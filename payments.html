@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#c9a84c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ROSTR+">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <title>Payments — ROSTR+ GCC</title>
+  <link rel="stylesheet" href="assets/css/system.css">
+  <style>
+    /* ── Payments Page Specific Styles ── */
+    .payments-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-2xl);
+      animation: fadeIn var(--duration-slow) var(--ease-out);
+    }
+
+    .payments-header h1 {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    /* Stats Grid with Double-Bezel Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: var(--space-lg);
+      margin-bottom: var(--space-2xl);
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: var(--space-lg);
+      position: relative;
+      overflow: hidden;
+      transition: all var(--duration-base) var(--ease-out);
+      animation: fadeIn var(--duration-slow) var(--ease-out);
+    }
+
+    /* Double-bezel effect */
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      pointer-events: none;
+      inset: 8px;
+    }
+
+    .stat-card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, transparent 100%);
+      border-radius: var(--radius-lg);
+      pointer-events: none;
+    }
+
+    .stat-card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-medium);
+      transform: translateY(-2px);
+    }
+
+    .stat-card .card-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: var(--space-sm);
+    }
+
+    .stat-value {
+      font-family: var(--font-display);
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      font-variant-numeric: tabular-nums;
+      margin-bottom: var(--space-xs);
+    }
+
+    .stat-change {
+      font-size: 0.82rem;
+      color: var(--text-tertiary);
+      font-family: var(--font-mono);
+    }
+
+    /* Section Headers */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-lg);
+      margin-top: var(--space-2xl);
+    }
+
+    .section-header h2 {
+      font-family: var(--font-display);
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    /* Table Styles */
+    .table-wrap {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+
+    thead {
+      background: rgba(255,255,255,0.02);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    thead th {
+      padding: var(--space-md) var(--space-lg);
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border-subtle);
+      transition: background-color var(--duration-base) var(--ease-out);
+    }
+
+    tbody tr:hover {
+      background: rgba(255,255,255,0.05);
+      cursor: pointer;
+    }
+
+    tbody tr:last-child {
+      border-bottom: none;
+    }
+
+    tbody td {
+      padding: var(--space-md) var(--space-lg);
+      color: var(--text-primary);
+    }
+
+    td:last-child {
+      text-align: right;
+    }
+
+    /* Status Tags */
+    .tag {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 0.78rem;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      width: fit-content;
+    }
+
+    .tag--paid {
+      background: var(--status-confirmed-bg);
+      color: var(--status-confirmed);
+      border: 1px solid var(--status-confirmed);
+    }
+
+    .tag--pending {
+      background: var(--status-pending-bg);
+      color: var(--status-pending);
+      border: 1px solid var(--status-pending);
+    }
+
+    .tag--escrow {
+      background: rgba(96,165,250,0.1);
+      color: #60a5fa;
+      border: 1px solid #60a5fa;
+    }
+
+    .tag--failed {
+      background: var(--status-cancelled-bg);
+      color: var(--status-cancelled);
+      border: 1px solid var(--status-cancelled);
+    }
+
+    .tag--card {
+      background: rgba(201,168,76,0.1);
+      color: var(--gold);
+      border: 1px solid var(--gold-glow);
+    }
+
+    .tag--bank {
+      background: rgba(167,139,250,0.1);
+      color: #a78bfa;
+      border: 1px solid #a78bfa;
+    }
+
+    /* Upcoming Payments Section */
+    .upcoming-items {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-lg);
+    }
+
+    .upcoming-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: var(--space-lg);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all var(--duration-base) var(--ease-out);
+    }
+
+    .upcoming-card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-medium);
+      transform: translateX(4px);
+    }
+
+    .upcoming-info {
+      flex: 1;
+    }
+
+    .upcoming-label {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: var(--space-xs);
+    }
+
+    .upcoming-artist {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: var(--space-xs);
+    }
+
+    .upcoming-due {
+      font-size: 0.9rem;
+      color: var(--text-tertiary);
+    }
+
+    .upcoming-amount {
+      font-family: var(--font-display);
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--gold);
+      font-variant-numeric: tabular-nums;
+      margin-right: var(--space-lg);
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--duration-base) var(--ease-out);
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal {
+      background: var(--bg-raised);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-xl);
+      padding: var(--space-2xl);
+      max-width: 500px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-lg);
+      animation: slideUp var(--duration-base) var(--ease-out);
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: var(--space-xl);
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: var(--space-lg);
+    }
+
+    .modal-header h3 {
+      font-family: var(--font-display);
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .modal-header .text-secondary {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin-top: 4px;
+    }
+
+    .breakdown-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--space-md) 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .breakdown-row:last-child {
+      border-bottom: none;
+    }
+
+    .breakdown-label {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+    }
+
+    .breakdown-value {
+      font-family: var(--font-mono);
+      color: var(--text-primary);
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+    }
+
+    .breakdown-total {
+      margin-top: var(--space-lg);
+      padding-top: var(--space-lg);
+      border-top: 2px solid var(--border-medium);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .breakdown-total .breakdown-label {
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--text-primary);
+    }
+
+    .breakdown-total .breakdown-value {
+      font-size: 1.25rem;
+      color: var(--gold);
+    }
+
+    /* Form Styles */
+    .form-group {
+      margin-bottom: var(--space-lg);
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: var(--space-sm);
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    select, input {
+      width: 100%;
+      padding: var(--space-md);
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 1rem;
+      transition: all var(--duration-base) var(--ease-out);
+    }
+
+    select:focus, input:focus {
+      outline: none;
+      background: var(--bg-input-focus);
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(201,168,76,0.1);
+    }
+
+    /* Button Styles */
+    .btn {
+      padding: var(--space-md) var(--space-lg);
+      border-radius: var(--radius-md);
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all var(--duration-base) var(--ease-out);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--gold);
+      color: var(--text-inverse);
+    }
+
+    .btn-primary:hover {
+      background: #d4b85c;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(201,168,76,0.2);
+    }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1px solid var(--border-medium);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-strong);
+      transform: translateY(-1px);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-primary);
+      border: none;
+    }
+
+    .btn-ghost:hover {
+      background: rgba(255,255,255,0.05);
+    }
+
+    .btn-icon {
+      padding: var(--space-sm);
+      display: inline-flex;
+    }
+
+    .btn-sm {
+      padding: var(--space-sm) var(--space-md);
+      font-size: 0.88rem;
+    }
+
+    .btn-full {
+      width: 100%;
+    }
+
+    .btn-action-row {
+      display: flex;
+      gap: var(--space-sm);
+      justify-content: flex-end;
+      margin-top: var(--space-xl);
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: var(--space-3xl) var(--space-lg);
+      color: var(--text-secondary);
+    }
+
+    .empty-state h3 {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: var(--space-md);
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    .animate-in {
+      animation: fadeIn var(--duration-slow) var(--ease-out) both;
+    }
+
+    .stagger-1 { animation-delay: 100ms; }
+    .stagger-2 { animation-delay: 200ms; }
+    .stagger-3 { animation-delay: 300ms; }
+    .stagger-4 { animation-delay: 400ms; }
+
+    /* Utility Classes */
+    .text-secondary {
+      color: var(--text-secondary);
+    }
+
+    .text-tertiary {
+      color: var(--text-tertiary);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* Payment Method Grid */
+    .payment-method-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-md);
+      margin: var(--space-lg) 0;
+    }
+
+    .payment-method-option {
+      padding: var(--space-md);
+      border: 2px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      background: transparent;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all var(--duration-base) var(--ease-out);
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .payment-method-option:hover {
+      border-color: var(--gold);
+      background: rgba(201,168,76,0.05);
+    }
+
+    .payment-method-option.selected {
+      border-color: var(--gold);
+      background: rgba(201,168,76,0.1);
+      color: var(--gold);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .payments-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-md);
+      }
+
+      .upcoming-card {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .upcoming-amount {
+        margin-right: 0;
+        margin-top: var(--space-md);
+      }
+
+      .payment-method-grid {
+        grid-template-columns: 1fr;
+      }
+
+      table {
+        font-size: 0.85rem;
+      }
+
+      thead th, tbody td {
+        padding: var(--space-md);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+    <nav-root id="nav-root"></nav-root>
+
+    <div class="layout-main">
+      <main class="main-content" style="padding: var(--space-xl)">
+        <!-- Page Header -->
+        <div class="payments-header">
+          <h1>Payments</h1>
+          <button class="btn btn-primary" onclick="openMakePaymentModal()">
+            <span class="js-icon" data-icon="plus" data-size="16"></span>
+            Make Payment
+          </button>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid" id="paymentStats">
+          <div class="stat-card animate-in stagger-1"><div class="card-inner"><div class="stat-label">Total Paid</div><div class="stat-value" id="stat-paid">—</div></div></div>
+          <div class="stat-card animate-in stagger-2"><div class="card-inner"><div class="stat-label">Pending</div><div class="stat-value" id="stat-pending">—</div></div></div>
+          <div class="stat-card animate-in stagger-3"><div class="card-inner"><div class="stat-label">Awaiting Transfer</div><div class="stat-value" id="stat-awaiting">—</div></div></div>
+          <div class="stat-card animate-in stagger-4"><div class="card-inner"><div class="stat-label">Platform Fees</div><div class="stat-value" id="stat-fees">—</div></div></div>
+        </div>
+
+        <!-- Payment History -->
+        <div style="margin-top: var(--space-3xl); animation: fadeIn var(--duration-slow) var(--ease-out); animation-delay: 200ms">
+          <div class="section-header">
+            <h2>Payment History</h2>
+          </div>
+          <div class="table-wrap">
+            <table id="payment-history-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Artist</th>
+                  <th>Event / Venue</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Method</th>
+                </tr>
+              </thead>
+              <tbody id="payment-history-body">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Upcoming Payments -->
+        <div style="margin-top: var(--space-3xl); animation: fadeIn var(--duration-slow) var(--ease-out); animation-delay: 300ms">
+          <div class="section-header">
+            <h2>Upcoming Payments</h2>
+          </div>
+          <div class="upcoming-items" id="upcoming-payments-list">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Payment Details Modal -->
+  <div id="payment-detail-modal" class="modal-overlay" onclick="if(event.target === this) closePaymentDetailModal()">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h3>Payment Details</h3>
+          <div class="text-secondary" id="detail-artist"></div>
+        </div>
+        <button class="btn btn-ghost btn-icon" onclick="closePaymentDetailModal()">
+          <span class="js-icon" data-icon="x" data-size="16"></span>
+        </button>
+      </div>
+
+      <div id="detail-breakdown" style="margin-bottom: var(--space-xl)">
+        <!-- Populated by JS -->
+      </div>
+
+      <div style="margin-bottom: var(--space-lg); padding: var(--space-md); background: rgba(255,255,255,0.02); border-radius: var(--radius-md); border: 1px solid var(--border-subtle)">
+        <div class="breakdown-row" style="border-bottom: none; padding: 0">
+          <div class="breakdown-label" style="font-family: var(--font-mono); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px">Transaction ID</div>
+        </div>
+        <div id="detail-txn-id" style="font-family: var(--font-mono); color: var(--text-primary); word-break: break-all; margin-top: var(--space-sm)"></div>
+      </div>
+
+      <div style="display: flex; gap: var(--space-md); font-size: 0.85rem; color: var(--text-secondary)">
+        <div>
+          <div style="font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px">Created</div>
+          <div id="detail-created"></div>
+        </div>
+        <div>
+          <div style="font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px">Completed</div>
+          <div id="detail-completed"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Make Payment Modal -->
+  <div id="make-payment-modal" class="modal-overlay" onclick="if(event.target === this) closeMakePaymentModal()">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Make Payment</h3>
+        <button class="btn btn-ghost btn-icon" onclick="closeMakePaymentModal()">
+          <span class="js-icon" data-icon="x" data-size="16"></span>
+        </button>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Booking</label>
+        <select id="booking-select" onchange="updatePaymentAmount()">
+          <option value="">Select a booking...</option>
+        </select>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); margin-bottom: var(--space-lg)">
+        <div class="form-group" style="margin-bottom: 0">
+          <label class="form-label">Base Amount</label>
+          <input type="text" id="base-amount" readonly style="background: var(--bg-input); opacity: 0.7; cursor: not-allowed">
+        </div>
+        <div class="form-group" style="margin-bottom: 0">
+          <label class="form-label">Platform Fee (5%)</label>
+          <input type="text" id="platform-fee" readonly style="background: var(--bg-input); opacity: 0.7; cursor: not-allowed">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Total Amount</label>
+        <input type="text" id="total-amount" readonly style="background: var(--bg-input); opacity: 0.7; cursor: not-allowed; font-weight: bold">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Payment Method</label>
+        <div class="payment-method-grid">
+          <button class="payment-method-option selected" data-method="bank" onclick="selectPaymentMethod('bank')">
+            <span class="js-icon" data-icon="activity" data-size="16"></span> Bank Transfer
+          </button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Confirm Amount</label>
+        <input type="text" id="confirm-amount" placeholder="Re-enter total amount to confirm" style="">
+      </div>
+
+      <div class="btn-action-row">
+        <button class="btn btn-secondary" onclick="closeMakePaymentModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitPayment()">
+          <span class="js-icon" data-icon="send" data-size="16"></span>
+          Process Payment
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/app.js"></script>
+  <script>
+    // ── State ──
+    let paymentsData = [];
+    let upcomingData = [];
+    let liveBookings = [];
+
+    // ── Render Payment History ──
+    function renderPaymentHistory() {
+      const tbody = document.getElementById('payment-history-body');
+      if (paymentsData.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-tertiary);padding:var(--space-xl)">No payments yet</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = paymentsData.map(p => {
+        const artistName = p.bookings?.artists?.profiles?.display_name || p.bookings?.artists?.name || '—';
+        const eventName = p.bookings?.event_name || p.bookings?.venue_name || '—';
+        return `
+        <tr onclick="openPaymentDetailModal('${p.id}')">
+          <td>${UI.formatDate(p.created_at)}</td>
+          <td>${esc(artistName)}</td>
+          <td>${esc(eventName)}</td>
+          <td style="font-variant-numeric: tabular-nums">${UI.currency(p.amount, p.currency)}</td>
+          <td>${renderStatusTag(p.status)}</td>
+          <td>${renderMethodTag(p.payment_method || 'card')}</td>
+        </tr>
+      `}).join('');
+    }
+
+    // ── Status Tag Helper ──
+    function renderStatusTag(status) {
+      const map = {
+        paid: 'paid',
+        pending: 'pending',
+        escrow: 'escrow',
+        failed: 'failed'
+      };
+      const tagClass = map[status] || 'pending';
+      return `<span class="tag tag--${tagClass}">${status}</span>`;
+    }
+
+    // ── Method Tag Helper ──
+    function renderMethodTag(method) {
+      const map = {
+        card: 'card',
+        bank: 'bank'
+      };
+      const tagClass = map[method] || 'card';
+      return `<span class="tag tag--${tagClass}">${method === 'card' ? 'Card' : 'Bank'}</span>`;
+    }
+
+    // ── Render Upcoming Payments ──
+    function renderUpcomingPayments() {
+      const container = document.getElementById('upcoming-payments-list');
+      if (upcomingData.length === 0) {
+        container.innerHTML = `<div style="padding:var(--space-lg);color:var(--text-tertiary);font-size:0.85rem">No upcoming payments</div>`;
+        return;
+      }
+      container.innerHTML = upcomingData.map(b => {
+        const artistName = b.artists?.profiles?.display_name || b.artists?.name || '—';
+        const eventName = b.event_name || b.venue_name || '—';
+        const fee = b.fee || 0;
+        const currency = b.currency || 'AED';
+        return `
+        <div class="upcoming-card">
+          <div class="upcoming-info">
+            <div class="upcoming-label">Due ${UI.formatDate(b.event_date)}</div>
+            <div class="upcoming-artist">${esc(artistName)}</div>
+            <div class="upcoming-due">${esc(eventName)}</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: var(--space-lg)">
+            <div class="upcoming-amount">${UI.currency(fee, currency)}</div>
+            <button class="btn btn-primary btn-sm" onclick="openMakePaymentModalWithData('${artistName.replace(/'/g,"\\'")}', ${fee}, '${currency}', '${b.id}')">
+              Pay Now
+            </button>
+          </div>
+        </div>
+      `}).join('');
+    }
+
+    // ── Open Payment Detail Modal ──
+    function openPaymentDetailModal(paymentId) {
+      const payment = paymentsData.find(p => p.id === paymentId);
+      if (!payment) return;
+
+      const artistName = payment.bookings?.artists?.profiles?.display_name || payment.bookings?.artists?.name || '—';
+      const eventName = payment.bookings?.event_name || payment.bookings?.venue_name || '—';
+      const baseAmount = payment.amount || 0;
+      const platformFee = Math.round(baseAmount * 0.05);
+      const totalAmount = baseAmount + platformFee;
+      const currency = payment.currency || 'AED';
+
+      document.getElementById('detail-artist').textContent = artistName + ' • ' + eventName;
+
+      document.getElementById('detail-breakdown').innerHTML = `
+        <div class="breakdown-row">
+          <span class="breakdown-label">Base Amount</span>
+          <span class="breakdown-value">${UI.currency(baseAmount, currency)}</span>
+        </div>
+        <div class="breakdown-row">
+          <span class="breakdown-label">Platform Fee (5%)</span>
+          <span class="breakdown-value">${UI.currency(platformFee, currency)}</span>
+        </div>
+        <div class="breakdown-total">
+          <span class="breakdown-label">Total</span>
+          <span class="breakdown-value">${UI.currency(totalAmount, currency)}</span>
+        </div>
+      `;
+
+      document.getElementById('detail-txn-id').textContent = payment.transaction_ref || payment.id.substring(0, 16).toUpperCase();
+      document.getElementById('detail-created').textContent = UI.formatDate(payment.created_at);
+      document.getElementById('detail-completed').textContent = payment.updated_at ? UI.formatDate(payment.updated_at) : '—';
+
+      document.getElementById('payment-detail-modal').classList.add('active');
+    }
+
+    // ── Close Payment Detail Modal ──
+    function closePaymentDetailModal() {
+      document.getElementById('payment-detail-modal').classList.remove('active');
+    }
+
+    // ── Populate Booking Select ──
+    function populateBookingSelect() {
+      const select = document.getElementById('booking-select');
+      // Clear existing options except the placeholder
+      while (select.options.length > 1) select.remove(1);
+
+      liveBookings.forEach(b => {
+        const artistName = b.artists?.profiles?.display_name || b.artists?.name || 'Unknown';
+        const option = document.createElement('option');
+        option.value = b.id;
+        option.textContent = `${esc(artistName)} — ${b.venue_name || b.event_name} (${UI.formatDate(b.event_date)}) — ${UI.currency(b.fee, b.currency)}`;
+        option.dataset.amount = b.fee || 0;
+        option.dataset.currency = b.currency || 'AED';
+        select.appendChild(option);
+      });
+    }
+
+    // ── Update Payment Amount ──
+    function updatePaymentAmount() {
+      const select = document.getElementById('booking-select');
+      const selectedOption = select.options[select.selectedIndex];
+
+      if (selectedOption.value === '') {
+        document.getElementById('base-amount').value = '';
+        document.getElementById('platform-fee').value = '';
+        document.getElementById('total-amount').value = '';
+        document.getElementById('confirm-amount').value = '';
+        return;
+      }
+
+      const baseAmount = parseFloat(selectedOption.dataset.amount);
+      const currency = selectedOption.dataset.currency;
+      const platformFee = Math.round(baseAmount * 0.05);
+      const totalAmount = baseAmount + platformFee;
+
+      document.getElementById('base-amount').value = UI.currency(baseAmount, currency);
+      document.getElementById('platform-fee').value = UI.currency(platformFee, currency);
+      document.getElementById('total-amount').value = UI.currency(totalAmount, currency);
+      document.getElementById('confirm-amount').value = '';
+    }
+
+    // ── Select Payment Method ──
+    function selectPaymentMethod(method) {
+      document.querySelectorAll('.payment-method-option').forEach(btn => {
+        btn.classList.remove('selected');
+      });
+      document.querySelector(`[data-method="${method}"]`).classList.add('selected');
+    }
+
+    // ── Open Make Payment Modal ──
+    function openMakePaymentModal() {
+      document.getElementById('booking-select').value = '';
+      updatePaymentAmount();
+      document.querySelectorAll('.payment-method-option').forEach(btn => {
+        btn.classList.remove('selected');
+      });
+      document.getElementById('make-payment-modal').classList.add('active');
+    }
+
+    // ── Close Make Payment Modal ──
+    function closeMakePaymentModal() {
+      document.getElementById('make-payment-modal').classList.remove('active');
+    }
+
+    // ── Submit Payment ──
+    async function submitPayment() {
+      const select = document.getElementById('booking-select');
+      const confirmAmount = document.getElementById('confirm-amount').value;
+      const totalAmount = document.getElementById('total-amount').value;
+      const paymentMethod = document.querySelector('.payment-method-option.selected');
+
+      if (!select.value) { UI.toast('Please select a booking', 'error'); return; }
+      if (!paymentMethod) { UI.toast('Please select a payment method', 'error'); return; }
+      if (!confirmAmount) { UI.toast('Please confirm the amount', 'error'); return; }
+
+      const confirmNum = parseFloat(confirmAmount.replace(/[^\d.-]/g, ''));
+      const totalNum = parseFloat(totalAmount.replace(/[^\d.-]/g, ''));
+      if (Math.abs(confirmNum - totalNum) > 0.01) {
+        UI.toast('Confirmation amount does not match total', 'error');
+        return;
+      }
+
+      // Record bank transfer payment in DB
+      const selectedOption = select.options[select.selectedIndex];
+      const amount = parseFloat(selectedOption.dataset.amount) || 0;
+      const currency = selectedOption.dataset.currency || 'AED';
+      const method = paymentMethod.dataset.method || 'card';
+
+      const result = await DB.createPayment({
+        booking_id: select.value,
+        amount,
+        currency,
+        payment_method: method,
+        status: 'pending',
+      });
+
+      if (result.success) {
+        UI.toast('Payment recorded — complete via your payment provider', 'success');
+        closeMakePaymentModal();
+        // Reload payments
+        const pr = await DB.getMyPayments();
+        if (pr.success) { paymentsData = pr.data; renderPaymentHistory(); }
+      } else {
+        UI.toast('Failed to record payment: ' + (result.error || ''), 'error');
+      }
+    }
+
+    // ── Open Make Payment With Data ──
+    function openMakePaymentModalWithData(artist, amount, currency, bookingId) {
+      openMakePaymentModal();
+      const select = document.getElementById('booking-select');
+      if (bookingId) {
+        select.value = bookingId;
+      } else {
+        for (let i = 0; i < select.options.length; i++) {
+          if (select.options[i].textContent.includes(artist)) {
+            select.value = select.options[i].value;
+            break;
+          }
+        }
+      }
+      updatePaymentAmount();
+    }
+
+    // ── Initialize ──
+    document.addEventListener('DOMContentLoaded', async () => {
+      await Auth.ready();
+      if (!Auth.isLoggedIn()) { window.location.href = 'auth.html'; return; }
+
+      document.getElementById('nav-root').innerHTML = renderNav('payments');
+
+      // Load live data in parallel
+      const [paymentsResult, bookingsResult] = await Promise.all([
+        DB.getMyPayments(),
+        DB.getMyBookings(),
+      ]);
+
+      if (paymentsResult.success) paymentsData = paymentsResult.data;
+
+      if (bookingsResult.success) {
+        liveBookings = bookingsResult.data.filter(b => ['pending', 'confirmed'].includes(b.status));
+        upcomingData = bookingsResult.data.filter(b => b.status === 'confirmed' && new Date(b.event_date) > new Date());
+      }
+
+      renderPaymentHistory();
+      renderUpcomingPayments();
+      populateBookingSelect();
+
+      // Update stats from live data
+      const paid = paymentsData.filter(p => p.status === 'paid').reduce((s, p) => s + (p.amount || 0), 0);
+      const pending = paymentsData.filter(p => p.status === 'pending').reduce((s, p) => s + (p.amount || 0), 0);
+      const awaiting = upcomingData.reduce((s, b) => s + (b.fee || 0), 0);
+      const fees = Math.round(paid * 0.05);
+      const el = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+      el('stat-paid', paid > 0 ? UI.currency(paid, 'AED') : '—');
+      el('stat-pending', pending > 0 ? UI.currency(pending, 'AED') : '—');
+      el('stat-awaiting', awaiting > 0 ? UI.currency(awaiting, 'AED') : '—');
+      el('stat-fees', fees > 0 ? UI.currency(fees, 'AED') : '—');
+
+      document.getElementById('payment-detail-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'payment-detail-modal') closePaymentDetailModal();
+      });
+      document.getElementById('make-payment-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'make-payment-modal') closeMakePaymentModal();
+      });
+    });
+  </script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
+</body>
+</html>

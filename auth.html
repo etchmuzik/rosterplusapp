@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#c9a84c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ROSTR+">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <title>Sign In — ROSTR+</title>
+  <link rel="stylesheet" href="assets/css/system.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/app.js" defer></script>
+  <style>
+    .auth-page {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .auth-left {
+      background: var(--bg-raised);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: var(--space-3xl);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .auth-left::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 1px;
+      background: var(--border-subtle);
+    }
+
+    .auth-brand {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.3rem;
+      letter-spacing: -0.04em;
+      margin-bottom: var(--space-3xl);
+    }
+
+    .auth-brand span { color: var(--gold); }
+
+    .auth-left h2 {
+      font-size: clamp(1.8rem, 3vw, 2.8rem);
+      margin-bottom: var(--space-lg);
+      max-width: 16ch;
+    }
+
+    .auth-left h2 .accent { color: var(--gold); }
+
+    .auth-left p {
+      color: var(--text-secondary);
+      font-size: 1rem;
+      max-width: 42ch;
+      margin-bottom: var(--space-2xl);
+    }
+
+    .auth-stats {
+      display: flex;
+      gap: var(--space-2xl);
+    }
+
+    .auth-stat-num {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--gold-text);
+    }
+
+    .auth-stat-label {
+      font-size: 0.82rem;
+      color: var(--text-tertiary);
+      margin-top: 2px;
+    }
+
+    .auth-right {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-2xl);
+    }
+
+    .auth-form-wrap {
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .auth-tabs {
+      display: flex;
+      gap: 2px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 3px;
+      margin-bottom: var(--space-xl);
+    }
+
+    .auth-tab {
+      flex: 1;
+      padding: 9px;
+      text-align: center;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      border-radius: calc(var(--radius-sm) - 2px);
+      cursor: pointer;
+      transition: all var(--duration-fast) var(--ease-out);
+      border: none;
+      background: none;
+      font-family: var(--font-body);
+    }
+
+    .auth-tab.active {
+      background: var(--bg-raised);
+      color: var(--text-primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .auth-tab:hover:not(.active) {
+      color: var(--text-primary);
+    }
+
+    .role-select {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-lg);
+    }
+
+    .role-option {
+      padding: var(--space-md);
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all var(--duration-fast) var(--ease-out);
+      text-align: center;
+    }
+
+    .role-option:hover {
+      border-color: var(--border-medium);
+      background: var(--bg-card-hover);
+    }
+
+    .role-option.selected {
+      border-color: var(--gold);
+      background: var(--gold-dim);
+    }
+
+    .role-option .role-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.04);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto var(--space-sm);
+      color: var(--text-secondary);
+    }
+
+    .role-option.selected .role-icon {
+      background: var(--gold-dim);
+      color: var(--gold-text);
+    }
+
+    .role-option h5 {
+      font-size: 0.88rem;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .role-option small {
+      font-size: 0.75rem;
+      color: var(--text-tertiary);
+    }
+
+    .auth-divider {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      margin: var(--space-lg) 0;
+    }
+
+    .auth-divider::before,
+    .auth-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border-subtle);
+    }
+
+    .auth-divider span {
+      font-size: 0.75rem;
+      color: var(--text-tertiary);
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+    }
+
+    .auth-error {
+      padding: 10px 14px;
+      background: var(--status-cancelled-bg);
+      border: 1px solid rgba(248,113,113,0.2);
+      border-radius: var(--radius-sm);
+      color: var(--status-cancelled);
+      font-size: 0.85rem;
+      margin-bottom: var(--space-md);
+      display: none;
+    }
+
+    .auth-footer {
+      text-align: center;
+      margin-top: var(--space-lg);
+      font-size: 0.85rem;
+      color: var(--text-tertiary);
+    }
+
+    .auth-footer a { color: var(--gold-text); font-weight: 500; }
+
+    @media (max-width: 768px) {
+      .auth-page { grid-template-columns: 1fr; }
+      .auth-left { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-page">
+    <!-- Left panel -->
+    <div class="auth-left">
+      <a href="index.html" class="auth-brand" style="text-decoration:none;color:var(--text-primary)">ROSTR<span>+</span></a>
+      <h2>The booking platform built for the <span class="accent">Gulf</span></h2>
+      <p>Join hundreds of promoters and artists already streamlining their nightlife bookings across the GCC.</p>
+      <div class="auth-stats">
+        <div>
+          <div class="auth-stat-num">340+</div>
+          <div class="auth-stat-label">Active artists</div>
+        </div>
+        <div>
+          <div class="auth-stat-num">8</div>
+          <div class="auth-stat-label">GCC cities</div>
+        </div>
+        <div>
+          <div class="auth-stat-num">2.4h</div>
+          <div class="auth-stat-label">Avg. response</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right panel — form -->
+    <div class="auth-right">
+      <div class="auth-form-wrap">
+        <div class="auth-tabs">
+          <button class="auth-tab active" onclick="switchTab('login')">Sign In</button>
+          <button class="auth-tab" onclick="switchTab('signup')">Create Account</button>
+        </div>
+
+        <div id="auth-error" class="auth-error"></div>
+
+        <!-- Login Form -->
+        <form id="login-form" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-input" id="login-email" placeholder="you@company.com" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" class="form-input" id="login-password" placeholder="Enter password" required>
+          </div>
+          <button type="submit" class="btn btn-primary w-full btn-lg" id="login-btn">Sign In</button>
+          <div class="auth-footer" style="margin-top:var(--space-md)">
+            <a href="#" onclick="switchTab('reset');return false" style="color:var(--text-tertiary);font-size:0.82rem">Forgot password?</a>
+          </div>
+          <div class="auth-footer">
+            No account yet? <a href="#" onclick="switchTab('signup');return false">Create one</a>
+          </div>
+        </form>
+
+        <!-- Reset Password Form -->
+        <form id="reset-form" style="display:none" onsubmit="handleReset(event)">
+          <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:var(--space-lg)">Enter your email and we'll send you a reset link.</p>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-input" id="reset-email" placeholder="you@company.com" required>
+          </div>
+          <button type="submit" class="btn btn-primary w-full btn-lg" id="reset-btn">Send Reset Link</button>
+          <div class="auth-footer">
+            <a href="#" onclick="switchTab('login');return false">Back to sign in</a>
+          </div>
+        </form>
+
+        <!-- Signup Form -->
+        <form id="signup-form" style="display:none" onsubmit="handleSignup(event)">
+          <div class="form-group">
+            <label class="form-label">I am a</label>
+            <div class="role-select">
+              <div class="role-option selected" onclick="selectRole('promoter', this)">
+                <div class="role-icon" id="role-icon-promoter"></div>
+                <h5>Promoter</h5>
+                <small>Book artists for events</small>
+              </div>
+              <div class="role-option" onclick="selectRole('artist', this)">
+                <div class="role-icon" id="role-icon-artist"></div>
+                <h5>Artist</h5>
+                <small>Get booked for gigs</small>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" class="form-input" id="signup-name" placeholder="Your name or stage name" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-input" id="signup-email" placeholder="you@company.com" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" class="form-input" id="signup-password" placeholder="Min 8 characters" required minlength="8">
+          </div>
+          <input type="hidden" id="signup-role" value="promoter">
+          <button type="submit" class="btn btn-primary w-full btn-lg" id="signup-btn">Create Account</button>
+          <div class="auth-footer">
+            Already have an account? <a href="#" onclick="switchTab('login');return false">Sign in</a>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Set role icons (wrapped in try-catch so it doesn't break the rest)
+      try {
+        document.getElementById('role-icon-promoter').innerHTML = UI.icon('users', 18);
+        document.getElementById('role-icon-artist').innerHTML = UI.icon('music', 18);
+      } catch(e) { console.warn('Icon render skipped:', e); }
+
+      // Check URL for pre-selected role — both promoter and artist should go to signup
+      const params = new URLSearchParams(window.location.search);
+      const roleParam = params.get('role');
+      if (roleParam === 'promoter' || roleParam === 'artist') {
+        switchTab('signup');
+        if (roleParam === 'artist') {
+          document.querySelectorAll('.role-option').forEach(el => el.classList.remove('selected'));
+          document.querySelectorAll('.role-option')[1].classList.add('selected');
+          document.getElementById('signup-role').value = 'artist';
+          selectedRole = 'artist';
+        }
+        // promoter is already selected by default
+      }
+    });
+
+    let selectedRole = 'promoter';
+
+    function switchTab(tab) {
+      document.querySelectorAll('.auth-tab').forEach((el, i) => {
+        el.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'signup' && i === 1));
+      });
+      document.getElementById('login-form').style.display = tab === 'login' ? '' : 'none';
+      document.getElementById('signup-form').style.display = tab === 'signup' ? '' : 'none';
+      document.getElementById('reset-form').style.display = tab === 'reset' ? '' : 'none';
+      document.getElementById('auth-error').style.display = 'none';
+    }
+
+    async function handleReset(e) {
+      e.preventDefault();
+      const btn = document.getElementById('reset-btn');
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+      const email = document.getElementById('reset-email').value;
+      const result = await Auth.sendPasswordReset(email);
+      if (result.success) {
+        showError('Check your email for a reset link.');
+        document.getElementById('auth-error').style.borderColor = 'rgba(52,211,153,0.3)';
+        document.getElementById('auth-error').style.background = 'rgba(52,211,153,0.08)';
+        document.getElementById('auth-error').style.color = 'var(--status-confirmed)';
+      } else {
+        showError(result.error || 'Failed to send reset email');
+      }
+      btn.disabled = false;
+      btn.textContent = 'Send Reset Link';
+    }
+
+    function selectRole(role, el) {
+      selectedRole = role;
+      document.getElementById('signup-role').value = role;
+      document.querySelectorAll('.role-option').forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('auth-error');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const btn = document.getElementById('login-btn');
+      btn.disabled = true;
+      btn.textContent = 'Signing in...';
+
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+
+      const result = await Auth.signIn(email, password);
+      if (result.success) {
+        const raw = new URLSearchParams(window.location.search).get('redirect') || '';
+        const fallback = Auth.role === 'artist' ? 'artist-dashboard.html' : 'dashboard.html';
+        const redirect = (raw && /^[a-zA-Z0-9\-_./]+\.html/.test(raw) && !raw.includes('//')) ? raw : fallback;
+        window.location.href = redirect;
+      } else {
+        showError(result.error || 'Sign in failed');
+        btn.disabled = false;
+        btn.textContent = 'Sign In';
+      }
+    }
+
+    async function handleSignup(e) {
+      e.preventDefault();
+      const btn = document.getElementById('signup-btn');
+      btn.disabled = true;
+      btn.textContent = 'Creating account...';
+
+      try {
+        const name = document.getElementById('signup-name').value;
+        const email = document.getElementById('signup-email').value;
+        const password = document.getElementById('signup-password').value;
+        const rawRole = document.getElementById('signup-role').value;
+        const role = (rawRole === 'promoter' || rawRole === 'artist') ? rawRole : 'promoter';
+
+        const result = await Auth.signUp(email, password, role, name);
+        if (result.success) {
+          window.location.href = role === 'artist' ? 'artist-profile-edit.html?setup=1' : 'dashboard.html';
+        } else {
+          showError(result.error || 'Sign up failed');
+          btn.disabled = false;
+          btn.textContent = 'Create Account';
+        }
+      } catch(err) {
+        console.error('[ROSTR] Signup error:', err);
+        showError('Account creation failed. Please try again.');
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+      }
+    }
+
+  </script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#c9a84c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ROSTR+">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <title>EPK — ROSTR+ GCC</title>
+  <link rel="stylesheet" href="assets/css/system.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/app.js" defer></script>
+  <style>
+    .epk-container { max-width: 900px; margin: 80px auto 0; padding: var(--space-2xl) var(--space-lg); }
+    .epk-hero { text-align: center; margin-bottom: var(--space-3xl); padding: var(--space-3xl) 0; border-bottom: 1px solid var(--border-subtle); }
+    .avatar-xlarge { width: 160px; height: 160px; border-radius: 16px; margin: 0 auto var(--space-xl); background: var(--gold-dim); border: 2px solid var(--gold); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 4rem; font-weight: 700; color: var(--gold-text); overflow: hidden; }
+    .avatar-xlarge img { width: 100%; height: 100%; object-fit: cover; }
+    .epk-name { font-family: var(--font-display); font-size: 2.8rem; font-weight: 800; letter-spacing: -0.04em; margin-bottom: var(--space-sm); }
+    .epk-meta { color: var(--text-secondary); font-size: 0.95rem; margin-bottom: var(--space-md); }
+    .epk-socials { display: flex; justify-content: center; gap: var(--space-md); margin-top: var(--space-lg); }
+    .epk-socials a { display: flex; align-items: center; gap: 6px; color: var(--text-secondary); font-size: 0.85rem; text-decoration: none; padding: 6px 12px; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); transition: all var(--duration-fast); }
+    .epk-socials a:hover { border-color: var(--gold); color: var(--gold-text); }
+    .epk-section { margin-bottom: var(--space-3xl); }
+    .epk-section-title { font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-tertiary); margin-bottom: var(--space-lg); }
+    .quote-grid { display: grid; gap: var(--space-md); }
+    .quote-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 6px; }
+    .quote-card-inner { background: var(--bg-raised); border-radius: calc(var(--radius-lg) - 4px); padding: var(--space-lg); }
+    .quote-text { font-style: italic; color: var(--text-secondary); line-height: 1.7; margin-bottom: var(--space-sm); font-size: 1.05rem; }
+    .quote-text::before { content: '\201C'; color: var(--gold-text); font-size: 1.5rem; margin-right: 4px; }
+    .quote-source { font-family: var(--font-mono); font-size: 0.78rem; color: var(--gold-text); }
+    .perf-list { display: flex; flex-direction: column; gap: var(--space-sm); }
+    .perf-item { display: flex; align-items: center; gap: var(--space-md); padding: var(--space-md) var(--space-lg); background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); }
+    .perf-venue { font-weight: 600; color: var(--text-primary); flex: 1; }
+    .perf-event { color: var(--text-secondary); font-size: 0.88rem; flex: 1; }
+    .perf-date { font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-tertiary); }
+    .rider-list { display: flex; flex-direction: column; gap: var(--space-sm); }
+    .rider-item { display: flex; justify-content: space-between; align-items: center; padding: var(--space-sm) var(--space-md); background: var(--bg-card); border-radius: var(--radius-sm); font-size: 0.88rem; }
+    .rider-key { color: var(--text-secondary); font-weight: 500; }
+    .rider-value { color: var(--text-tertiary); font-family: var(--font-mono); font-size: 0.82rem; }
+    .epk-booking { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-xl); text-align: center; }
+    .epk-rate { font-family: var(--font-display); font-size: 1.8rem; font-weight: 700; color: var(--gold-text); margin-bottom: var(--space-md); }
+    .share-bar { display: flex; align-items: center; gap: var(--space-md); padding: var(--space-lg); background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); margin-top: var(--space-2xl); }
+    .share-url { flex: 1; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .epk-footer { text-align: center; margin-top: var(--space-3xl); padding-top: var(--space-xl); border-top: 1px solid var(--border-subtle); color: var(--text-tertiary); font-size: 0.78rem; }
+    .edit-btn { position: absolute; top: var(--space-sm); right: var(--space-sm); opacity: 0; transition: opacity var(--duration-fast); }
+    .epk-section:hover .edit-btn { opacity: 1; }
+    .epk-section { position: relative; }
+    @media (max-width: 768px) { .epk-name { font-size: 2rem; } .epk-socials { flex-wrap: wrap; justify-content: center; } .perf-item { flex-direction: column; align-items: flex-start; } }
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+    <div id="nav-root"></div>
+    <div class="epk-container">
+      <div id="epk-content">
+        <div style="text-align:center;padding:var(--space-3xl);color:var(--text-tertiary)">Loading EPK...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let _epkData = null;
+    let _isEditMode = false;
+    let _artistId = null;
+
+    function renderEPK(data) {
+      if (!data) { document.getElementById('epk-content').innerHTML = '<div class="empty-state" style="text-align:center;padding:var(--space-3xl)"><h2>EPK Not Found</h2><p>This artist profile doesn\'t exist.</p><a href="directory.html" class="btn btn-primary">Browse Artists</a></div>'; return; }
+
+      const name = esc(data.stage_name || data.name || 'Unknown');
+      const genre = esc(Array.isArray(data.genre) ? data.genre[0] : (data.genre || ''));
+      const subgenres = Array.isArray(data.subgenres) ? data.subgenres : [];
+      const city = esc(data.city || data.cities_active?.[0] || '');
+      const bio = esc(data.bio || data.profiles?.bio || '');
+      const avatar = data.avatar_url || data.profiles?.avatar_url;
+      const social = data.social_links || data.social || {};
+      const rating = data.rating || 0;
+      const bookings = data.total_bookings || data.bookings || 0;
+      const rateMin = data.base_fee || data.rate_min || 0;
+      const rateMax = data.rate_max || rateMin * 2;
+      const currency = data.currency || 'AED';
+      const quotes = data.press_quotes || [];
+      const performances = data.past_performances || [];
+      const rider = data.tech_rider || [];
+      const initials = (data.stage_name || data.name || 'A').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+
+      const genreTags = [genre, ...subgenres.map(s => esc(s))].filter(Boolean).map(g => `<span class="tag tag--gold">${g}</span>`).join(' ');
+
+      const socialLinks = Object.entries(social).filter(([k, v]) => v).map(([k, v]) => {
+        const icons = { instagram: 'grid', soundcloud: 'music', spotify: 'music', youtube: 'activity' };
+        return `<a href="${esc(v)}" target="_blank" rel="noopener">${UI.icon(icons[k] || 'send', 14)} ${k.charAt(0).toUpperCase() + k.slice(1)}</a>`;
+      }).join('');
+
+      const quotesHtml = quotes.length ? quotes.map(q => `
+        <div class="quote-card"><div class="quote-card-inner">
+          <div class="quote-text">${esc(q.quote)}</div>
+          <div class="quote-source">${esc(q.source)} ${q.date ? '· ' + q.date : ''}</div>
+        </div></div>`).join('') : '<p class="text-tertiary">No press quotes yet</p>';
+
+      const perfHtml = performances.length ? performances.map(p => `
+        <div class="perf-item">
+          <div class="perf-venue">${esc(p.venue)}</div>
+          <div class="perf-event">${esc(p.event)}</div>
+          <div class="perf-date">${UI.formatDate(p.date)}</div>
+        </div>`).join('') : '<p class="text-tertiary">No past performances listed</p>';
+
+      const riderHtml = rider.length ? rider.map(r => `
+        <div class="rider-item">
+          <span class="rider-key">${esc(r.category)}</span>
+          <span class="rider-value">${esc(r.item)}</span>
+        </div>`).join('') : '<p class="text-tertiary">No tech rider specified</p>';
+
+      const editBtnHtml = _isEditMode ? `<a href="artist-profile-edit.html" class="btn btn-secondary btn-sm" style="margin-top:var(--space-md)">Edit Full Profile</a>` : '';
+
+      const artistIdForBooking = _artistId || data.id;
+
+      document.getElementById('epk-content').innerHTML = `
+        <div class="epk-hero">
+          <div class="avatar-xlarge">${avatar ? `<img src="${avatar}" alt="${name}">` : initials}</div>
+          <div class="epk-name">${name}</div>
+          <div class="epk-meta">${city} ${genre ? '· ' + genre : ''} ${rating ? '· ★ ' + rating.toFixed(1) : ''}</div>
+          <div>${genreTags}</div>
+          ${socialLinks ? `<div class="epk-socials">${socialLinks}</div>` : ''}
+          ${editBtnHtml}
+        </div>
+
+        ${bio ? `<div class="epk-section"><div class="epk-section-title">About</div><p style="color:var(--text-secondary);line-height:1.8;font-size:1.05rem">${bio}</p></div>` : ''}
+
+        <div class="epk-section">
+          <div class="epk-section-title">Press</div>
+          <div class="quote-grid">${quotesHtml}</div>
+        </div>
+
+        <div class="epk-section">
+          <div class="epk-section-title">Past Performances</div>
+          <div class="perf-list">${perfHtml}</div>
+        </div>
+
+        <div class="epk-section">
+          <div class="epk-section-title">Technical Rider</div>
+          <div class="rider-list">${riderHtml}</div>
+        </div>
+
+        <div class="epk-booking">
+          <div class="epk-section-title">Booking</div>
+          <div class="epk-rate">${UI.currency(rateMin, currency)}${rateMax > rateMin ? ' — ' + UI.currency(rateMax, currency) : ''}</div>
+          <div style="margin-bottom:var(--space-md)">${data.status === 'active' || data.available ? '<span class="tag tag--confirmed">Available</span>' : '<span class="tag tag--draft">Unavailable</span>'}</div>
+          <div style="display:flex;gap:var(--space-sm);justify-content:center">
+            <a href="booking.html?artist=${artistIdForBooking}" class="btn btn-primary">Book This Artist</a>
+            <a href="messages.html" class="btn btn-secondary">Contact</a>
+          </div>
+        </div>
+
+        <div class="share-bar">
+          <span style="font-size:0.85rem;color:var(--text-secondary)">Share this EPK:</span>
+          <div class="share-url" id="share-url">${window.location.href}</div>
+          <button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('share-url').textContent);UI.toast('Link copied!','success')">Copy</button>
+        </div>
+
+        <div class="epk-footer">
+          Powered by <strong>ROSTR+</strong> — The GCC Booking Platform
+        </div>
+      `;
+
+      document.title = `${data.stage_name || data.name || 'Artist'} — EPK | ROSTR+`;
+    }
+
+    // Init
+    document.addEventListener('DOMContentLoaded', async function() {
+      await Auth.ready();
+      document.getElementById('nav-root').innerHTML = renderNav('epk');
+      if (typeof hydrateIcons === 'function') hydrateIcons();
+
+      const params = new URLSearchParams(window.location.search);
+      _artistId = params.get('artist');
+
+      if (_artistId) {
+        // Public view mode
+        const result = await DB.getArtistEPK(_artistId);
+        renderEPK(result.success ? result.data : null);
+      } else if (Auth.isLoggedIn() && Auth.role === 'artist') {
+        // Edit mode — show own EPK
+        _isEditMode = true;
+        const result = await DB.getMyArtistProfile();
+        if (result.success && result.data) {
+          _artistId = result.data.id;
+          renderEPK(result.data);
+        } else {
+          document.getElementById('epk-content').innerHTML = '<div class="empty-state" style="text-align:center;padding:var(--space-3xl)"><h2>No Profile Yet</h2><p>Create your artist profile first to build your EPK.</p><a href="artist-profile-edit.html?setup=1" class="btn btn-primary">Create Profile</a></div>';
+        }
+      } else {
+        window.location.href = 'auth.html';
+      }
+    });
+  </script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
+</body>
+</html>

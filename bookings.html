@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#c9a84c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ROSTR+">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <title>Bookings — ROSTR+</title>
+  <link rel="stylesheet" href="assets/css/system.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/app.js" defer></script>
+  <style>
+    .page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: var(--space-2xl);
+      padding-top: var(--space-2xl);
+    }
+
+    .page-header h1 { margin-bottom: 4px; }
+    .page-header p { color: var(--text-secondary); font-size: 0.92rem; }
+
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-lg);
+      flex-wrap: wrap;
+    }
+
+    .filter-tabs {
+      display: flex;
+      gap: 2px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 3px;
+    }
+
+    .filter-tab {
+      padding: 7px 16px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      font-family: var(--font-body);
+      color: var(--text-secondary);
+      background: none;
+      border: none;
+      border-radius: calc(var(--radius-sm) - 2px);
+      cursor: pointer;
+      transition: all var(--duration-fast) var(--ease-out);
+      white-space: nowrap;
+    }
+
+    .filter-tab.active {
+      background: var(--bg-raised);
+      color: var(--text-primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .filter-tab:hover:not(.active) { color: var(--text-primary); }
+
+    .filter-tab .count {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text-tertiary);
+      margin-left: 4px;
+    }
+
+    .filter-search {
+      position: relative;
+      margin-left: auto;
+    }
+
+    .filter-search input {
+      padding: 8px 12px 8px 34px;
+      width: 240px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      outline: none;
+      transition: all var(--duration-fast) var(--ease-out);
+    }
+
+    .filter-search input:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px var(--gold-dim);
+      width: 300px;
+    }
+
+    .filter-search input::placeholder { color: var(--text-tertiary); }
+
+    .filter-search-icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-tertiary);
+      pointer-events: none;
+    }
+
+    /* ── Booking cards ── */
+    .bookings-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+    }
+
+    .booking-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 6px;
+      transition: all var(--duration-base) var(--ease-out);
+      animation: fadeIn 500ms var(--ease-out) both;
+    }
+
+    .booking-card:hover {
+      border-color: var(--border-medium);
+      box-shadow: var(--shadow-md);
+    }
+
+    .booking-inner {
+      background: var(--bg-raised);
+      border-radius: calc(var(--radius-lg) - 4px);
+      padding: var(--space-lg);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: var(--space-lg);
+      align-items: center;
+    }
+
+    .booking-artist {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 200px;
+    }
+
+    .booking-artist-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-bottom: 2px;
+    }
+
+    .booking-artist-genre {
+      font-size: 0.78rem;
+      color: var(--text-tertiary);
+    }
+
+    .booking-details {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xl);
+      flex-wrap: wrap;
+    }
+
+    .booking-detail {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .booking-detail-label {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-tertiary);
+    }
+
+    .booking-detail-value {
+      font-size: 0.88rem;
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .booking-detail-value.amount {
+      font-variant-numeric: tabular-nums;
+      font-family: var(--font-mono);
+      color: var(--gold-text);
+    }
+
+    .booking-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      flex-shrink: 0;
+    }
+
+    /* ── Status indicator line ── */
+    .booking-card[data-status="confirmed"] { border-left: 3px solid var(--status-confirmed); }
+    .booking-card[data-status="pending"] { border-left: 3px solid var(--status-pending); }
+    .booking-card[data-status="cancelled"] { border-left: 3px solid var(--status-cancelled); }
+    .booking-card[data-status="draft"] { border-left: 3px solid var(--text-tertiary); }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center;
+      padding: var(--space-4xl) var(--space-xl);
+    }
+
+    .empty-state h3 { color: var(--text-secondary); margin-bottom: var(--space-sm); }
+    .empty-state p { color: var(--text-tertiary); max-width: 40ch; margin: 0 auto var(--space-lg); }
+
+    /* ── Detail Modal ── */
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-md);
+      margin-bottom: var(--space-lg);
+    }
+
+    .detail-item label {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-tertiary);
+      margin-bottom: 4px;
+    }
+
+    .detail-item span {
+      font-size: 0.92rem;
+      color: var(--text-primary);
+    }
+
+    .detail-divider {
+      height: 1px;
+      background: var(--border-subtle);
+      margin: var(--space-lg) 0;
+    }
+
+    .detail-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+    }
+
+    .timeline-item {
+      display: flex;
+      gap: 12px;
+      font-size: 0.85rem;
+    }
+
+    .timeline-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--gold);
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+
+    .timeline-time {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--text-tertiary);
+      margin-top: 2px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 1024px) {
+      .booking-inner {
+        grid-template-columns: 1fr;
+        gap: var(--space-md);
+      }
+      .booking-actions { justify-content: flex-end; }
+    }
+
+    @media (max-width: 640px) {
+      .filter-bar { flex-direction: column; align-items: stretch; }
+      .filter-search { margin-left: 0; }
+      .filter-search input { width: 100%; }
+      .filter-search input:focus { width: 100%; }
+      .booking-details { gap: var(--space-md); }
+      .detail-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div id="nav-root"></div>
+  <div class="page-shell">
+    <div class="container">
+
+      <div class="page-header animate-in">
+        <div>
+          <h1>Bookings</h1>
+          <p>Manage all your artist bookings in one place</p>
+        </div>
+        <a href="booking.html" class="btn btn-primary" id="newBookingBtn">New Booking</a>
+      </div>
+
+      <!-- Stats summary -->
+      <div class="stats-grid animate-in stagger-1" id="statsGrid"></div>
+
+      <!-- Filter bar -->
+      <div class="filter-bar animate-in stagger-2">
+        <div class="filter-tabs" id="filterTabs"></div>
+        <div class="filter-search">
+          <div class="filter-search-icon" id="searchIcon"></div>
+          <input type="text" placeholder="Search artist, venue..." id="searchInput" oninput="applyFilters()">
+        </div>
+      </div>
+
+      <!-- Bookings list -->
+      <div class="bookings-list" id="bookingsList"></div>
+    </div>
+  </div>
+
+  <!-- Detail Modal -->
+  <div class="modal-overlay" id="detailModal" onclick="if(event.target===this)closeModal()">
+    <div class="modal" style="max-width:600px">
+      <div class="modal-header">
+        <h3 id="modalTitle">Booking Details</h3>
+        <button class="btn btn-ghost btn-icon" onclick="closeModal()" id="modalClose"></button>
+      </div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <script>
+    // ── State ──
+    let allBookings = [];
+    let activeFilter = 'all';
+
+    // ── Render stats ──
+    function renderStats() {
+      const confirmed = allBookings.filter(b => b.status === 'confirmed').length;
+      const pending = allBookings.filter(b => b.status === 'pending').length;
+      const totalSpend = allBookings.filter(b => b.status !== 'cancelled').reduce((s, b) => s + b.amount, 0);
+
+      document.getElementById('statsGrid').innerHTML = `
+        <div class="card stat-card"><div class="card-inner">
+          <div class="stat-label">Total bookings</div>
+          <div class="stat-value">${allBookings.length}</div>
+        </div></div>
+        <div class="card stat-card"><div class="card-inner">
+          <div class="stat-label">Confirmed</div>
+          <div class="stat-value" style="color:var(--status-confirmed)">${confirmed}</div>
+        </div></div>
+        <div class="card stat-card"><div class="card-inner">
+          <div class="stat-label">Pending</div>
+          <div class="stat-value" style="color:var(--status-pending)">${pending}</div>
+        </div></div>
+        <div class="card stat-card"><div class="card-inner">
+          <div class="stat-label">Total value</div>
+          <div class="stat-value" style="font-variant-numeric:tabular-nums">${UI.currency(totalSpend, 'AED')}</div>
+        </div></div>
+      `;
+    }
+
+    // ── Render filter tabs ──
+    function renderFilterTabs() {
+      const counts = {
+        all: allBookings.length,
+        confirmed: allBookings.filter(b => b.status === 'confirmed').length,
+        pending: allBookings.filter(b => b.status === 'pending').length,
+        draft: allBookings.filter(b => b.status === 'draft').length,
+        cancelled: allBookings.filter(b => b.status === 'cancelled').length,
+      };
+
+      document.getElementById('filterTabs').innerHTML = Object.entries(counts).map(([key, count]) =>
+        `<button class="filter-tab ${activeFilter === key ? 'active' : ''}" onclick="setFilter('${key}')">${key.charAt(0).toUpperCase() + key.slice(1)}<span class="count">${count}</span></button>`
+      ).join('');
+    }
+
+    function setFilter(filter) {
+      activeFilter = filter;
+      renderFilterTabs();
+      applyFilters();
+    }
+
+    // ── Apply filters ──
+    function applyFilters() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      let filtered = allBookings;
+
+      if (activeFilter !== 'all') {
+        filtered = filtered.filter(b => b.status === activeFilter);
+      }
+
+      if (search) {
+        filtered = filtered.filter(b =>
+          (b.artist_name || '').toLowerCase().includes(search) ||
+          (b.venue || '').toLowerCase().includes(search) ||
+          (b.city || '').toLowerCase().includes(search) ||
+          (b.genre || '').toLowerCase().includes(search)
+        );
+      }
+
+      renderBookings(filtered);
+    }
+
+    // ── Render bookings ──
+    function renderBookings(bookings) {
+      const list = document.getElementById('bookingsList');
+
+      if (bookings.length === 0) {
+        list.innerHTML = `
+          <div class="empty-state">
+            <div style="color:var(--text-tertiary);opacity:0.2;margin-bottom:var(--space-md)"><span class="js-icon" data-icon="calendar" data-size="48"></span></div>
+            <h3>No bookings found</h3>
+            <p>Try adjusting your filters or create a new booking.</p>
+            <a href="booking.html" class="btn btn-primary">New Booking</a>
+          </div>
+        `;
+        return;
+      }
+
+      // Sort by date descending
+      const sorted = [...bookings].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      list.innerHTML = sorted.map((b, i) => {
+        const artist = (typeof MockData !== 'undefined' && MockData.artists) ? MockData.artists.find(a => a.id === b.artist_id) : null;
+        const isPast = new Date(b.date) < new Date();
+
+        return `
+        <div class="booking-card" data-status="${b.status}" style="animation-delay:${i * 60}ms">
+          <div class="booking-inner">
+            <div class="booking-artist">
+              ${UI.avatar(b.artist_name, 44)}
+              <div>
+                <div class="booking-artist-name">${esc(b.artist_name)}</div>
+                <div class="booking-artist-genre">${esc(b.genre)}</div>
+              </div>
+            </div>
+
+            <div class="booking-details">
+              <div class="booking-detail">
+                <span class="booking-detail-label">Date</span>
+                <span class="booking-detail-value">${UI.formatDate(b.date)}</span>
+              </div>
+              <div class="booking-detail">
+                <span class="booking-detail-label">Time</span>
+                <span class="booking-detail-value">${esc(b.time)}</span>
+              </div>
+              <div class="booking-detail">
+                <span class="booking-detail-label">Venue</span>
+                <span class="booking-detail-value">${esc(b.venue)}</span>
+              </div>
+              <div class="booking-detail">
+                <span class="booking-detail-label">City</span>
+                <span class="booking-detail-value">${esc(b.city)}</span>
+              </div>
+              <div class="booking-detail">
+                <span class="booking-detail-label">Fee</span>
+                <span class="booking-detail-value amount">${UI.currency(b.amount, b.currency)}</span>
+              </div>
+              <div class="booking-detail">
+                <span class="booking-detail-label">Status</span>
+                ${UI.statusTag(b.status)}
+              </div>
+            </div>
+
+            <div class="booking-actions">
+              <button class="btn btn-ghost btn-sm" onclick="viewBooking('${b.id}')">View</button>
+              ${b.status === 'draft' ? `<a href="booking.html?artist=${b.artist_id}" class="btn btn-secondary btn-sm">Edit</a>` : ''}
+              ${b.status === 'pending' ? `<button class="btn btn-secondary btn-sm" onclick="cancelBooking('${b.id}')">Cancel</button>` : ''}
+              ${b.status === 'confirmed' ? `<a href="messages.html" class="btn btn-secondary btn-sm">Message</a>` : ''}
+            </div>
+          </div>
+        </div>
+      `;}).join('');
+    }
+
+    // ── View booking detail ──
+    function viewBooking(id) {
+      const b = allBookings.find(x => x.id === id);
+      if (!b) return;
+
+      const platformFee = Math.round(b.amount * 0.05);
+      const total = b.amount + platformFee;
+
+      document.getElementById('modalTitle').textContent = b.artist_name + ' — ' + b.venue;
+      document.getElementById('modalBody').innerHTML = `
+        <div class="detail-grid">
+          <div class="detail-item">
+            <label>Artist</label>
+            <span>${esc(b.artist_name)}</span>
+          </div>
+          <div class="detail-item">
+            <label>Genre</label>
+            <span>${esc(b.genre)}</span>
+          </div>
+          <div class="detail-item">
+            <label>Venue</label>
+            <span>${esc(b.venue)}, ${esc(b.city)}</span>
+          </div>
+          <div class="detail-item">
+            <label>Date & Time</label>
+            <span>${UI.formatDate(b.date)} at ${esc(b.time)}</span>
+          </div>
+          <div class="detail-item">
+            <label>Duration</label>
+            <span>${esc(b.duration)}</span>
+          </div>
+          <div class="detail-item">
+            <label>Status</label>
+            <span>${UI.statusTag(b.status)}</span>
+          </div>
+          <div class="detail-item">
+            <label>Contract</label>
+            <span>${UI.statusTag(b.contract)}</span>
+          </div>
+          <div class="detail-item">
+            <label>Booking ID</label>
+            <span style="font-family:var(--font-mono);font-size:0.82rem;color:var(--text-tertiary)">${b.id.toUpperCase()}</span>
+          </div>
+        </div>
+
+        <div class="detail-divider"></div>
+
+        <h4 style="margin-bottom:var(--space-md);font-size:0.95rem">Payment Breakdown</h4>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:var(--space-lg)">
+          <div style="display:flex;justify-content:space-between;font-size:0.88rem">
+            <span class="text-secondary">Artist fee</span>
+            <span style="font-variant-numeric:tabular-nums">${UI.currency(b.amount, b.currency)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:0.88rem">
+            <span class="text-secondary">Platform fee (5%)</span>
+            <span style="font-variant-numeric:tabular-nums">${UI.currency(platformFee, b.currency)}</span>
+          </div>
+          <div style="height:1px;background:var(--border-subtle)"></div>
+          <div style="display:flex;justify-content:space-between;font-size:0.95rem;font-weight:600">
+            <span>Total</span>
+            <span style="color:var(--gold-text);font-variant-numeric:tabular-nums">${UI.currency(total, b.currency)}</span>
+          </div>
+        </div>
+
+        <div class="detail-divider"></div>
+
+        <h4 style="margin-bottom:var(--space-md);font-size:0.95rem">Activity</h4>
+        <div class="detail-timeline">
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div>
+              <div>Booking created</div>
+              <div class="timeline-time">${UI.formatDate(b.created)}</div>
+            </div>
+          </div>
+          ${b.contract !== 'none' ? `<div class="timeline-item">
+            <div class="timeline-dot" style="background:var(--status-pending)"></div>
+            <div>
+              <div>Contract ${b.contract}</div>
+              <div class="timeline-time">${UI.formatDate(b.created)}</div>
+            </div>
+          </div>` : ''}
+          ${b.status === 'confirmed' ? `<div class="timeline-item">
+            <div class="timeline-dot" style="background:var(--status-confirmed)"></div>
+            <div>
+              <div>Booking confirmed</div>
+              <div class="timeline-time">${UI.formatDate(b.created)}</div>
+            </div>
+          </div>` : ''}
+          ${b.status === 'cancelled' ? `<div class="timeline-item">
+            <div class="timeline-dot" style="background:var(--status-cancelled)"></div>
+            <div>
+              <div>Booking cancelled</div>
+              <div class="timeline-time">${UI.formatDate(b.created)}</div>
+            </div>
+          </div>` : ''}
+        </div>
+
+        <div style="display:flex;gap:var(--space-sm);margin-top:var(--space-xl)">
+          ${b.status === 'confirmed' || b.status === 'pending' ? `<a href="messages.html" class="btn btn-secondary">Message Artist</a>` : ''}
+          ${b.contract !== 'none' ? `<a href="contracts.html" class="btn btn-secondary">View Contract</a>` : ''}
+          <button class="btn btn-ghost" onclick="closeModal()">Close</button>
+        </div>
+      `;
+
+      document.getElementById('detailModal').classList.add('active');
+    }
+
+    async function cancelBooking(id) {
+      const b = allBookings.find(x => x.id === id);
+      if (!b || !confirm('Cancel booking for ' + (b.artist_name || 'this artist') + '?')) return;
+      const result = await DB.updateBookingStatus(id, 'cancelled');
+      if (result.success) {
+        b.status = 'cancelled';
+        renderStats();
+        renderFilterTabs();
+        applyFilters();
+        UI.toast('Booking cancelled', 'warning');
+      } else {
+        UI.toast('Failed to cancel booking', 'error');
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('detailModal').classList.remove('active');
+    }
+
+    // ── Init ──
+    document.addEventListener('DOMContentLoaded', async () => {
+      await Auth.ready();
+      if (!Auth.isLoggedIn()) { window.location.href = 'auth.html'; return; }
+
+      document.getElementById('nav-root').innerHTML = renderNav('bookings');
+      document.getElementById('searchIcon').innerHTML = UI.icon('search', 14);
+      document.getElementById('newBookingBtn').innerHTML = UI.icon('plus', 16) + ' New Booking';
+      document.getElementById('modalClose').innerHTML = UI.icon('x', 18);
+
+      const result = await DB.getMyBookings();
+      if (result.success) {
+        allBookings = result.data.map(b => ({
+          id: b.id,
+          artist_id: b.artist_id,
+          artist_name: b.artist_name || b.artists?.profiles?.display_name || b.artists?.stage_name || 'Unknown Artist',
+          genre: b.genre || (Array.isArray(b.artists?.genre) ? b.artists.genre[0] : b.artists?.genre) || '',
+          venue: b.venue || b.venue_name || '',
+          city: b.city || (Array.isArray(b.artists?.cities_active) ? b.artists.cities_active[0] : '') || '',
+          date: b.date || b.event_date,
+          time: b.time || b.event_time || '',
+          duration: b.duration || '',
+          status: b.status,
+          amount: b.amount || b.fee || 0,
+          currency: b.currency || 'AED',
+          created: b.created_at,
+          contract: b.contracts?.[0]?.status || 'none',
+        }));
+      }
+
+      renderStats();
+      renderFilterTabs();
+      applyFilters();
+    });
+
+    // Close modal on Escape
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+  </script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
+</body>
+</html>

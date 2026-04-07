@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#c9a84c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ROSTR+">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <title>Create Booking — ROSTR+ GCC</title>
+  <link rel="stylesheet" href="assets/css/system.css">
+  <style>
+    /* ─── Booking-specific styles ─── */
+    .booking-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: var(--space-2xl) var(--space-lg);
+    }
+
+    .booking-header {
+      margin-bottom: var(--space-3xl);
+      text-align: center;
+    }
+
+    .booking-header h1 {
+      margin-bottom: var(--space-sm);
+    }
+
+    .booking-header p {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+    }
+
+    /* ─── Step Indicator ─── */
+    .step-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-lg);
+      margin-bottom: var(--space-3xl);
+      position: relative;
+    }
+
+    .step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .step-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: all var(--duration-base) var(--ease-out);
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+    }
+
+    .step.active .step-circle {
+      background: var(--gold);
+      color: var(--text-inverse);
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px var(--gold-dim);
+    }
+
+    .step.completed .step-circle {
+      background: var(--gold);
+      color: var(--text-inverse);
+      border-color: var(--gold);
+    }
+
+    .step-label {
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      text-align: center;
+      min-width: 80px;
+    }
+
+    .step.active .step-label,
+    .step.completed .step-label {
+      color: var(--text-primary);
+    }
+
+    .step-connector {
+      position: absolute;
+      top: 22px;
+      left: calc(-1 * var(--space-lg));
+      right: calc(-1 * var(--space-lg));
+      height: 2px;
+      background: var(--border-subtle);
+      z-index: 1;
+    }
+
+    .step-connector.active {
+      background: var(--gold);
+    }
+
+    .step:nth-child(1) .step-connector,
+    .step:last-child .step-connector {
+      display: none;
+    }
+
+    /* ─── Form Layout ─── */
+    .booking-form {
+      animation: fadeIn var(--duration-slow) var(--ease-out) both;
+    }
+
+    .form-section {
+      display: none;
+    }
+
+    .form-section.active {
+      display: block;
+      animation: fadeIn var(--duration-base) var(--ease-out) both;
+    }
+
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-lg);
+    }
+
+    .form-grid-2 .form-group:nth-child(3),
+    .form-grid-2 .form-group:nth-child(4) {
+      grid-column: auto;
+    }
+
+    @media (max-width: 640px) {
+      .form-grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ─── Step 2: Artist Selection ─── */
+    .artist-search-box {
+      position: relative;
+      margin-bottom: var(--space-lg);
+    }
+
+    .artist-search-input {
+      width: 100%;
+      padding: 12px 16px 12px 40px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 0.92rem;
+      outline: none;
+      transition: all var(--duration-fast) var(--ease-out);
+    }
+
+    .artist-search-input:focus {
+      background: var(--bg-input-focus);
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px var(--gold-dim);
+    }
+
+    .artist-search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-tertiary);
+      pointer-events: none;
+    }
+
+    .artist-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: var(--space-md);
+      margin-bottom: var(--space-lg);
+    }
+
+    @media (max-width: 768px) {
+      .artist-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      }
+    }
+
+    .artist-card {
+      background: var(--bg-card);
+      border: 2px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: var(--space-md);
+      text-align: center;
+      cursor: pointer;
+      transition: all var(--duration-base) var(--ease-out);
+    }
+
+    .artist-card:hover {
+      border-color: var(--border-medium);
+      background: var(--bg-card-hover);
+      box-shadow: var(--shadow-md);
+    }
+
+    .artist-card.selected {
+      border-color: var(--gold);
+      border-width: 2px;
+      background: var(--gold-dim);
+      box-shadow: 0 0 0 3px var(--gold-dim);
+    }
+
+    .artist-avatar {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      margin: 0 auto var(--space-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-weight: 600;
+      color: var(--gold-text);
+      background: var(--gold-dim);
+      border: 1px solid var(--border-gold);
+      flex-shrink: 0;
+    }
+
+    .artist-name {
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+
+    .artist-genre {
+      font-size: 0.72rem;
+      color: var(--text-tertiary);
+      margin-bottom: 6px;
+    }
+
+    .artist-rate {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--gold-text);
+      font-family: var(--font-mono);
+    }
+
+    .artist-badge {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      margin-top: 4px;
+      opacity: 0.6;
+    }
+
+    /* ─── Step 3: Review Layout ─── */
+    .review-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-xl);
+    }
+
+    @media (max-width: 768px) {
+      .review-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .review-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 6px;
+    }
+
+    .review-section-inner {
+      background: var(--bg-raised);
+      border-radius: calc(var(--radius-lg) - 4px);
+      padding: var(--space-lg);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+
+    .review-title {
+      font-family: var(--font-display);
+      font-weight: 600;
+      margin-bottom: var(--space-md);
+      color: var(--text-primary);
+      font-size: 0.95rem;
+    }
+
+    .review-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: var(--space-sm) 0;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 0.88rem;
+    }
+
+    .review-row:last-child {
+      border-bottom: none;
+    }
+
+    .review-label {
+      color: var(--text-secondary);
+    }
+
+    .review-value {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .pricing-breakdown {
+      background: var(--bg-card);
+      border-radius: var(--radius-sm);
+      padding: var(--space-md);
+      margin-top: var(--space-lg);
+    }
+
+    .pricing-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.88rem;
+      padding: 8px 0;
+    }
+
+    .pricing-row.total {
+      border-top: 1px solid var(--border-subtle);
+      padding-top: var(--space-md);
+      margin-top: var(--space-md);
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--gold-text);
+    }
+
+    .pricing-label {
+      color: var(--text-secondary);
+    }
+
+    .pricing-value {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-sm);
+      padding: var(--space-md);
+      background: var(--bg-card);
+      border-radius: var(--radius-sm);
+      margin-bottom: var(--space-lg);
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      margin-top: 4px;
+      cursor: pointer;
+    }
+
+    .checkbox-group label {
+      flex: 1;
+      cursor: pointer;
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .checkbox-group input[type="checkbox"]:checked + label {
+      color: var(--text-primary);
+    }
+
+    /* ─── Form Navigation ─── */
+    .form-nav {
+      display: flex;
+      gap: var(--space-md);
+      justify-content: space-between;
+      margin-top: var(--space-2xl);
+      padding-top: var(--space-xl);
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .form-nav-left {
+      display: flex;
+      gap: var(--space-md);
+    }
+
+    .form-nav-right {
+      display: flex;
+      gap: var(--space-md);
+    }
+
+    /* ─── Success Modal ─── */
+    .modal-success {
+      text-align: center;
+    }
+
+    .modal-success-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: var(--status-confirmed-bg);
+      border: 2px solid var(--status-confirmed);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto var(--space-lg);
+      color: var(--status-confirmed);
+      font-size: 32px;
+    }
+
+    .modal-success h2 {
+      margin-bottom: var(--space-sm);
+    }
+
+    .modal-success p {
+      color: var(--text-secondary);
+      margin-bottom: var(--space-lg);
+    }
+
+    .reference-box {
+      background: var(--bg-card);
+      border-radius: var(--radius-sm);
+      padding: var(--space-md);
+      margin-bottom: var(--space-lg);
+      border: 1px solid var(--border-gold);
+    }
+
+    .reference-label {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+    }
+
+    .reference-number {
+      font-family: var(--font-mono);
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--gold-text);
+      word-break: break-all;
+    }
+
+    /* ─── Validation ─── */
+    .form-input.invalid,
+    .form-select.invalid {
+      border-color: var(--status-cancelled);
+      background: rgba(248,113,113,0.05);
+    }
+
+    .form-input.invalid:focus,
+    .form-select.invalid:focus {
+      box-shadow: 0 0 0 3px rgba(248,113,113,0.15);
+    }
+
+    .error-message {
+      font-size: 0.75rem;
+      color: var(--status-cancelled);
+      margin-top: 4px;
+      display: none;
+    }
+
+    .form-input.invalid + .error-message,
+    .form-select.invalid + .error-message {
+      display: block;
+    }
+
+    /* ─── Utility ─── */
+    .text-right {
+      text-align: right;
+    }
+
+    .opacity-disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="nav-root"></div>
+
+  <div class="page-shell">
+    <div class="booking-container">
+      <div class="booking-header">
+        <h1>Create Booking</h1>
+        <p>Book an artist for your event. Complete all steps to confirm.</p>
+      </div>
+
+      <!-- Step Indicator -->
+      <div class="step-indicator">
+        <div class="step active" data-step="1">
+          <div class="step-circle">1</div>
+          <div class="step-label">Event Details</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step" data-step="2">
+          <div class="step-circle">2</div>
+          <div class="step-label">Artist Selection</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step" data-step="3">
+          <div class="step-circle">3</div>
+          <div class="step-label">Review & Submit</div>
+          <div class="step-connector"></div>
+        </div>
+      </div>
+
+      <!-- Booking Form -->
+      <form class="booking-form" id="booking-form">
+        <!-- Step 1: Event Details -->
+        <div class="form-section active" data-section="1">
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label">Event Name</label>
+              <input type="text" class="form-input" id="eventName" placeholder="e.g., Summer Rooftop Bash" required>
+              <span class="error-message">Event name is required</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Event Date</label>
+              <input type="date" class="form-input" id="eventDate" required>
+              <span class="error-message">Event date is required</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Event Time</label>
+              <input type="time" class="form-input" id="eventTime" required>
+              <span class="error-message">Event time is required</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Venue</label>
+              <select class="form-select" id="eventVenue" required>
+                <option value="">Select a venue...</option>
+              </select>
+              <span class="error-message">Venue selection is required</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Event Type</label>
+              <select class="form-select" id="eventType" required>
+                <option value="">Select event type...</option>
+                <option value="nightclub">Nightclub</option>
+                <option value="beach_club">Beach Club</option>
+                <option value="festival">Festival</option>
+                <option value="lounge">Lounge</option>
+                <option value="private_event">Private Event</option>
+                <option value="wedding">Wedding</option>
+                <option value="corporate">Corporate Event</option>
+              </select>
+              <span class="error-message">Event type is required</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Expected Attendance</label>
+              <input type="number" class="form-input" id="expectedAttendance" placeholder="e.g., 500" min="1" required>
+              <span class="error-message">Expected attendance is required</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Artist Selection -->
+        <div class="form-section" data-section="2">
+          <div class="form-group">
+            <label class="form-label">Search or Select Artist</label>
+            <div class="artist-search-box">
+              <div class="artist-search-icon">
+                <span class="js-icon" data-icon="search" data-size="18"></span>
+              </div>
+              <input type="text" class="artist-search-input" id="artistSearch" placeholder="Search by name, genre...">
+            </div>
+          </div>
+
+          <div class="artist-grid" id="artistGrid">
+            <!-- Populated by JS -->
+          </div>
+
+          <input type="hidden" id="selectedArtistId">
+          <span class="error-message" id="artistError" style="display: none; margin-top: var(--space-md);">Please select an artist</span>
+        </div>
+
+        <!-- Step 3: Review & Submit -->
+        <div class="form-section" data-section="3">
+          <div class="review-layout">
+            <!-- Left Column: Event Details Summary -->
+            <div class="review-section">
+              <div class="review-section-inner">
+                <div class="review-title">Event Details</div>
+
+                <div class="review-row">
+                  <span class="review-label">Event Name</span>
+                  <span class="review-value" id="reviewEventName">—</span>
+                </div>
+
+                <div class="review-row">
+                  <span class="review-label">Date</span>
+                  <span class="review-value" id="reviewEventDate">—</span>
+                </div>
+
+                <div class="review-row">
+                  <span class="review-label">Time</span>
+                  <span class="review-value" id="reviewEventTime">—</span>
+                </div>
+
+                <div class="review-row">
+                  <span class="review-label">Venue</span>
+                  <span class="review-value" id="reviewEventVenue">—</span>
+                </div>
+
+                <div class="review-row">
+                  <span class="review-label">Type</span>
+                  <span class="review-value" id="reviewEventType">—</span>
+                </div>
+
+                <div class="review-row">
+                  <span class="review-label">Attendance</span>
+                  <span class="review-value" id="reviewAttendance">—</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: Artist Card + Pricing -->
+            <div class="review-section">
+              <div class="review-section-inner">
+                <div class="review-title">Artist & Pricing</div>
+
+                <div style="text-align: center; margin-bottom: var(--space-lg);">
+                  <div style="width: 72px; height: 72px; border-radius: 50%; background: var(--gold-dim); border: 1px solid var(--border-gold); display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-md); color: var(--gold-text); font-family: var(--font-display); font-weight: 600; font-size: 24px;">
+                    <span id="reviewArtistInitials">—</span>
+                  </div>
+                  <div style="font-family: var(--font-display); font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;" id="reviewArtistName">—</div>
+                  <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 8px;" id="reviewArtistGenre">—</div>
+                  <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+                    <div style="font-size: 0.75rem; color: var(--text-tertiary);">
+                      <span id="reviewArtistRating">4.8</span> <span style="color: var(--gold);">★</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="pricing-breakdown">
+                  <div class="pricing-row">
+                    <span class="pricing-label">Artist Rate (min)</span>
+                    <span class="pricing-value" id="reviewArtistRate">—</span>
+                  </div>
+
+                  <div class="pricing-row">
+                    <span class="pricing-label">Booking Platform Fee (5%)</span>
+                    <span class="pricing-value" id="reviewPlatformFee">—</span>
+                  </div>
+
+                  <div class="pricing-row total">
+                    <span>Total Booking Cost</span>
+                    <span id="reviewTotalCost">—</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Terms Checkbox -->
+          <div class="checkbox-group">
+            <input type="checkbox" id="termsCheckbox" required>
+            <label for="termsCheckbox">
+              I agree to the artist's technical requirements, cancellation policy, and platform terms of service. I confirm that all event details are accurate.
+            </label>
+          </div>
+        </div>
+
+        <!-- Form Navigation -->
+        <div class="form-nav">
+          <div class="form-nav-left">
+            <button type="button" class="btn btn-secondary" id="backBtn" onclick="goToStep(currentStep - 1)" style="display: none;">Back</button>
+          </div>
+          <div class="form-nav-right">
+            <button type="button" class="btn btn-secondary" id="nextBtn" onclick="goToStep(currentStep + 1)">Next</button>
+            <button type="submit" class="btn btn-primary" id="submitBtn" style="display: none;">Submit Booking</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Success Modal -->
+  <div class="modal-overlay" id="successModal">
+    <div class="modal modal-success">
+      <div class="modal-success-icon">√</div>
+      <h2>Booking Confirmed</h2>
+      <p>Your booking request has been submitted successfully. The artist will review your request within 24 hours.</p>
+
+      <div class="reference-box">
+        <div class="reference-label">Booking Reference</div>
+        <div class="reference-number" id="referenceNumber">—</div>
+      </div>
+
+      <div style="display: flex; gap: var(--space-md); justify-content: center;">
+        <a href="dashboard.html" class="btn btn-primary">View in Dashboard</a>
+        <button onclick="resetForm()" class="btn btn-secondary">Create Another</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/app.js" defer></script>
+  <script>
+    // ─── State Management ─── */
+    let currentStep = 1;
+    const formData = {
+      eventName: '',
+      eventDate: '',
+      eventTime: '',
+      eventVenue: '',
+      eventVenueObject: null,
+      eventType: '',
+      expectedAttendance: 0,
+      artistId: '',
+      artistData: null
+    };
+
+    // ─── Initialize on Page Load ─── */
+    document.addEventListener('DOMContentLoaded', async () => {
+      await Auth.ready();
+      if (!Auth.isLoggedIn()) { window.location.href = 'auth.html'; return; }
+
+      // Render navigation
+      document.getElementById('nav-root').innerHTML = renderNav('bookings');
+
+      // Load artists from DB + populate venues
+      const artistResult = await DB.getArtists({});
+      const _allArtists = (artistResult.success && artistResult.data.length > 0) ? artistResult.data : (typeof MockData !== 'undefined' ? MockData.artists : []);
+
+      populateVenues();
+      renderArtistGrid(_allArtists);
+
+      // Check for artist pre-selection from URL
+      const params = new URLSearchParams(window.location.search);
+      const artistParam = params.get('artist');
+      if (artistParam) {
+        selectArtist(artistParam, _allArtists, true);
+      }
+
+      // Setup form event listeners
+      setupFormListeners();
+
+      // Setup artist search
+      document.getElementById('artistSearch').addEventListener('input', async (e) => {
+        const query = e.target.value.toLowerCase();
+        if (query.length > 1) {
+          const sr = await DB.getArtists({ search: query });
+          renderArtistGrid(sr.success ? sr.data : []);
+        } else {
+          renderArtistGrid(_allArtists);
+        }
+      });
+
+      // Setup form submission
+      document.getElementById('booking-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        submitBooking();
+      });
+
+      // Initialize back button visibility
+      updateNavButtons();
+    });
+
+    // ─── Populate Venues Dropdown ─── */
+    async function populateVenues() {
+      const venueSelect = document.getElementById('eventVenue');
+      // Use MockData venues as fallback if DB venues not available
+      const venues = (typeof MockData !== 'undefined' && MockData.venues) ? MockData.venues : [];
+      venues.forEach(venue => {
+        const option = document.createElement('option');
+        option.value = venue.id || venue.name;
+        option.textContent = `${venue.name} — ${venue.city}${venue.capacity ? ' (' + venue.capacity.toLocaleString() + ' capacity)' : ''}`;
+        option.dataset.venueObj = JSON.stringify(venue);
+        venueSelect.appendChild(option);
+      });
+    }
+
+    // ─── Render Artist Grid ─── */
+    let _currentArtists = [];
+    function renderArtistGrid(artists) {
+      _currentArtists = artists;
+      const grid = document.getElementById('artistGrid');
+      grid.innerHTML = artists.map(artist => {
+        const selected = formData.artistId === artist.id;
+        const initials = artist.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+        return `
+          <div class="artist-card ${selected ? 'selected' : ''}" onclick="selectArtist('${artist.id}')">
+            <div class="artist-avatar">${initials}</div>
+            <div class="artist-name">${esc(artist.name)}</div>
+            <div class="artist-genre">${esc(artist.subgenre)}</div>
+            <div class="artist-rate">${UI.currency(artist.rate_min, artist.currency)}</div>
+            ${artist.verified ? `<div class="artist-badge"><span class="js-icon" data-icon="verified" data-size="14"></span></div>` : ''}
+          </div>
+        `;
+      }).join('');
+
+      // Re-apply selected state if we have a selected artist
+      if (formData.artistId) {
+        const selected = document.querySelector(`.artist-card[onclick*="'${formData.artistId}'"]`);
+        if (selected) {
+          selected.classList.add('selected');
+        }
+      }
+    }
+
+    // ─── Select Artist ─── */
+    async function selectArtist(artistId, artistsList, skipRender = false) {
+      const pool = Array.isArray(artistsList) && artistsList.length ? artistsList : _currentArtists;
+      let artist = pool.find(a => a.id === artistId) || null;
+      if (!artist) {
+        const r = await DB.getArtistById(artistId);
+        artist = r.success ? r.data : null;
+      }
+      if (!artist) return;
+
+      formData.artistId = artistId;
+      formData.artistData = artist;
+      document.getElementById('selectedArtistId').value = artistId;
+
+      renderArtistGrid(pool);
+    }
+
+    // ─── Setup Form Event Listeners ─── */
+    function setupFormListeners() {
+      document.getElementById('eventName').addEventListener('input', (e) => {
+        formData.eventName = e.target.value;
+      });
+
+      document.getElementById('eventDate').addEventListener('change', (e) => {
+        formData.eventDate = e.target.value;
+      });
+
+      document.getElementById('eventTime').addEventListener('change', (e) => {
+        formData.eventTime = e.target.value;
+      });
+
+      document.getElementById('eventVenue').addEventListener('change', (e) => {
+        const selected = e.target.options[e.target.selectedIndex];
+        formData.eventVenue = e.target.value;
+        if (selected.dataset.venueObj) {
+          formData.eventVenueObject = JSON.parse(selected.dataset.venueObj);
+        }
+      });
+
+      document.getElementById('eventType').addEventListener('change', (e) => {
+        formData.eventType = e.target.value;
+      });
+
+      document.getElementById('expectedAttendance').addEventListener('input', (e) => {
+        formData.expectedAttendance = parseInt(e.target.value) || 0;
+      });
+    }
+
+    // ─── Navigation Between Steps ─── */
+    function goToStep(step) {
+      if (step < 1 || step > 3) return;
+
+      // Validate current step before moving forward
+      if (step > currentStep) {
+        if (!validateStep(currentStep)) {
+          return;
+        }
+      }
+
+      // Update UI
+      currentStep = step;
+      updateFormSections();
+      updateStepIndicator();
+      updateNavButtons();
+      updateReviewSection();
+
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ─── Validate Current Step ─── */
+    function validateStep(step) {
+      clearErrors();
+
+      if (step === 1) {
+        const eventName = document.getElementById('eventName');
+        const eventDate = document.getElementById('eventDate');
+        const eventTime = document.getElementById('eventTime');
+        const eventVenue = document.getElementById('eventVenue');
+        const eventType = document.getElementById('eventType');
+        const expectedAttendance = document.getElementById('expectedAttendance');
+
+        let isValid = true;
+
+        if (!eventName.value.trim()) {
+          eventName.classList.add('invalid');
+          isValid = false;
+        }
+        if (!eventDate.value) {
+          eventDate.classList.add('invalid');
+          isValid = false;
+        }
+        if (!eventTime.value) {
+          eventTime.classList.add('invalid');
+          isValid = false;
+        }
+        if (!eventVenue.value) {
+          eventVenue.classList.add('invalid');
+          isValid = false;
+        }
+        if (!eventType.value) {
+          eventType.classList.add('invalid');
+          isValid = false;
+        }
+        if (!expectedAttendance.value || expectedAttendance.value < 1) {
+          expectedAttendance.classList.add('invalid');
+          isValid = false;
+        }
+
+        return isValid;
+      }
+
+      if (step === 2) {
+        if (!formData.artistId) {
+          document.getElementById('artistError').style.display = 'block';
+          return false;
+        }
+        return true;
+      }
+
+      return true;
+    }
+
+    // ─── Clear Errors ─── */
+    function clearErrors() {
+      document.querySelectorAll('.form-input.invalid, .form-select.invalid').forEach(el => {
+        el.classList.remove('invalid');
+      });
+      document.getElementById('artistError').style.display = 'none';
+    }
+
+    // ─── Update Form Sections ─── */
+    function updateFormSections() {
+      document.querySelectorAll('.form-section').forEach(section => {
+        section.classList.remove('active');
+      });
+      document.querySelector(`.form-section[data-section="${currentStep}"]`).classList.add('active');
+    }
+
+    // ─── Update Step Indicator ─── */
+    function updateStepIndicator() {
+      document.querySelectorAll('.step').forEach((step, idx) => {
+        const stepNum = idx + 1;
+        step.classList.remove('active', 'completed');
+
+        if (stepNum === currentStep) {
+          step.classList.add('active');
+        } else if (stepNum < currentStep) {
+          step.classList.add('completed');
+        }
+      });
+
+      // Update connectors
+      document.querySelectorAll('.step-connector').forEach((connector, idx) => {
+        if (idx < currentStep - 1) {
+          connector.classList.add('active');
+        } else {
+          connector.classList.remove('active');
+        }
+      });
+    }
+
+    // ─── Update Navigation Buttons ─── */
+    function updateNavButtons() {
+      const backBtn = document.getElementById('backBtn');
+      const nextBtn = document.getElementById('nextBtn');
+      const submitBtn = document.getElementById('submitBtn');
+
+      if (currentStep === 1) {
+        backBtn.style.display = 'none';
+        nextBtn.style.display = 'flex';
+        submitBtn.style.display = 'none';
+      } else if (currentStep === 2) {
+        backBtn.style.display = 'flex';
+        nextBtn.style.display = 'flex';
+        submitBtn.style.display = 'none';
+      } else {
+        backBtn.style.display = 'flex';
+        nextBtn.style.display = 'none';
+        submitBtn.style.display = 'flex';
+      }
+    }
+
+    // ─── Update Review Section ─── */
+    function updateReviewSection() {
+      if (currentStep !== 3) return;
+
+      // Event details
+      document.getElementById('reviewEventName').textContent = formData.eventName || '—';
+      document.getElementById('reviewEventDate').textContent = formData.eventDate ? UI.formatDate(formData.eventDate) : '—';
+      document.getElementById('reviewEventTime').textContent = formData.eventTime || '—';
+      document.getElementById('reviewEventVenue').textContent = formData.eventVenueObject ? formData.eventVenueObject.name : '—';
+      document.getElementById('reviewEventType').textContent = formData.eventType || '—';
+      document.getElementById('reviewAttendance').textContent = formData.expectedAttendance.toLocaleString() || '—';
+
+      // Artist details
+      if (formData.artistData) {
+        const artist = formData.artistData;
+        const initials = artist.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+
+        document.getElementById('reviewArtistInitials').textContent = initials;
+        document.getElementById('reviewArtistName').textContent = artist.name;
+        document.getElementById('reviewArtistGenre').textContent = `${esc(artist.genre)} — ${esc(artist.subgenre)}`;
+        document.getElementById('reviewArtistRating').textContent = artist.rating.toFixed(1);
+
+        // Pricing
+        const artistRate = artist.rate_min;
+        const fee = Math.ceil(artistRate * 0.05);
+        const total = artistRate + fee;
+
+        document.getElementById('reviewArtistRate').textContent = UI.currency(artistRate, artist.currency);
+        document.getElementById('reviewPlatformFee').textContent = UI.currency(fee, artist.currency);
+        document.getElementById('reviewTotalCost').textContent = UI.currency(total, artist.currency);
+      }
+    }
+
+    // ─── Submit Booking ─── */
+    async function submitBooking() {
+      // Final validation
+      const termsCheckbox = document.getElementById('termsCheckbox');
+      if (!termsCheckbox.checked) {
+        UI.toast('Please agree to the terms and conditions', 'warning');
+        return;
+      }
+
+      const submitBtn = document.querySelector('[onclick="submitBooking()"]');
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Submitting...'; }
+
+      try {
+        const artistRate = formData.artistData.rate_min;
+        const fee = Math.ceil(artistRate * 0.05);
+        const total = artistRate + fee;
+
+        const bookingPayload = {
+          artist_id: formData.artistData.id,
+          venue_name: formData.eventVenue,
+          event_name: formData.eventName,
+          event_date: formData.eventDate,
+          event_time: formData.eventTime,
+          event_type: formData.eventType,
+          expected_attendance: formData.expectedAttendance,
+          fee: artistRate,
+          platform_fee: fee,
+          currency: formData.artistData.currency || 'USD',
+          notes: formData.notes || '',
+        };
+
+        const result = await DB.createBooking(bookingPayload);
+
+        if (!result.success) throw new Error(result.error || 'Booking failed');
+
+        const booking = result.data;
+        const referenceNumber = `BK-${booking.id.substring(0, 8).toUpperCase()}`;
+
+        // Send email notification to artist
+        if (formData.artistData.email) {
+          await Emails.send(formData.artistData.email, 'booking_request', {
+            promoter_name: Auth.user.display_name || Auth.user.email,
+            event_name: formData.eventName,
+            venue_name: formData.eventVenue,
+            event_date: formData.eventDate,
+            fee: UI.currency(artistRate, formData.artistData.currency || 'USD'),
+            booking_url: `${window.location.origin}/bookings.html`,
+          });
+        }
+
+        document.getElementById('referenceNumber').textContent = referenceNumber;
+        document.getElementById('successModal').classList.add('active');
+        UI.toast('Booking submitted successfully!', 'success');
+      } catch (err) {
+        console.error('[ROSTR] Booking submit error:', err);
+        UI.toast('Failed to submit booking: ' + err.message, 'error');
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit Booking Request'; }
+      }
+    }
+
+    // ─── Reset Form ─── */
+    function resetForm() {
+      currentStep = 1;
+      formData.eventName = '';
+      formData.eventDate = '';
+      formData.eventTime = '';
+      formData.eventVenue = '';
+      formData.eventVenueObject = null;
+      formData.eventType = '';
+      formData.expectedAttendance = 0;
+      formData.artistId = '';
+      formData.artistData = null;
+
+      document.getElementById('booking-form').reset();
+      document.getElementById('selectedArtistId').value = '';
+      document.getElementById('successModal').classList.remove('active');
+
+      updateFormSections();
+      updateStepIndicator();
+      updateNavButtons();
+      // Re-load artist grid
+      DB.getArtists({}).then(r => renderArtistGrid(r.success ? r.data : []));
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  </script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
+</body>
+</html>

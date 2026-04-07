@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#c9a84c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ROSTR+">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <title>Settings — ROSTR+ GCC</title>
+  <link rel="stylesheet" href="assets/css/system.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/app.js" defer></script>
+  <style>
+    .settings-container { max-width: 700px; margin: 80px auto 0; padding: var(--space-2xl) var(--space-lg); }
+    .settings-section { margin-bottom: var(--space-3xl); }
+    .settings-header { font-family: var(--font-display); font-size: 1.15rem; font-weight: 600; margin-bottom: var(--space-lg); padding-bottom: var(--space-sm); border-bottom: 1px solid var(--border-subtle); }
+    .settings-row { display: flex; align-items: center; justify-content: space-between; padding: var(--space-md) 0; border-bottom: 1px solid var(--border-subtle); }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-label { font-size: 0.92rem; color: var(--text-primary); }
+    .settings-desc { font-size: 0.78rem; color: var(--text-tertiary); margin-top: 2px; }
+    .toggle { position: relative; width: 44px; height: 24px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: 12px; cursor: pointer; transition: all var(--duration-fast); flex-shrink: 0; }
+    .toggle.active { background: var(--gold); border-color: var(--gold); }
+    .toggle::after { content: ''; position: absolute; width: 18px; height: 18px; border-radius: 50%; background: var(--text-primary); top: 2px; left: 2px; transition: transform var(--duration-fast); }
+    .toggle.active::after { transform: translateX(20px); }
+    .avatar-edit { display: flex; align-items: center; gap: var(--space-lg); }
+    .avatar-large { width: 80px; height: 80px; border-radius: 50%; background: var(--gold-dim); border: 2px solid var(--gold); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 2rem; font-weight: 700; color: var(--gold-text); overflow: hidden; }
+    .avatar-large img { width: 100%; height: 100%; object-fit: cover; }
+    .danger-zone { background: rgba(248,113,113,0.05); border: 1px solid rgba(248,113,113,0.2); border-radius: var(--radius-md); padding: var(--space-lg); }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); }
+    @media (max-width: 768px) { .settings-row { flex-direction: column; align-items: flex-start; gap: var(--space-sm); } .form-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+    <div id="nav-root"></div>
+    <div class="settings-container">
+      <h1 style="margin-bottom:var(--space-xs)">Settings</h1>
+      <p class="text-tertiary" style="margin-bottom:var(--space-2xl)">Manage your account and preferences</p>
+
+      <!-- Profile Section -->
+      <div class="settings-section">
+        <div class="settings-header">Profile</div>
+        <div class="avatar-edit" style="margin-bottom:var(--space-lg)">
+          <div class="avatar-large" id="avatar-preview"></div>
+          <div>
+            <label class="btn btn-secondary btn-sm" style="cursor:pointer">
+              Change Photo
+              <input type="file" accept="image/*" style="display:none" onchange="uploadPhoto(this.files[0])">
+            </label>
+            <p class="text-tertiary" style="font-size:0.75rem;margin-top:4px">JPG, PNG. Max 10MB.</p>
+          </div>
+        </div>
+        <div class="form-grid" style="margin-bottom:var(--space-md)">
+          <div class="form-group">
+            <label class="form-label">Display Name</label>
+            <input type="text" class="form-input" id="display-name" placeholder="Your name">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-input" id="user-email" disabled style="opacity:0.6">
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:var(--space-md)">
+          <label class="form-label">Company / Organization</label>
+          <input type="text" class="form-input" id="company" placeholder="e.g. Beyond Events">
+        </div>
+        <div class="form-group" style="margin-bottom:var(--space-md)">
+          <label class="form-label">Phone</label>
+          <input type="tel" class="form-input" id="phone" placeholder="+971 50 XXX XXXX">
+        </div>
+        <div class="form-group">
+          <label class="form-label">City</label>
+          <select class="form-select" id="city">
+            <option value="">Select city...</option>
+            <option value="Dubai">Dubai</option>
+            <option value="Abu Dhabi">Abu Dhabi</option>
+            <option value="Riyadh">Riyadh</option>
+            <option value="Jeddah">Jeddah</option>
+            <option value="Doha">Doha</option>
+            <option value="Kuwait City">Kuwait City</option>
+            <option value="Manama">Manama</option>
+            <option value="Muscat">Muscat</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" style="margin-top:var(--space-lg)" onclick="saveProfile()">Save Profile</button>
+      </div>
+
+      <!-- Security Section -->
+      <div class="settings-section">
+        <div class="settings-header">Security</div>
+        <div class="form-group" style="margin-bottom:var(--space-md)">
+          <label class="form-label">New Password</label>
+          <input type="password" class="form-input" id="new-password" placeholder="Enter new password" minlength="8">
+        </div>
+        <div class="form-group" style="margin-bottom:var(--space-md)">
+          <label class="form-label">Confirm Password</label>
+          <input type="password" class="form-input" id="confirm-password" placeholder="Confirm new password">
+        </div>
+        <button class="btn btn-secondary" onclick="changePassword()">Update Password</button>
+      </div>
+
+      <!-- Notifications Section -->
+      <div class="settings-section">
+        <div class="settings-header">Notifications</div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">Email notifications</div>
+            <div class="settings-desc">Receive booking requests, confirmations, and messages via email</div>
+          </div>
+          <div class="toggle active" id="toggle-email" onclick="this.classList.toggle('active')"></div>
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">Booking updates</div>
+            <div class="settings-desc">Get notified when a booking status changes</div>
+          </div>
+          <div class="toggle active" id="toggle-bookings" onclick="this.classList.toggle('active')"></div>
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">New messages</div>
+            <div class="settings-desc">Get notified when you receive a new message</div>
+          </div>
+          <div class="toggle active" id="toggle-messages" onclick="this.classList.toggle('active')"></div>
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">Contract updates</div>
+            <div class="settings-desc">Get notified when a contract is signed or sent</div>
+          </div>
+          <div class="toggle active" id="toggle-contracts" onclick="this.classList.toggle('active')"></div>
+        </div>
+      </div>
+
+      <!-- Danger Zone -->
+      <div class="settings-section">
+        <div class="settings-header" style="color:var(--status-cancelled)">Danger Zone</div>
+        <div class="danger-zone">
+          <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:var(--space-md)">Once you delete your account, there is no going back. All your data will be permanently removed.</p>
+          <button class="btn btn-danger btn-sm" onclick="if(confirm('Are you sure? This cannot be undone.')) UI.toast('Contact hi@rosterplus.io to delete your account','info')">Delete Account</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let _avatarUrl = null;
+
+    async function uploadPhoto(file) {
+      if (!file) return;
+      UI.toast('Uploading...', 'info');
+      const result = await Storage.uploadAvatar(file);
+      if (result.url) {
+        _avatarUrl = result.url;
+        document.getElementById('avatar-preview').innerHTML = `<img src="${result.url}" alt="Avatar">`;
+        UI.toast('Photo updated', 'success');
+      } else {
+        UI.toast(result.error || 'Upload failed', 'error');
+      }
+    }
+
+    async function saveProfile() {
+      const updates = {
+        display_name: document.getElementById('display-name').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        city: document.getElementById('city').value,
+        company: document.getElementById('company').value.trim(),
+      };
+      if (_avatarUrl) updates.avatar_url = _avatarUrl;
+
+      const result = await DB.updateProfile(updates);
+      if (!result.error) {
+        if (updates.display_name && Auth.user) Auth.user.display_name = updates.display_name;
+        UI.toast('Profile saved!', 'success');
+      } else {
+        UI.toast('Failed to save: ' + (result.error || ''), 'error');
+      }
+    }
+
+    async function changePassword() {
+      const pw = document.getElementById('new-password').value;
+      const confirm = document.getElementById('confirm-password').value;
+      if (!pw || pw.length < 8) { UI.toast('Password must be at least 8 characters', 'warning'); return; }
+      if (pw !== confirm) { UI.toast('Passwords do not match', 'warning'); return; }
+
+      const result = await Auth.updatePassword(pw);
+      if (!result.error) {
+        UI.toast('Password updated', 'success');
+        document.getElementById('new-password').value = '';
+        document.getElementById('confirm-password').value = '';
+      } else {
+        UI.toast('Failed: ' + result.error, 'error');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+      await Auth.ready();
+      if (!Auth.isLoggedIn()) { Auth.require(); return; }
+
+      document.getElementById('nav-root').innerHTML = renderNav('settings');
+      if (typeof hydrateIcons === 'function') hydrateIcons();
+
+      // Populate form
+      const user = Auth.user;
+      if (user) {
+        document.getElementById('display-name').value = user.display_name || '';
+        document.getElementById('user-email').value = user.email || '';
+        const preview = document.getElementById('avatar-preview');
+        if (user.avatar_url) {
+          preview.innerHTML = `<img src="${user.avatar_url}" alt="Avatar">`;
+        } else {
+          preview.textContent = (user.display_name || 'U').charAt(0).toUpperCase();
+        }
+      }
+
+      // Load full profile for phone/city/company
+      const profile = await DB.getProfile();
+      if (profile.data) {
+        document.getElementById('phone').value = profile.data.phone || '';
+        document.getElementById('city').value = profile.data.city || '';
+        document.getElementById('company').value = profile.data.company || '';
+      }
+    });
+  </script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+node_modules/
+.DS_Store
+.claude/
+e2e/
+serve.js
+*.log

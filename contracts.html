@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#c9a84c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ROSTR+">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <title>Contracts — ROSTR+ GCC</title>
+  <meta name="description" content="Manage performance contracts with artists on ROSTR+ GCC">
+  <link rel="stylesheet" href="assets/css/system.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/app.js" defer></script>
+  <style>
+    /* ═════════════════════════════════════════════════════════
+       Contracts Page
+       ═════════════════════════════════════════════════════════ */
+
+    .contracts-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: var(--space-2xl) var(--space-lg);
+    }
+
+    /* ── Page Header ── */
+    .page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: var(--space-2xl);
+      gap: var(--space-lg);
+    }
+
+    .page-header-left {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+
+    .page-header h1 {
+      margin: 0;
+      font-size: clamp(1.8rem, 4vw, 2.4rem);
+    }
+
+    .page-header-subtitle {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      max-width: 50ch;
+    }
+
+    .page-header-actions {
+      display: flex;
+      gap: var(--space-md);
+      flex-wrap: wrap;
+    }
+
+    /* ── Filter Tabs ── */
+    .filter-tabs {
+      display: flex;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-2xl);
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: var(--space-lg);
+      overflow-x: auto;
+    }
+
+    .filter-tab {
+      padding: 8px 16px;
+      border: none;
+      background: none;
+      color: var(--text-secondary);
+      font-family: var(--font-body);
+      font-size: 0.88rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--duration-fast) var(--ease-out);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      white-space: nowrap;
+    }
+
+    .filter-tab:hover {
+      color: var(--text-primary);
+    }
+
+    .filter-tab.active {
+      color: var(--gold-text);
+      border-bottom-color: var(--gold);
+    }
+
+    /* ── Contracts List ── */
+    .contracts-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+    }
+
+    /* ── Contract Card ── */
+    .contract-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-left: 3px solid transparent;
+      border-radius: var(--radius-lg);
+      padding: 6px;
+      transition: all var(--duration-base) var(--ease-out);
+      cursor: pointer;
+    }
+
+    .contract-card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-medium);
+      box-shadow: var(--shadow-md);
+    }
+
+    .contract-card.signed {
+      border-left-color: var(--gold);
+    }
+
+    .contract-card.sent {
+      border-left-color: var(--status-pending);
+    }
+
+    .contract-card.draft {
+      border-left-color: var(--status-draft);
+    }
+
+    .contract-card-inner {
+      background: var(--bg-raised);
+      border-radius: calc(var(--radius-lg) - 4px);
+      padding: var(--space-lg);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+
+    /* ── Contract Card Table Layout ── */
+    .contracts-table-wrapper {
+      overflow-x: auto;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--space-2xl);
+    }
+
+    .contracts-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+
+    .contracts-table th {
+      text-align: left;
+      padding: 12px 16px;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-tertiary);
+      background: rgba(255,255,255,0.02);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .contracts-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      vertical-align: middle;
+    }
+
+    .contracts-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .contracts-table tr:hover td {
+      background: rgba(255,255,255,0.015);
+    }
+
+    /* ── Contract Info Cell ── */
+    .contract-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .contract-artist {
+      font-weight: 500;
+      color: var(--text-primary);
+      font-family: var(--font-display);
+      font-size: 0.95rem;
+    }
+
+    .contract-event {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    /* ── Status Cell ── */
+    .contract-status {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .contract-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .contract-status-dot.signed {
+      background: var(--gold);
+    }
+
+    .contract-status-dot.sent {
+      background: var(--status-pending);
+    }
+
+    .contract-status-dot.draft {
+      background: var(--status-draft);
+    }
+
+    /* ── Actions Cell ── */
+    .contract-actions {
+      display: flex;
+      gap: var(--space-sm);
+      justify-content: flex-end;
+    }
+
+    .contract-actions .btn {
+      padding: 6px 12px;
+      font-size: 0.8rem;
+    }
+
+    .contract-actions .btn-ghost {
+      color: var(--text-secondary);
+    }
+
+    .contract-actions .btn-ghost:hover {
+      color: var(--text-primary);
+    }
+
+    /* ── Empty State ── */
+    .empty-state {
+      text-align: center;
+      padding: var(--space-4xl) var(--space-xl);
+    }
+
+    .empty-state svg {
+      margin-bottom: var(--space-lg);
+      opacity: 0.2;
+    }
+
+    .empty-state h3 {
+      margin-bottom: var(--space-sm);
+      color: var(--text-secondary);
+    }
+
+    .empty-state p {
+      color: var(--text-tertiary);
+      max-width: 40ch;
+      margin: 0 auto var(--space-lg);
+    }
+
+    /* ── Modal Overlay ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(8px);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--duration-base) var(--ease-out);
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal {
+      background: var(--bg-raised);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-xl);
+      padding: var(--space-xl);
+      max-width: 600px;
+      width: 90%;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-lg);
+      transform: translateY(16px);
+      transition: transform var(--duration-base) var(--ease-out);
+    }
+
+    .modal-overlay.active .modal {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-lg);
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color var(--duration-fast) var(--ease-out);
+    }
+
+    .modal-close:hover {
+      color: var(--text-primary);
+    }
+
+    /* ── Contract Document ── */
+    .contract-document {
+      background: #f5f5f5;
+      color: #333;
+      padding: var(--space-2xl);
+      border-radius: var(--radius-md);
+      font-family: 'Georgia', serif;
+      font-size: 0.95rem;
+      line-height: 1.8;
+      margin-bottom: var(--space-lg);
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .contract-document-title {
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.4rem;
+      margin-bottom: var(--space-lg);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .contract-section {
+      margin-bottom: var(--space-lg);
+    }
+
+    .contract-section-title {
+      font-weight: bold;
+      font-size: 1.05rem;
+      margin-bottom: var(--space-sm);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 6px;
+    }
+
+    .contract-section-content {
+      padding: 0 var(--space-md);
+    }
+
+    .contract-parties {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-lg);
+      margin-bottom: var(--space-lg);
+    }
+
+    .contract-party {
+      padding: var(--space-md);
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+
+    .contract-party-label {
+      font-weight: bold;
+      margin-bottom: 4px;
+      font-size: 0.9rem;
+    }
+
+    .contract-party-name {
+      font-size: 1.05rem;
+      margin-bottom: 4px;
+    }
+
+    .contract-party-details {
+      font-size: 0.88rem;
+      color: #666;
+    }
+
+    .contract-signature-block {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-lg);
+      margin-top: var(--space-lg);
+      page-break-inside: avoid;
+    }
+
+    .contract-signature-line {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .sig-line {
+      border-top: 1px solid #333;
+      height: 60px;
+      display: flex;
+      align-items: flex-end;
+      padding-bottom: 4px;
+    }
+
+    .sig-label {
+      font-size: 0.85rem;
+      color: #555;
+      margin-top: 4px;
+    }
+
+    .sig-status {
+      font-size: 0.8rem;
+      font-family: var(--font-mono);
+      color: #666;
+      margin-top: 2px;
+    }
+
+    .sig-status.signed {
+      color: var(--status-confirmed);
+      font-weight: 600;
+    }
+
+    .sig-status.pending {
+      color: var(--status-pending);
+    }
+
+    /* ── New Contract Modal Form ── */
+    .form-group {
+      margin-bottom: var(--space-lg);
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .form-input,
+    .form-select {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 0.92rem;
+      transition: all var(--duration-fast) var(--ease-out);
+      outline: none;
+    }
+
+    .form-input:focus,
+    .form-select:focus {
+      background: var(--bg-input-focus);
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px var(--gold-dim);
+    }
+
+    .form-input::placeholder {
+      color: var(--text-tertiary);
+    }
+
+    .form-select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 36px;
+    }
+
+    /* ── Modal Actions ── */
+    .modal-actions {
+      display: flex;
+      gap: var(--space-md);
+      margin-top: var(--space-xl);
+      justify-content: flex-end;
+    }
+
+    .modal-actions .btn {
+      min-width: 120px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .contracts-container {
+        padding: var(--space-lg);
+      }
+
+      .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .page-header-actions {
+        width: 100%;
+      }
+
+      .page-header-actions .btn {
+        flex: 1;
+      }
+
+      .contracts-table {
+        font-size: 0.8rem;
+      }
+
+      .contracts-table th,
+      .contracts-table td {
+        padding: 10px 12px;
+      }
+
+      .contract-actions {
+        flex-direction: column;
+      }
+
+      .contract-actions .btn {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .contract-parties {
+        grid-template-columns: 1fr;
+      }
+
+      .contract-signature-block {
+        grid-template-columns: 1fr;
+      }
+
+      .modal {
+        width: 95%;
+        max-height: 90vh;
+        padding: var(--space-lg);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .contracts-container {
+        padding: var(--space-md);
+      }
+
+      .page-header h1 {
+        font-size: 1.6rem;
+      }
+
+      .page-header-actions {
+        gap: var(--space-sm);
+      }
+
+      .filter-tabs {
+        gap: 0;
+        margin-bottom: var(--space-lg);
+      }
+
+      .filter-tab {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+      }
+
+      .contracts-table th,
+      .contracts-table td {
+        padding: 8px;
+        font-size: 0.75rem;
+      }
+
+      .contract-artist {
+        font-size: 0.85rem;
+      }
+
+      .contract-event {
+        font-size: 0.75rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+    <!-- Navigation -->
+    <div id="nav-root"></div>
+
+    <!-- Main Content -->
+    <main class="contracts-container">
+      <!-- Page Header -->
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1>Contracts</h1>
+          <p class="page-header-subtitle">Manage performance contracts with artists. Track status, signatures, and documents.</p>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn btn-primary" onclick="openNewContractModal()">
+            <span>Create Contract</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter Tabs -->
+      <div class="filter-tabs">
+        <button class="filter-tab active" data-filter="all" onclick="filterContracts('all')">All</button>
+        <button class="filter-tab" data-filter="signed" onclick="filterContracts('signed')">Signed</button>
+        <button class="filter-tab" data-filter="sent" onclick="filterContracts('sent')">Sent</button>
+        <button class="filter-tab" data-filter="draft" onclick="filterContracts('draft')">Draft</button>
+      </div>
+
+      <!-- Contracts Table -->
+      <div class="contracts-table-wrapper">
+        <table class="contracts-table" id="contracts-table">
+          <thead>
+            <tr>
+              <th>Contract</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th style="text-align: right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="contracts-tbody">
+            <!-- Populated by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Empty State -->
+      <div id="empty-state" class="empty-state" style="display: none;">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14,2 14,8 20,8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+        <h3>No contracts found</h3>
+        <p>Create your first contract to get started with artist agreements.</p>
+        <button class="btn btn-primary" onclick="openNewContractModal()">Create Contract</button>
+      </div>
+    </main>
+  </div>
+
+  <!-- View Contract Modal -->
+  <div class="modal-overlay" id="view-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Contract Details</h2>
+        <button class="modal-close" onclick="closeViewModal()">✕</button>
+      </div>
+      <div id="view-modal-content">
+        <!-- Populated by JS -->
+      </div>
+      <div class="modal-actions" style="display:flex;gap:var(--space-sm)">
+        <button class="btn btn-secondary" onclick="closeViewModal()">Close</button>
+        <button class="btn btn-primary" onclick="downloadContract()">Download PDF</button>
+        <button id="sign-btn" class="btn" style="background:var(--status-confirmed);color:#000" onclick="signContractAsPromoter(currentViewingContract?.id)">Sign as Promoter</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Contract Modal -->
+  <div class="modal-overlay" id="new-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Create New Contract</h2>
+        <button class="modal-close" onclick="closeNewContractModal()">✕</button>
+      </div>
+      <form id="new-contract-form" onsubmit="createContract(event)">
+        <div class="form-group">
+          <label class="form-label">Artist</label>
+          <select class="form-select" id="artist-select" required>
+            <option value="">Select an artist...</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Event / Venue</label>
+          <select class="form-select" id="event-select" required>
+            <option value="">Select an event...</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Fee (AED)</label>
+          <input type="number" class="form-input" id="fee-input" placeholder="e.g., 15000" required min="0" step="100">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Notes</label>
+          <textarea class="form-input" id="notes-input" placeholder="Any special terms or notes..." style="resize: vertical; min-height: 80px;"></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeNewContractModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Generate Contract</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    /* ═════════════════════════════════════════════════════════
+       Contracts Page Logic
+       ═════════════════════════════════════════════════════════ */
+
+    let currentFilter = 'all';
+    let contracts = [];
+    let currentViewingContract = null;
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', async () => {
+      await Auth.ready();
+      if (!Auth.isLoggedIn()) { window.location.href = 'auth.html'; return; }
+
+      // Render navigation
+      const navRoot = document.getElementById('nav-root');
+      navRoot.innerHTML = renderNav('contracts');
+
+      // Load contracts from DB
+      const result = await DB.getMyContracts();
+      if (result.success) {
+        contracts = result.data.map(c => ({
+          id: c.id,
+          artist: c.bookings?.artists?.profiles?.display_name || c.bookings?.artists?.name || 'Unknown',
+          event: c.bookings?.event_name || c.bookings?.venue_name || 'Event',
+          status: c.status,
+          created: c.created_at,
+          booking: c.bookings,
+          promoter_signed: c.promoter_signed,
+          artist_signed: c.artist_signed,
+        }));
+      }
+
+      // Populate artist and event dropdowns
+      await populateNewContractForm();
+
+      // Render contracts table
+      renderContractsTable();
+
+      // Close modals on outside click
+      document.getElementById('view-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'view-modal') closeViewModal();
+      });
+
+      document.getElementById('new-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'new-modal') closeNewContractModal();
+      });
+    });
+
+    // Populate new contract form dropdowns
+    async function populateNewContractForm() {
+      const artistSelect = document.getElementById('artist-select');
+      const eventSelect = document.getElementById('event-select');
+
+      // Load pending/confirmed bookings that don't yet have a contract
+      const result = await DB.getMyBookings();
+      if (result.success) {
+        const bookings = result.data.filter(b => ['pending', 'confirmed'].includes(b.status));
+        bookings.forEach(b => {
+          const artistName = b.artists?.profiles?.display_name || b.artists?.name || 'Unknown';
+          const opt1 = document.createElement('option');
+          opt1.value = b.artist_id;
+          opt1.textContent = artistName;
+          opt1.dataset.bookingId = b.id;
+          artistSelect.appendChild(opt1);
+
+          const opt2 = document.createElement('option');
+          opt2.value = b.venue_name || '';
+          opt2.textContent = `${b.event_name || b.venue_name} (${UI.formatDate(b.event_date)})`;
+          opt2.dataset.bookingId = b.id;
+          eventSelect.appendChild(opt2);
+        });
+      }
+    }
+
+    // Filter contracts
+    function filterContracts(filter) {
+      currentFilter = filter;
+
+      // Update active tab
+      document.querySelectorAll('.filter-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.filter === filter);
+      });
+
+      renderContractsTable();
+    }
+
+    // Get filtered contracts
+    function getFilteredContracts() {
+      if (currentFilter === 'all') {
+        return contracts;
+      }
+      return contracts.filter(c => c.status === currentFilter);
+    }
+
+    // Render contracts table
+    function renderContractsTable() {
+      const filtered = getFilteredContracts();
+      const tbody = document.getElementById('contracts-tbody');
+      const emptyState = document.getElementById('empty-state');
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '';
+        emptyState.style.display = 'block';
+        return;
+      }
+
+      emptyState.style.display = 'none';
+
+      tbody.innerHTML = filtered.map(contract => {
+        const statusTag = UI.statusTag(contract.status);
+        const formattedDate = UI.formatDate(contract.created);
+
+        return `
+          <tr>
+            <td>
+              <div class="contract-info">
+                <div class="contract-artist">${esc(contract.artist)}</div>
+                <div class="contract-event">${esc(contract.event)}</div>
+              </div>
+            </td>
+            <td>
+              <div class="contract-status">
+                <div class="contract-status-dot ${contract.status}"></div>
+                ${statusTag}
+              </div>
+            </td>
+            <td>${formattedDate}</td>
+            <td>
+              <div class="contract-actions">
+                <button class="btn btn-ghost btn-sm" onclick="viewContract('${contract.id}')">View</button>
+                <button class="btn btn-ghost btn-sm" onclick="downloadContractPDF('${contract.id}')">Download</button>
+                ${contract.status === 'sent' || contract.status === 'draft' ? `<button class="btn btn-ghost btn-sm" onclick="sendContract('${contract.id}')">Send</button>` : ''}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // View contract
+    function viewContract(contractId) {
+      const contract = contracts.find(c => c.id === contractId);
+      if (!contract) return;
+
+      currentViewingContract = contract;
+      const modal = document.getElementById('view-modal');
+      const content = document.getElementById('view-modal-content');
+
+      // Use booking data from contract
+      const booking = contract.booking || null;
+      const venue = null;
+
+      const status = {
+        promoter: contract.promoter_signed ? 'Signed' : 'Pending',
+        artist: contract.artist_signed ? 'Signed' : 'Pending',
+      };
+
+      content.innerHTML = `
+        <div class="contract-document">
+          <div class="contract-document-title">Performance Contract</div>
+
+          <div class="contract-section">
+            <div class="contract-section-title">Parties</div>
+            <div class="contract-parties">
+              <div class="contract-party">
+                <div class="contract-party-label">Promoter / Organizer</div>
+                <div class="contract-party-name">Beyond Concierge Events Co. LLC</div>
+                <div class="contract-party-details">
+                  Dubai, United Arab Emirates<br>
+                  Email: book@rosterplus.io<br>
+                  Phone: +971 4 XXX XXXX
+                </div>
+              </div>
+              <div class="contract-party">
+                <div class="contract-party-label">Artist</div>
+                <div class="contract-party-name">${esc(contract.artist)}</div>
+                <div class="contract-party-details">
+                  Professional DJ / Artist<br>
+                  GCC Region<br>
+                  As listed on ROSTR+ platform
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="contract-section">
+            <div class="contract-section-title">Event Details</div>
+            <div class="contract-section-content">
+              <p><strong>Venue:</strong> ${esc(contract.event)}</p>
+              <p><strong>Date:</strong> ${booking ? UI.formatDate(booking.event_date) : 'TBD'}</p>
+              <p><strong>Time:</strong> ${booking ? (booking.event_time || '') : 'TBD'}</p>
+              <p><strong>Location:</strong> GCC Region</p>
+            </div>
+          </div>
+
+          <div class="contract-section">
+            <div class="contract-section-title">Compensation</div>
+            <div class="contract-section-content">
+              <p><strong>Performance Fee:</strong> ${booking ? UI.currency(booking.fee, booking.currency) : 'TBD'}</p>
+              <p><strong>Payment Terms:</strong> 50% upon signing, 50% upon completion of performance</p>
+              <p><strong>Currency:</strong> ${booking ? (booking.currency || 'AED') : 'AED'}</p>
+            </div>
+          </div>
+
+          <div class="contract-section">
+            <div class="contract-section-title">Terms & Conditions</div>
+            <div class="contract-section-content">
+              <p><strong>Cancellation Policy:</strong> If the Artist cancels within 14 days of the event, the full fee is forfeited. If the Promoter cancels within 14 days, the Artist receives full compensation.</p>
+              <p><strong>Technical Rider:</strong> Artist shall provide technical specifications 7 days prior to the event. Venue shall accommodate all reasonable technical requirements.</p>
+              <p><strong>Payment Method:</strong> Bank transfer to Artist's designated account as provided on contract execution.</p>
+              <p><strong>Liability:</strong> Both parties assume responsibility for their respective equipment and personnel.</p>
+            </div>
+          </div>
+
+          <div class="contract-section">
+            <div class="contract-section-title">Signatures</div>
+            <div class="contract-signature-block">
+              <div class="contract-signature-line">
+                <div>
+                  <div class="sig-line"></div>
+                  <div class="sig-label">Promoter / Beyond Events</div>
+                  <div class="sig-status signed">Signed ${status.promoter === 'Signed' ? '• ' + UI.formatDate(contract.created) : ''}</div>
+                </div>
+              </div>
+              <div class="contract-signature-line">
+                <div>
+                  <div class="sig-line"></div>
+                  <div class="sig-label">Artist: ${esc(contract.artist)}</div>
+                  <div class="sig-status ${status.artist === 'Signed' ? 'signed' : 'pending'}">${status.artist}${status.artist === 'Signed' ? ' • ' + UI.formatDate(contract.created) : ''}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      modal.classList.add('active');
+    }
+
+    // Close view modal
+    function closeViewModal() {
+      document.getElementById('view-modal').classList.remove('active');
+    }
+
+    // Open new contract modal
+    function openNewContractModal() {
+      document.getElementById('new-modal').classList.add('active');
+      document.getElementById('new-contract-form').reset();
+    }
+
+    // Close new contract modal
+    function closeNewContractModal() {
+      document.getElementById('new-modal').classList.remove('active');
+      document.getElementById('new-contract-form').reset();
+    }
+
+    // Create new contract
+    async function createContract(e) {
+      e.preventDefault();
+
+      const artistSelect = document.getElementById('artist-select');
+      const selectedOpt = artistSelect.options[artistSelect.selectedIndex];
+      const bookingId = selectedOpt?.dataset?.bookingId;
+      const fee = parseFloat(document.getElementById('fee-input').value) || 0;
+
+      if (!bookingId) {
+        UI.toast('Please select an artist/booking', 'error');
+        return;
+      }
+
+      const btn = e.target.querySelector('button[type="submit"]') || e.submitter;
+      if (btn) { btn.disabled = true; btn.textContent = 'Creating...'; }
+
+      const eventName = document.getElementById('event-select').options[document.getElementById('event-select').selectedIndex]?.textContent || 'Event';
+      const result = await DB.createContract({ booking_id: bookingId, fee, title: 'Performance Contract — ' + eventName });
+      if (result.success) {
+        const c = result.data;
+        contracts.unshift({
+          id: c.id,
+          artist: selectedOpt.textContent,
+          event: document.getElementById('event-select').value,
+          status: c.status,
+          created: c.created_at,
+          booking: null,
+          promoter_signed: false,
+          artist_signed: false,
+        });
+        UI.toast('Contract created successfully', 'success');
+        closeNewContractModal();
+        renderContractsTable();
+      } else {
+        UI.toast('Failed to create contract: ' + (result.error || ''), 'error');
+      }
+      if (btn) { btn.disabled = false; btn.textContent = 'Create Contract'; }
+    }
+
+    // Send contract (marks as sent + sends email)
+    async function sendContract(contractId) {
+      const contract = contracts.find(c => c.id === contractId);
+      if (!contract) return;
+
+      const result = await DB.updateContractStatus(contractId, 'sent');
+      if (result.success) {
+        contract.status = 'sent';
+        renderContractsTable();
+        // Send email notification to artist
+        Emails.contractSigned && Emails.send(contract.booking?.artists?.profiles?.email || '', 'contract_signed', {
+          event_name: contract.event || '',
+          contract_url: window.location.origin + '/contracts.html',
+        });
+        UI.toast(`Contract sent to ${esc(contract.artist)}`, 'success');
+      } else {
+        UI.toast('Failed to send contract', 'error');
+      }
+    }
+
+    // Sign contract (promoter side)
+    async function signContractAsPromoter(contractId) {
+      const contract = contracts.find(c => c.id === contractId);
+      if (!contract) return;
+      const result = await DB.signContract(contractId, 'promoter');
+      if (!result.error) {
+        contract.promoter_signed = true;
+        if (contract.artist_signed) contract.status = 'signed';
+        renderContractsTable();
+        UI.toast('Contract signed by you', 'success');
+      } else {
+        UI.toast('Failed to sign: ' + (result.error || ''), 'error');
+      }
+    }
+
+    // Download contract as PDF
+    function downloadContract() {
+      if (!currentViewingContract) return;
+      downloadContractPDF(currentViewingContract.id);
+    }
+
+    // Download contract as PDF via print
+    function downloadContractPDF(contractId) {
+      const contract = contracts.find(c => c.id === contractId);
+      if (!contract) return;
+      // Open the contract view modal first so content is visible
+      viewContract(contractId);
+      // Use browser print dialog (Save as PDF)
+      setTimeout(() => {
+        const content = document.getElementById('view-modal-content');
+        if (!content) return;
+        const printWin = window.open('', '_blank', 'width=800,height=1100');
+        printWin.document.write(`<!DOCTYPE html><html><head><title>Contract — ${esc(contract.artist)}</title><style>body{font-family:system-ui,sans-serif;padding:40px;color:#222;line-height:1.6}h1,h2,h3{margin-top:24px}.contract-section{margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid #eee}.sig-line{border-top:1px solid #999;width:200px;margin-top:40px;padding-top:4px}@media print{body{padding:20px}}</style></head><body>${content.innerHTML}</body></html>`);
+        printWin.document.close();
+        printWin.focus();
+        setTimeout(() => printWin.print(), 300);
+      }, 200);
+    }
+  </script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
+</body>
+</html>

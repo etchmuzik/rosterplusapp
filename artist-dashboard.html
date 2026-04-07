@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#c9a84c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ROSTR+">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <title>Artist Dashboard — ROSTR+ GCC</title>
+  <link rel="stylesheet" href="assets/css/system.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/app.js" defer></script>
+  <style>
+    .layout-sidebar { display: grid; grid-template-columns: 240px 1fr; min-height: calc(100vh - 64px); margin-top: 64px; }
+    .sidebar { background: var(--bg-raised); border-right: 1px solid var(--border-subtle); padding: var(--space-lg); position: sticky; top: 64px; height: calc(100vh - 64px); overflow-y: auto; }
+    .sidebar-label { font-family: var(--font-mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-tertiary); margin-bottom: var(--space-sm); padding: 0 var(--space-sm); }
+    .sidebar-item { display: flex; align-items: center; gap: var(--space-sm); padding: 10px var(--space-sm); border-radius: var(--radius-sm); font-size: 0.88rem; color: var(--text-secondary); cursor: pointer; transition: all var(--duration-fast) var(--ease-out); width: 100%; text-align: left; background: none; border: none; font-family: var(--font-body); }
+    .sidebar-item:hover { background: rgba(255,255,255,0.04); color: var(--text-primary); }
+    .sidebar-item.active { background: var(--gold-dim); color: var(--gold-text); font-weight: 500; }
+    .main-content { padding: var(--space-2xl); overflow-x: hidden; }
+    .view-section { display: none; animation: fadeIn var(--duration-slow) var(--ease-out); }
+    .view-section.active { display: block; }
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-md); margin-bottom: var(--space-2xl); }
+    .stat-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 6px; }
+    .stat-card .card-inner { background: var(--bg-raised); border-radius: calc(var(--radius-lg) - 4px); padding: var(--space-lg); }
+    .stat-label { font-family: var(--font-mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-tertiary); margin-bottom: var(--space-sm); }
+    .stat-value { font-family: var(--font-display); font-size: 2rem; font-weight: 700; letter-spacing: -0.04em; }
+    .action-group { display: flex; gap: var(--space-xs); }
+    .btn-accept { background: rgba(52,211,153,0.15); color: var(--status-confirmed); border: 1px solid rgba(52,211,153,0.2); }
+    .btn-accept:hover { background: rgba(52,211,153,0.25); }
+    .btn-reject { background: rgba(248,113,113,0.15); color: var(--status-cancelled); border: 1px solid rgba(248,113,113,0.2); }
+    .btn-reject:hover { background: rgba(248,113,113,0.25); }
+    .quick-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-md); margin-top: var(--space-xl); }
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); overflow: hidden; }
+    .calendar-header-cell { padding: 8px; text-align: center; font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-tertiary); background: rgba(255,255,255,0.02); }
+    .calendar-cell { padding: 8px; min-height: 70px; background: var(--bg-card); border: 1px solid var(--border-subtle); cursor: pointer; transition: background var(--duration-fast); }
+    .calendar-cell:hover { background: var(--bg-card-hover, rgba(255,255,255,0.04)); }
+    .calendar-cell.today { border-color: var(--gold); }
+    .calendar-cell.has-booking::after { content: ''; display: block; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); margin: 4px auto 0; }
+    .calendar-cell .day-num { font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-secondary); }
+    .calendar-cell.other-month .day-num { opacity: 0.3; }
+    .earnings-total { font-family: var(--font-display); font-size: 2.4rem; font-weight: 700; color: var(--gold-text); letter-spacing: -0.04em; }
+    @media (max-width: 1024px) { .layout-sidebar { grid-template-columns: 1fr; } .sidebar { display: none; } .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 768px) { .stats-grid { grid-template-columns: 1fr; } .quick-actions { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+    <div id="nav-root"></div>
+    <div class="layout-sidebar">
+      <aside class="sidebar">
+        <div class="sidebar-section">
+          <div class="sidebar-label">Dashboard</div>
+          <button class="sidebar-item active" data-view="overview" onclick="switchView('overview')">
+            <span class="js-icon" data-icon="home" data-size="16"></span> Overview
+          </button>
+          <button class="sidebar-item" data-view="requests" onclick="switchView('requests')">
+            <span class="js-icon" data-icon="inbox" data-size="16"></span> Booking Requests
+          </button>
+          <button class="sidebar-item" data-view="upcoming" onclick="switchView('upcoming')">
+            <span class="js-icon" data-icon="calendar" data-size="16"></span> Upcoming Gigs
+          </button>
+          <button class="sidebar-item" data-view="calendar" onclick="switchView('calendar')">
+            <span class="js-icon" data-icon="grid" data-size="16"></span> Calendar
+          </button>
+          <button class="sidebar-item" data-view="earnings" onclick="switchView('earnings')">
+            <span class="js-icon" data-icon="dollar" data-size="16"></span> Earnings
+          </button>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <!-- OVERVIEW -->
+        <section id="view-overview" class="view-section active">
+          <div style="margin-bottom:var(--space-2xl)">
+            <h1 style="margin-bottom:var(--space-sm)">Welcome back, <span id="welcome-name">Artist</span></h1>
+            <p class="text-tertiary">Here's your booking activity</p>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card"><div class="card-inner"><div class="stat-label">Incoming Requests</div><div class="stat-value" id="stat-requests">0</div></div></div>
+            <div class="stat-card"><div class="card-inner"><div class="stat-label">Confirmed Gigs</div><div class="stat-value" id="stat-confirmed" style="color:var(--status-confirmed)">0</div></div></div>
+            <div class="stat-card"><div class="card-inner"><div class="stat-label">Total Earned</div><div class="stat-value" id="stat-earned" style="color:var(--gold-text)">—</div></div></div>
+            <div class="stat-card"><div class="card-inner"><div class="stat-label">This Month</div><div class="stat-value" id="stat-month">—</div></div></div>
+          </div>
+
+          <h3 style="margin-bottom:var(--space-md)">Pending Requests</h3>
+          <div id="pending-requests" class="table-wrap" style="margin-bottom:var(--space-2xl)"></div>
+
+          <h3 style="margin-bottom:var(--space-md)">Upcoming Gigs</h3>
+          <div id="upcoming-gigs" class="table-wrap" style="margin-bottom:var(--space-2xl)"></div>
+
+          <h3 style="margin-bottom:var(--space-md)">Recent Messages</h3>
+          <div id="recent-messages" style="display:flex;flex-direction:column;gap:var(--space-sm);margin-bottom:var(--space-xl)"></div>
+
+          <div class="quick-actions">
+            <a href="artist-profile-edit.html" class="card card--interactive"><div class="card-inner" style="text-align:center;padding:var(--space-xl)"><span class="js-icon" data-icon="music" data-size="24"></span><div style="margin-top:var(--space-sm);font-weight:500">Edit Profile</div></div></a>
+            <a href="epk.html" class="card card--interactive"><div class="card-inner" style="text-align:center;padding:var(--space-xl)"><span class="js-icon" data-icon="fileText" data-size="24"></span><div style="margin-top:var(--space-sm);font-weight:500">Build EPK</div></div></a>
+            <a href="messages.html" class="card card--interactive"><div class="card-inner" style="text-align:center;padding:var(--space-xl)"><span class="js-icon" data-icon="inbox" data-size="24"></span><div style="margin-top:var(--space-sm);font-weight:500">Messages</div></div></a>
+          </div>
+        </section>
+
+        <!-- BOOKING REQUESTS -->
+        <section id="view-requests" class="view-section">
+          <h2 style="margin-bottom:var(--space-lg)">Booking Requests</h2>
+          <div id="all-requests" class="table-wrap"></div>
+        </section>
+
+        <!-- UPCOMING GIGS -->
+        <section id="view-upcoming" class="view-section">
+          <h2 style="margin-bottom:var(--space-lg)">Upcoming Gigs</h2>
+          <div id="all-upcoming" class="table-wrap"></div>
+        </section>
+
+        <!-- CALENDAR -->
+        <section id="view-calendar" class="view-section">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-lg)">
+            <h2 id="cal-title">April 2026</h2>
+            <div style="display:flex;gap:var(--space-sm)">
+              <button class="btn btn-ghost btn-sm" onclick="changeMonth(-1)">&larr; Prev</button>
+              <button class="btn btn-ghost btn-sm" onclick="changeMonth(1)">Next &rarr;</button>
+            </div>
+          </div>
+          <div id="calendar-grid" class="calendar-grid"></div>
+        </section>
+
+        <!-- EARNINGS -->
+        <section id="view-earnings" class="view-section">
+          <h2 style="margin-bottom:var(--space-lg)">Earnings</h2>
+          <div class="stats-grid" style="margin-bottom:var(--space-2xl)">
+            <div class="stat-card"><div class="card-inner"><div class="stat-label">Total Earned</div><div class="earnings-total" id="earn-total">—</div></div></div>
+            <div class="stat-card"><div class="card-inner"><div class="stat-label">Pending</div><div class="stat-value" id="earn-pending" style="color:var(--status-pending)">—</div></div></div>
+            <div class="stat-card"><div class="card-inner"><div class="stat-label">This Month</div><div class="stat-value" id="earn-month">—</div></div></div>
+            <div class="stat-card"><div class="card-inner"><div class="stat-label">Total Gigs</div><div class="stat-value" id="earn-count">0</div></div></div>
+          </div>
+          <div id="earnings-table" class="table-wrap"></div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Accept/Reject Modal -->
+  <div id="action-modal" class="modal-overlay" onclick="if(event.target===this) closeActionModal()" style="display:none">
+    <div class="modal" style="max-width:500px">
+      <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-lg)">
+        <h3 id="modal-title">Accept Booking</h3>
+        <button class="btn btn-ghost btn-icon" onclick="closeActionModal()"><span class="js-icon" data-icon="x" data-size="16"></span></button>
+      </div>
+      <div id="modal-details" style="margin-bottom:var(--space-lg)"></div>
+      <div class="form-group">
+        <label class="form-label" id="modal-msg-label">Message to promoter (optional)</label>
+        <textarea class="form-textarea" id="modal-message" rows="3" placeholder="Add a note..."></textarea>
+      </div>
+      <div style="display:flex;gap:var(--space-sm)">
+        <button id="modal-confirm" class="btn btn-primary" style="flex:1" onclick="confirmAction()">Confirm</button>
+        <button class="btn btn-secondary" style="flex:1" onclick="closeActionModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let _bookings = [];
+    let _earnings = {};
+    let _messages = [];
+    let _calMonth = new Date().getMonth();
+    let _calYear = new Date().getFullYear();
+    let _actionBookingId = null;
+    let _actionType = null;
+
+    function switchView(view) {
+      document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+      document.getElementById('view-' + view)?.classList.add('active');
+      document.querySelectorAll('.sidebar-item').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+    }
+
+    function renderBookingRow(b, showActions) {
+      const promoter = esc(b.promoter_name || b.promoter?.display_name || '—');
+      const venue = esc(b.venue_name || b.event_name || '—');
+      const fee = UI.currency(b.fee || b.amount || 0, b.currency || 'AED');
+      const actions = showActions && b.status === 'pending'
+        ? `<td><div class="action-group"><button class="btn btn-sm btn-accept" onclick="openAction('${b.id}','accept')">Accept</button><button class="btn btn-sm btn-reject" onclick="openAction('${b.id}','reject')">Reject</button></div></td>`
+        : `<td>${UI.statusTag(b.status)}</td>`;
+      return `<tr>
+        <td>${UI.formatDate(b.event_date || b.date)}</td>
+        <td><strong>${venue}</strong></td>
+        <td>${promoter}</td>
+        <td style="font-variant-numeric:tabular-nums">${fee}</td>
+        ${actions}
+      </tr>`;
+    }
+
+    function renderTable(bookings, containerId, showActions, emptyMsg) {
+      const el = document.getElementById(containerId);
+      if (!bookings.length) {
+        el.innerHTML = `<div class="empty-state" style="padding:var(--space-xl);text-align:center;color:var(--text-tertiary)">${emptyMsg || 'No bookings yet'}</div>`;
+        return;
+      }
+      el.innerHTML = `<table><thead><tr><th>Date</th><th>Event</th><th>Promoter</th><th>Fee</th><th>${showActions ? 'Actions' : 'Status'}</th></tr></thead><tbody>${bookings.map(b => renderBookingRow(b, showActions)).join('')}</tbody></table>`;
+    }
+
+    function renderMessages(msgs) {
+      const el = document.getElementById('recent-messages');
+      if (!msgs.length) { el.innerHTML = '<div class="text-tertiary" style="padding:var(--space-lg)">No messages yet</div>'; return; }
+      el.innerHTML = msgs.slice(0, 5).map(msg => {
+        const name = esc(msg.other_user_name || msg.sender?.display_name || 'Unknown');
+        const preview = esc((msg.content || msg.last_message || '').substring(0, 60));
+        return `<div class="card card--interactive" onclick="window.location.href='messages.html'"><div class="card-inner" style="display:flex;align-items:center;gap:var(--space-md)">${UI.avatar(name, 36)}<div style="flex:1;min-width:0"><strong style="font-size:0.9rem">${name}</strong><p class="text-tertiary" style="font-size:0.82rem;margin:2px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${preview}</p></div></div></div>`;
+      }).join('');
+    }
+
+    // Calendar
+    function renderCalendar() {
+      const grid = document.getElementById('calendar-grid');
+      const title = document.getElementById('cal-title');
+      const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      title.textContent = `${months[_calMonth]} ${_calYear}`;
+
+      const firstDay = new Date(_calYear, _calMonth, 1).getDay();
+      const daysInMonth = new Date(_calYear, _calMonth + 1, 0).getDate();
+      const today = new Date();
+
+      // Booking dates for this month
+      const bookingDates = new Set(_bookings.filter(b => {
+        const d = new Date(b.event_date || b.date);
+        return d.getMonth() === _calMonth && d.getFullYear() === _calYear && (b.status === 'confirmed' || b.status === 'pending');
+      }).map(b => new Date(b.event_date || b.date).getDate()));
+
+      let html = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => `<div class="calendar-header-cell">${d}</div>`).join('');
+
+      // Previous month padding
+      const prevDays = new Date(_calYear, _calMonth, 0).getDate();
+      for (let i = firstDay - 1; i >= 0; i--) {
+        html += `<div class="calendar-cell other-month"><div class="day-num">${prevDays - i}</div></div>`;
+      }
+      // Current month
+      for (let d = 1; d <= daysInMonth; d++) {
+        const isToday = d === today.getDate() && _calMonth === today.getMonth() && _calYear === today.getFullYear();
+        const hasBooking = bookingDates.has(d);
+        html += `<div class="calendar-cell ${isToday ? 'today' : ''} ${hasBooking ? 'has-booking' : ''}"><div class="day-num">${d}</div></div>`;
+      }
+      // Next month padding
+      const totalCells = firstDay + daysInMonth;
+      const remaining = (7 - totalCells % 7) % 7;
+      for (let i = 1; i <= remaining; i++) {
+        html += `<div class="calendar-cell other-month"><div class="day-num">${i}</div></div>`;
+      }
+      grid.innerHTML = html;
+    }
+
+    function changeMonth(delta) {
+      _calMonth += delta;
+      if (_calMonth > 11) { _calMonth = 0; _calYear++; }
+      if (_calMonth < 0) { _calMonth = 11; _calYear--; }
+      renderCalendar();
+    }
+
+    // Accept / Reject
+    function openAction(bookingId, type) {
+      _actionBookingId = bookingId;
+      _actionType = type;
+      const b = _bookings.find(x => x.id === bookingId);
+      document.getElementById('modal-title').textContent = type === 'accept' ? 'Accept Booking' : 'Decline Booking';
+      document.getElementById('modal-msg-label').textContent = type === 'accept' ? 'Message to promoter (optional)' : 'Reason for declining (optional)';
+      document.getElementById('modal-confirm').className = type === 'accept' ? 'btn btn-primary' : 'btn btn-reject';
+      document.getElementById('modal-confirm').textContent = type === 'accept' ? 'Accept Booking' : 'Decline Booking';
+      document.getElementById('modal-details').innerHTML = b ? `<div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:var(--space-lg)"><p><strong>Event:</strong> ${esc(b.event_name || b.venue_name || '—')}</p><p><strong>Date:</strong> ${UI.formatDate(b.event_date || b.date)}</p><p><strong>Promoter:</strong> ${esc(b.promoter_name || '—')}</p><p><strong>Fee:</strong> ${UI.currency(b.fee || b.amount || 0, b.currency || 'AED')}</p></div>` : '';
+      document.getElementById('modal-message').value = '';
+      document.getElementById('action-modal').style.display = '';
+      document.getElementById('action-modal').classList.add('active');
+    }
+
+    function closeActionModal() {
+      document.getElementById('action-modal').style.display = 'none';
+      document.getElementById('action-modal').classList.remove('active');
+      _actionBookingId = null; _actionType = null;
+    }
+
+    async function confirmAction() {
+      if (!_actionBookingId || !_actionType) return;
+      const btn = document.getElementById('modal-confirm');
+      btn.disabled = true; btn.textContent = 'Processing...';
+      const message = document.getElementById('modal-message').value.trim();
+      const result = _actionType === 'accept'
+        ? await DB.acceptBooking(_actionBookingId, message)
+        : await DB.rejectBooking(_actionBookingId, message);
+
+      if (result.success) {
+        const b = _bookings.find(x => x.id === _actionBookingId);
+        if (b) b.status = _actionType === 'accept' ? 'confirmed' : 'cancelled';
+
+        // Send email notification
+        if (b?.promoter_email) {
+          const emailType = _actionType === 'accept' ? 'booking_accepted' : 'booking_rejected';
+          Emails.send(b.promoter_email, emailType, {
+            artist_name: Auth.user?.display_name || 'Artist',
+            event_name: b.event_name || b.venue_name || '',
+            event_date: b.event_date || b.date || '',
+            booking_url: window.location.origin + '/bookings.html',
+            browse_url: window.location.origin + '/directory.html',
+          });
+        }
+
+        UI.toast(`Booking ${_actionType === 'accept' ? 'accepted' : 'declined'}`, 'success');
+        closeActionModal();
+        refreshUI();
+      } else {
+        UI.toast('Failed: ' + (result.error || ''), 'error');
+        btn.disabled = false; btn.textContent = _actionType === 'accept' ? 'Accept Booking' : 'Decline Booking';
+      }
+    }
+
+    function refreshUI() {
+      const pending = _bookings.filter(b => b.status === 'pending');
+      const confirmed = _bookings.filter(b => b.status === 'confirmed' || b.status === 'contracted');
+      const upcoming = confirmed.filter(b => new Date(b.event_date || b.date) >= new Date()).sort((a, b) => new Date(a.event_date || a.date) - new Date(b.event_date || b.date));
+
+      document.getElementById('stat-requests').textContent = pending.length;
+      document.getElementById('stat-confirmed').textContent = confirmed.length;
+
+      renderTable(pending.slice(0, 5), 'pending-requests', true, 'No pending requests — enjoy the downtime!');
+      renderTable(upcoming.slice(0, 5), 'upcoming-gigs', false, 'No upcoming gigs yet');
+      renderTable(_bookings, 'all-requests', true, 'No booking requests yet');
+      renderTable(upcoming, 'all-upcoming', false, 'No upcoming gigs');
+      renderCalendar();
+
+      // Earnings
+      if (_earnings) {
+        const el = (id, v) => { const e = document.getElementById(id); if(e) e.textContent = v; };
+        el('stat-earned', _earnings.total ? UI.currency(_earnings.total, 'AED') : '—');
+        el('stat-month', _earnings.thisMonth ? UI.currency(_earnings.thisMonth, 'AED') : '—');
+        el('earn-total', _earnings.total ? UI.currency(_earnings.total, 'AED') : '—');
+        el('earn-pending', _earnings.pending ? UI.currency(_earnings.pending, 'AED') : '—');
+        el('earn-month', _earnings.thisMonth ? UI.currency(_earnings.thisMonth, 'AED') : '—');
+        el('earn-count', _earnings.count || 0);
+      }
+
+      // Earnings table
+      const completed = _bookings.filter(b => b.status === 'completed' || b.status === 'confirmed');
+      const earnEl = document.getElementById('earnings-table');
+      if (completed.length) {
+        earnEl.innerHTML = `<table><thead><tr><th>Date</th><th>Event</th><th>Fee</th><th>Status</th></tr></thead><tbody>${completed.map(b => `<tr><td>${UI.formatDate(b.event_date || b.date)}</td><td>${esc(b.event_name || b.venue_name || '—')}</td><td style="font-variant-numeric:tabular-nums">${UI.currency(b.fee || b.amount || 0, b.currency || 'AED')}</td><td>${UI.statusTag(b.status)}</td></tr>`).join('')}</tbody></table>`;
+      } else {
+        earnEl.innerHTML = '<div class="text-tertiary" style="padding:var(--space-xl);text-align:center">Complete gigs to start earning</div>';
+      }
+    }
+
+    // Init
+    document.addEventListener('DOMContentLoaded', async function() {
+      await Auth.ready();
+      if (!Auth.isLoggedIn()) { Auth.require(); return; }
+      if (Auth.role !== 'artist') { window.location.replace('dashboard.html'); return; }
+
+      document.getElementById('nav-root').innerHTML = renderNav('artist-dashboard');
+      document.getElementById('welcome-name').textContent = Auth.user?.display_name || 'Artist';
+      if (typeof hydrateIcons === 'function') hydrateIcons();
+
+      // Load data
+      const [bookingsRes, messagesRes, earningsRes] = await Promise.all([
+        DB.getIncomingBookings(),
+        DB.getConversations(),
+        DB.getArtistEarnings(),
+      ]);
+
+      _bookings = bookingsRes.success ? bookingsRes.data : [];
+      _messages = messagesRes.success ? messagesRes.data : [];
+      _earnings = earningsRes.success ? earningsRes.data : {};
+
+      renderMessages(_messages);
+      refreshUI();
+
+      // Realtime
+      Realtime.subscribeToArtistBookings((updated) => {
+        const idx = _bookings.findIndex(b => b.id === updated.id);
+        if (idx !== -1) _bookings[idx] = { ..._bookings[idx], ...updated };
+        else _bookings.unshift(updated);
+        refreshUI();
+        UI.toast('Booking updated', 'info');
+      });
+    });
+  </script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
+</body>
+</html>

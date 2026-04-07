@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#c9a84c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ROSTR+">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <title>Edit Profile — ROSTR+ GCC</title>
+  <link rel="stylesheet" href="assets/css/system.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/app.js" defer></script>
+  <style>
+    .profile-container { max-width: 800px; margin: 80px auto 0; padding: var(--space-2xl) var(--space-lg); }
+    .section-header { font-family: var(--font-display); font-size: 1.15rem; font-weight: 600; margin-bottom: var(--space-lg); padding-bottom: var(--space-sm); border-bottom: 1px solid var(--border-subtle); }
+    .form-section { margin-bottom: var(--space-3xl); }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); }
+    .avatar-preview { width: 120px; height: 120px; border-radius: 50%; background: var(--gold-dim); border: 2px solid var(--border-gold, var(--gold)); display: flex; align-items: center; justify-content: center; overflow: hidden; font-family: var(--font-display); font-size: 3rem; font-weight: 700; color: var(--gold-text); }
+    .avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
+    .avatar-row { display: flex; align-items: center; gap: var(--space-xl); }
+    .toggle { position: relative; width: 48px; height: 26px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: 13px; cursor: pointer; transition: all var(--duration-fast); }
+    .toggle.active { background: var(--gold); border-color: var(--gold); }
+    .toggle::after { content: ''; position: absolute; width: 20px; height: 20px; border-radius: 50%; background: var(--text-primary); top: 2px; left: 2px; transition: transform var(--duration-fast); }
+    .toggle.active::after { transform: translateX(22px); }
+    .tag-input-wrap { display: flex; flex-wrap: wrap; gap: var(--space-xs); padding: 8px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); min-height: 44px; cursor: text; }
+    .tag-input-wrap:focus-within { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,0.15); }
+    .tag-input-wrap .tag { display: flex; align-items: center; gap: 4px; padding: 2px 8px; background: var(--gold-dim); border-radius: var(--radius-sm); font-size: 0.82rem; color: var(--gold-text); }
+    .tag-input-wrap .tag-remove { cursor: pointer; opacity: 0.6; font-size: 1rem; line-height: 1; }
+    .tag-input-wrap .tag-remove:hover { opacity: 1; }
+    .tag-input-wrap input { flex: 1; min-width: 100px; border: none; background: none; color: var(--text-primary); font-size: 0.88rem; outline: none; }
+    .char-count { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-tertiary); text-align: right; margin-top: 4px; }
+    .setup-banner { background: var(--gold-dim); border: 1px solid var(--gold); border-radius: var(--radius-md); padding: var(--space-lg); margin-bottom: var(--space-xl); text-align: center; }
+    .setup-banner h2 { color: var(--gold-text); margin-bottom: var(--space-xs); }
+    @media (max-width: 768px) { .form-grid { grid-template-columns: 1fr; } .avatar-row { flex-direction: column; text-align: center; } }
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+    <div id="nav-root"></div>
+    <div class="profile-container">
+      <div id="setup-banner" style="display:none" class="setup-banner">
+        <h2>Complete Your Artist Profile</h2>
+        <p class="text-secondary">Fill in your details so promoters can find and book you.</p>
+      </div>
+
+      <h1 style="margin-bottom:var(--space-xs)">Edit Your Profile</h1>
+      <p class="text-tertiary" style="margin-bottom:var(--space-2xl)">This info appears on your public profile and EPK</p>
+
+      <form id="profile-form" onsubmit="saveProfile(event)">
+        <!-- Basic Info -->
+        <div class="form-section">
+          <div class="section-header">Basic Info</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Stage Name</label>
+              <input type="text" class="form-input" id="stage-name" placeholder="Your stage name" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Primary Genre</label>
+              <select class="form-select" id="genre">
+                <option value="">Select genre...</option>
+                <option value="Tech House">Tech House</option>
+                <option value="Afro House">Afro House</option>
+                <option value="Deep House">Deep House</option>
+                <option value="Organic House">Organic House</option>
+                <option value="Minimal Techno">Minimal Techno</option>
+                <option value="Desert Techno">Desert Techno</option>
+                <option value="Drum & Bass">Drum & Bass</option>
+                <option value="Hip Hop">Hip Hop</option>
+                <option value="R&B / Neo Soul">R&B / Neo Soul</option>
+                <option value="Open Format">Open Format</option>
+                <option value="Future Bass">Future Bass</option>
+                <option value="Trance">Trance</option>
+                <option value="Reggaeton">Reggaeton</option>
+                <option value="Live Band">Live Band</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Subgenres</label>
+            <div class="tag-input-wrap" id="subgenres-wrap" onclick="this.querySelector('input').focus()">
+              <input type="text" placeholder="Type and press Enter..." onkeydown="addTag(event, 'subgenres')">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Bio</label>
+            <textarea class="form-textarea" id="bio" rows="4" maxlength="500" placeholder="Tell promoters about yourself..." oninput="updateCharCount(this, 'bio-count')"></textarea>
+            <div class="char-count" id="bio-count">0 / 500</div>
+          </div>
+        </div>
+
+        <!-- Avatar -->
+        <div class="form-section">
+          <div class="section-header">Photo</div>
+          <div class="avatar-row">
+            <div class="avatar-preview" id="avatar-preview"></div>
+            <div>
+              <label class="btn btn-secondary" style="cursor:pointer">
+                Upload Photo
+                <input type="file" accept="image/*" style="display:none" onchange="uploadAvatar(this.files[0])">
+              </label>
+              <p class="text-tertiary" style="font-size:0.78rem;margin-top:var(--space-xs)">JPG, PNG, WebP. Max 10MB.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rates -->
+        <div class="form-section">
+          <div class="section-header">Rates</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Minimum Rate</label>
+              <input type="number" class="form-input" id="rate-min" placeholder="e.g. 5000" min="0">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Maximum Rate</label>
+              <input type="number" class="form-input" id="rate-max" placeholder="e.g. 15000" min="0">
+            </div>
+          </div>
+          <div class="form-group" style="max-width:200px">
+            <label class="form-label">Currency</label>
+            <select class="form-select" id="currency">
+              <option value="AED">AED</option>
+              <option value="SAR">SAR</option>
+              <option value="QAR">QAR</option>
+              <option value="KWD">KWD</option>
+              <option value="BHD">BHD</option>
+              <option value="OMR">OMR</option>
+              <option value="USD">USD</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Social Links -->
+        <div class="form-section">
+          <div class="section-header">Social Links</div>
+          <div class="form-grid">
+            <div class="form-group"><label class="form-label">Instagram</label><input type="url" class="form-input" id="social-instagram" placeholder="https://instagram.com/..."></div>
+            <div class="form-group"><label class="form-label">SoundCloud</label><input type="url" class="form-input" id="social-soundcloud" placeholder="https://soundcloud.com/..."></div>
+            <div class="form-group"><label class="form-label">Spotify</label><input type="url" class="form-input" id="social-spotify" placeholder="https://open.spotify.com/..."></div>
+            <div class="form-group"><label class="form-label">YouTube</label><input type="url" class="form-input" id="social-youtube" placeholder="https://youtube.com/..."></div>
+          </div>
+        </div>
+
+        <!-- Location & Availability -->
+        <div class="form-section">
+          <div class="section-header">Location & Availability</div>
+          <div class="form-group">
+            <label class="form-label">Cities Active</label>
+            <div class="tag-input-wrap" id="cities-wrap" onclick="this.querySelector('input').focus()">
+              <input type="text" placeholder="Type city and press Enter..." onkeydown="addTag(event, 'cities')">
+            </div>
+            <p class="text-tertiary" style="font-size:0.78rem;margin-top:4px">e.g. Dubai, Riyadh, Doha, Abu Dhabi, Jeddah</p>
+          </div>
+          <div class="form-group" style="display:flex;align-items:center;gap:var(--space-md)">
+            <label class="form-label" style="margin:0">Available for bookings</label>
+            <div class="toggle" id="availability-toggle" onclick="this.classList.toggle('active')"></div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div style="display:flex;gap:var(--space-md);padding-top:var(--space-lg);border-top:1px solid var(--border-subtle)">
+          <button type="submit" class="btn btn-primary btn-lg" id="save-btn">Save Changes</button>
+          <a href="artist-dashboard.html" class="btn btn-ghost btn-lg">Discard</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let _tags = { subgenres: [], cities: [] };
+    let _avatarUrl = null;
+    let _isSetup = false;
+
+    function addTag(e, type) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const val = e.target.value.trim();
+      if (!val || _tags[type].includes(val)) return;
+      _tags[type].push(val);
+      e.target.value = '';
+      renderTags(type);
+    }
+
+    function removeTag(type, idx) {
+      _tags[type].splice(idx, 1);
+      renderTags(type);
+    }
+
+    function renderTags(type) {
+      const wrap = document.getElementById(type + '-wrap');
+      const input = wrap.querySelector('input');
+      const existing = wrap.querySelectorAll('.tag');
+      existing.forEach(t => t.remove());
+      _tags[type].forEach((tag, i) => {
+        const el = document.createElement('span');
+        el.className = 'tag';
+        el.innerHTML = `${esc(tag)} <span class="tag-remove" onclick="removeTag('${type}',${i})">&times;</span>`;
+        wrap.insertBefore(el, input);
+      });
+    }
+
+    function updateCharCount(textarea, countId) {
+      document.getElementById(countId).textContent = `${textarea.value.length} / ${textarea.maxLength}`;
+    }
+
+    async function uploadAvatar(file) {
+      if (!file) return;
+      UI.toast('Uploading...', 'info');
+      const result = await Storage.uploadAvatar(file);
+      if (result.url) {
+        _avatarUrl = result.url;
+        document.getElementById('avatar-preview').innerHTML = `<img src="${result.url}" alt="Avatar">`;
+        UI.toast('Photo uploaded', 'success');
+      } else {
+        UI.toast(result.error || 'Upload failed', 'error');
+      }
+    }
+
+    function populateForm(data) {
+      if (!data) return;
+      document.getElementById('stage-name').value = data.stage_name || data.name || '';
+      document.getElementById('genre').value = Array.isArray(data.genre) ? data.genre[0] : (data.genre || '');
+      document.getElementById('bio').value = data.bio || data.profiles?.bio || '';
+      updateCharCount(document.getElementById('bio'), 'bio-count');
+      document.getElementById('rate-min').value = data.base_fee || data.rate_min || '';
+      document.getElementById('rate-max').value = data.rate_max || '';
+      document.getElementById('currency').value = data.currency || 'AED';
+
+      // Social
+      const social = data.social_links || data.social || {};
+      document.getElementById('social-instagram').value = social.instagram || '';
+      document.getElementById('social-soundcloud').value = social.soundcloud || '';
+      document.getElementById('social-spotify').value = social.spotify || '';
+      document.getElementById('social-youtube').value = social.youtube || '';
+
+      // Tags
+      _tags.subgenres = Array.isArray(data.subgenres) ? [...data.subgenres] : (data.subgenre ? data.subgenre.split(',').map(s => s.trim()).filter(Boolean) : []);
+      _tags.cities = Array.isArray(data.cities_active) ? [...data.cities_active] : [];
+      renderTags('subgenres');
+      renderTags('cities');
+
+      // Availability
+      if (data.status === 'active') document.getElementById('availability-toggle').classList.add('active');
+
+      // Avatar
+      _avatarUrl = data.avatar_url || data.profiles?.avatar_url || null;
+      const preview = document.getElementById('avatar-preview');
+      if (_avatarUrl) {
+        preview.innerHTML = `<img src="${_avatarUrl}" alt="Avatar">`;
+      } else {
+        preview.textContent = (data.stage_name || data.name || 'A').charAt(0).toUpperCase();
+      }
+    }
+
+    async function saveProfile(e) {
+      e.preventDefault();
+      const btn = document.getElementById('save-btn');
+      btn.disabled = true; btn.textContent = 'Saving...';
+
+      const payload = {
+        stage_name: document.getElementById('stage-name').value.trim(),
+        display_name: document.getElementById('stage-name').value.trim(),
+        genre: document.getElementById('genre').value,
+        subgenres: _tags.subgenres,
+        bio: document.getElementById('bio').value.trim(),
+        base_fee: parseFloat(document.getElementById('rate-min').value) || 0,
+        rate_max: parseFloat(document.getElementById('rate-max').value) || 0,
+        currency: document.getElementById('currency').value,
+        cities_active: _tags.cities,
+        status: document.getElementById('availability-toggle').classList.contains('active') ? 'active' : 'inactive',
+        social_links: {
+          instagram: document.getElementById('social-instagram').value.trim(),
+          soundcloud: document.getElementById('social-soundcloud').value.trim(),
+          spotify: document.getElementById('social-spotify').value.trim(),
+          youtube: document.getElementById('social-youtube').value.trim(),
+        },
+      };
+      if (_avatarUrl) payload.avatar_url = _avatarUrl;
+
+      const result = _isSetup
+        ? await DB.createArtistProfile(payload)
+        : await DB.updateArtistProfile(payload);
+
+      if (result.success) {
+        UI.toast('Profile saved!', 'success');
+        setTimeout(() => window.location.href = 'artist-dashboard.html', 800);
+      } else {
+        UI.toast('Failed to save: ' + (result.error || ''), 'error');
+        btn.disabled = false; btn.textContent = 'Save Changes';
+      }
+    }
+
+    // Init
+    document.addEventListener('DOMContentLoaded', async function() {
+      await Auth.ready();
+      if (!Auth.isLoggedIn()) { Auth.require(); return; }
+      if (Auth.role !== 'artist') { window.location.replace('dashboard.html'); return; }
+
+      document.getElementById('nav-root').innerHTML = renderNav('profile-edit');
+      if (typeof hydrateIcons === 'function') hydrateIcons();
+
+      _isSetup = new URLSearchParams(window.location.search).has('setup');
+      if (_isSetup) {
+        document.getElementById('setup-banner').style.display = '';
+        document.getElementById('save-btn').textContent = 'Create Profile';
+      }
+
+      const result = await DB.getMyArtistProfile();
+      if (result.success && result.data) {
+        populateForm(result.data);
+        _isSetup = false; // Profile exists, switch to update mode
+      }
+    });
+  </script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
+</body>
+</html>
