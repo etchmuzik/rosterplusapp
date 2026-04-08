@@ -859,6 +859,9 @@
                 <span class="js-icon" data-icon="plus" data-size="16"></span>
                 Book This Artist
               </a>
+              <button class="btn btn-ghost btn-sm" style="margin-top:var(--space-sm);width:100%" onclick="navigator.clipboard.writeText(window.location.origin+'/booking.html?artist=${artist.id}');UI.toast('Booking link copied!','success')">
+                ${UI.icon('send', 14)} Copy Booking Link
+              </button>
             </div>
           </div>
         </div>

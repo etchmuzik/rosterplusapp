@@ -155,9 +155,10 @@
         </div>
 
         <div class="share-bar">
-          <span style="font-size:0.85rem;color:var(--text-secondary)">Share this EPK:</span>
+          <span style="font-size:0.85rem;color:var(--text-secondary)">Share:</span>
           <div class="share-url" id="share-url">${window.location.href}</div>
           <button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('share-url').textContent);UI.toast('Link copied!','success')">Copy</button>
+          <a href="https://wa.me/?text=${encodeURIComponent(esc(name) + ' — EPK | ROSTR+ GCC\\n' + window.location.href)}" target="_blank" rel="noopener" class="btn btn-sm" style="background:#25D366;color:#fff;border:none">WhatsApp</a>
         </div>
 
         <div class="epk-footer">

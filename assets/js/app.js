@@ -1428,6 +1428,16 @@ function hydrateIcons(root) {
 
 // ── Init ──
 // Wait for DOMContentLoaded so the Supabase CDN script has finished loading.
+// ── Analytics — Plausible (privacy-friendly, no cookies) ──
+(function() {
+  if (window.location.hostname === 'localhost') return;
+  const s = document.createElement('script');
+  s.defer = true;
+  s.dataset.domain = 'rosterplus.io';
+  s.src = 'https://plausible.io/js/script.js';
+  document.head.appendChild(s);
+})();
+
 function _rostrInit() {
   Auth.init();
   hydrateIcons();
