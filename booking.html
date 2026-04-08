@@ -35,114 +35,46 @@
     }
 
     /* ─── Step Indicator ─── */
-    .step-indicator {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: var(--space-lg);
-      margin-bottom: var(--space-3xl);
-      position: relative;
-    }
-
-    .step {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      position: relative;
-      z-index: 2;
-    }
-
-    .step-circle {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: var(--font-display);
-      font-weight: 600;
-      font-size: 0.95rem;
-      transition: all var(--duration-base) var(--ease-out);
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      color: var(--text-secondary);
-    }
-
-    .step.active .step-circle {
-      background: var(--gold);
-      color: var(--text-inverse);
-      border-color: var(--gold);
-      box-shadow: 0 0 0 3px var(--gold-dim);
-    }
-
-    .step.completed .step-circle {
-      background: var(--gold);
-      color: var(--text-inverse);
-      border-color: var(--gold);
-    }
-
-    .step-label {
-      font-size: 0.82rem;
-      font-weight: 500;
-      color: var(--text-tertiary);
-      text-align: center;
-      min-width: 80px;
-    }
-
-    .step.active .step-label,
-    .step.completed .step-label {
-      color: var(--text-primary);
-    }
-
-    .step-connector {
-      position: absolute;
-      top: 22px;
-      left: calc(-1 * var(--space-lg));
-      right: calc(-1 * var(--space-lg));
-      height: 2px;
-      background: var(--border-subtle);
-      z-index: 1;
-    }
-
-    .step-connector.active {
-      background: var(--gold);
-    }
-
-    .step:nth-child(1) .step-connector,
-    .step:last-child .step-connector {
-      display: none;
-    }
-
-    /* ─── Form Layout ─── */
+    /* ─── Form Layout — Single Page Sections ─── */
     .booking-form {
       animation: fadeIn var(--duration-slow) var(--ease-out) both;
     }
 
-    .form-section {
-      display: none;
+    .form-section-block {
+      background: var(--glass-bg);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-xl);
+      margin-bottom: var(--space-xl);
     }
 
-    .form-section.active {
-      display: block;
-      animation: fadeIn var(--duration-base) var(--ease-out) both;
+    .section-title {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--gold-text);
+      margin-bottom: var(--space-lg);
+      padding-bottom: var(--space-sm);
+      border-bottom: 1px solid var(--border-subtle);
+      letter-spacing: -0.02em;
     }
 
     .form-grid-2 {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: var(--space-lg);
+      gap: var(--space-md);
     }
 
-    .form-grid-2 .form-group:nth-child(3),
-    .form-grid-2 .form-group:nth-child(4) {
-      grid-column: auto;
+    .form-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-md);
     }
 
-    @media (max-width: 640px) {
-      .form-grid-2 {
-        grid-template-columns: 1fr;
-      }
+    @media (max-width: 768px) {
+      .form-grid-2, .form-grid-3 { grid-template-columns: 1fr; }
     }
 
     /* ─── Step 2: Artist Selection ─── */
@@ -262,95 +194,6 @@
     }
 
     /* ─── Step 3: Review Layout ─── */
-    .review-layout {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: var(--space-xl);
-    }
-
-    @media (max-width: 768px) {
-      .review-layout {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .review-section {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg);
-      padding: 6px;
-    }
-
-    .review-section-inner {
-      background: var(--bg-raised);
-      border-radius: calc(var(--radius-lg) - 4px);
-      padding: var(--space-lg);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
-    }
-
-    .review-title {
-      font-family: var(--font-display);
-      font-weight: 600;
-      margin-bottom: var(--space-md);
-      color: var(--text-primary);
-      font-size: 0.95rem;
-    }
-
-    .review-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      padding: var(--space-sm) 0;
-      border-bottom: 1px solid var(--border-subtle);
-      font-size: 0.88rem;
-    }
-
-    .review-row:last-child {
-      border-bottom: none;
-    }
-
-    .review-label {
-      color: var(--text-secondary);
-    }
-
-    .review-value {
-      color: var(--text-primary);
-      font-weight: 500;
-    }
-
-    .pricing-breakdown {
-      background: var(--bg-card);
-      border-radius: var(--radius-sm);
-      padding: var(--space-md);
-      margin-top: var(--space-lg);
-    }
-
-    .pricing-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.88rem;
-      padding: 8px 0;
-    }
-
-    .pricing-row.total {
-      border-top: 1px solid var(--border-subtle);
-      padding-top: var(--space-md);
-      margin-top: var(--space-md);
-      font-weight: 600;
-      font-size: 0.95rem;
-      color: var(--gold-text);
-    }
-
-    .pricing-label {
-      color: var(--text-secondary);
-    }
-
-    .pricing-value {
-      color: var(--text-primary);
-      font-weight: 500;
-    }
-
     .checkbox-group {
       display: flex;
       align-items: flex-start;
@@ -358,12 +201,12 @@
       padding: var(--space-md);
       background: var(--bg-card);
       border-radius: var(--radius-sm);
-      margin-bottom: var(--space-lg);
     }
 
     .checkbox-group input[type="checkbox"] {
       margin-top: 4px;
       cursor: pointer;
+      accent-color: var(--gold);
     }
 
     .checkbox-group label {
@@ -376,26 +219,6 @@
 
     .checkbox-group input[type="checkbox"]:checked + label {
       color: var(--text-primary);
-    }
-
-    /* ─── Form Navigation ─── */
-    .form-nav {
-      display: flex;
-      gap: var(--space-md);
-      justify-content: space-between;
-      margin-top: var(--space-2xl);
-      padding-top: var(--space-xl);
-      border-top: 1px solid var(--border-subtle);
-    }
-
-    .form-nav-left {
-      display: flex;
-      gap: var(--space-md);
-    }
-
-    .form-nav-right {
-      display: flex;
-      gap: var(--space-md);
     }
 
     /* ─── Success Modal ─── */
@@ -497,194 +320,198 @@
       </div>
 
       <!-- Step Indicator -->
-      <div class="step-indicator">
-        <div class="step active" data-step="1">
-          <div class="step-circle">1</div>
-          <div class="step-label">Event Details</div>
-          <div class="step-connector"></div>
-        </div>
-        <div class="step" data-step="2">
-          <div class="step-circle">2</div>
-          <div class="step-label">Artist Selection</div>
-          <div class="step-connector"></div>
-        </div>
-        <div class="step" data-step="3">
-          <div class="step-circle">3</div>
-          <div class="step-label">Review & Submit</div>
-          <div class="step-connector"></div>
-        </div>
-      </div>
-
-      <!-- Booking Form -->
+      <!-- Booking Form — Single Page Layout -->
       <form class="booking-form" id="booking-form">
-        <!-- Step 1: Event Details -->
-        <div class="form-section active" data-section="1">
-          <div class="form-grid-2">
-            <div class="form-group">
-              <label class="form-label">Event Name</label>
-              <input type="text" class="form-input" id="eventName" placeholder="e.g., Summer Rooftop Bash" required>
-              <span class="error-message">Event name is required</span>
-            </div>
 
-            <div class="form-group">
-              <label class="form-label">Event Date</label>
-              <input type="date" class="form-input" id="eventDate" required>
-              <span class="error-message">Event date is required</span>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Event Time</label>
-              <input type="time" class="form-input" id="eventTime" required>
-              <span class="error-message">Event time is required</span>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Venue</label>
-              <select class="form-select" id="eventVenue" required>
-                <option value="">Select a venue...</option>
-              </select>
-              <span class="error-message">Venue selection is required</span>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Event Type</label>
-              <select class="form-select" id="eventType" required>
-                <option value="">Select event type...</option>
-                <option value="nightclub">Nightclub</option>
-                <option value="beach_club">Beach Club</option>
-                <option value="festival">Festival</option>
-                <option value="lounge">Lounge</option>
-                <option value="private_event">Private Event</option>
-                <option value="wedding">Wedding</option>
-                <option value="corporate">Corporate Event</option>
-              </select>
-              <span class="error-message">Event type is required</span>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Expected Attendance</label>
-              <input type="number" class="form-input" id="expectedAttendance" placeholder="e.g., 500" min="1" required>
-              <span class="error-message">Expected attendance is required</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Step 2: Artist Selection -->
-        <div class="form-section" data-section="2">
+        <!-- Section: Artist -->
+        <div class="form-section-block">
+          <div class="section-title">Artist</div>
           <div class="form-group">
             <label class="form-label">Search or Select Artist</label>
             <div class="artist-search-box">
-              <div class="artist-search-icon">
-                <span class="js-icon" data-icon="search" data-size="18"></span>
-              </div>
+              <div class="artist-search-icon"><span class="js-icon" data-icon="search" data-size="18"></span></div>
               <input type="text" class="artist-search-input" id="artistSearch" placeholder="Search by name, genre...">
             </div>
           </div>
-
-          <div class="artist-grid" id="artistGrid">
-            <!-- Populated by JS -->
-          </div>
-
+          <div class="artist-grid" id="artistGrid"></div>
           <input type="hidden" id="selectedArtistId">
-          <span class="error-message" id="artistError" style="display: none; margin-top: var(--space-md);">Please select an artist</span>
+          <span class="error-message" id="artistError" style="display:none">Please select an artist</span>
+
+          <div class="form-grid-2" style="margin-top:var(--space-lg)">
+            <div class="form-group">
+              <label class="form-label">Fee (Artist Rate)</label>
+              <input type="text" class="form-input" id="artistFee" placeholder="Auto-filled from artist" readonly>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Event Date</label>
+              <input type="date" class="form-input" id="eventDate" required>
+            </div>
+          </div>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label">Proposed Lineup</label>
+              <input type="text" class="form-input" id="proposedLineup" placeholder="e.g., DJ NOVAK, AMARA, SAHARA SOUND">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Headline Artist</label>
+              <input type="text" class="form-input" id="headlineArtist" placeholder="Auto-filled" readonly>
+            </div>
+          </div>
         </div>
 
-        <!-- Step 3: Review & Submit -->
-        <div class="form-section" data-section="3">
-          <div class="review-layout">
-            <!-- Left Column: Event Details Summary -->
-            <div class="review-section">
-              <div class="review-section-inner">
-                <div class="review-title">Event Details</div>
-
-                <div class="review-row">
-                  <span class="review-label">Event Name</span>
-                  <span class="review-value" id="reviewEventName">—</span>
-                </div>
-
-                <div class="review-row">
-                  <span class="review-label">Date</span>
-                  <span class="review-value" id="reviewEventDate">—</span>
-                </div>
-
-                <div class="review-row">
-                  <span class="review-label">Time</span>
-                  <span class="review-value" id="reviewEventTime">—</span>
-                </div>
-
-                <div class="review-row">
-                  <span class="review-label">Venue</span>
-                  <span class="review-value" id="reviewEventVenue">—</span>
-                </div>
-
-                <div class="review-row">
-                  <span class="review-label">Type</span>
-                  <span class="review-value" id="reviewEventType">—</span>
-                </div>
-
-                <div class="review-row">
-                  <span class="review-label">Attendance</span>
-                  <span class="review-value" id="reviewAttendance">—</span>
-                </div>
-              </div>
+        <!-- Section: Contact Info -->
+        <div class="form-section-block">
+          <div class="section-title">Contact Info</div>
+          <div class="form-grid-3">
+            <div class="form-group">
+              <label class="form-label">Name</label>
+              <input type="text" class="form-input" id="contactName" placeholder="Your full name" required>
             </div>
-
-            <!-- Right Column: Artist Card + Pricing -->
-            <div class="review-section">
-              <div class="review-section-inner">
-                <div class="review-title">Artist & Pricing</div>
-
-                <div style="text-align: center; margin-bottom: var(--space-lg);">
-                  <div style="width: 72px; height: 72px; border-radius: 50%; background: var(--gold-dim); border: 1px solid var(--border-gold); display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-md); color: var(--gold-text); font-family: var(--font-display); font-weight: 600; font-size: 24px;">
-                    <span id="reviewArtistInitials">—</span>
-                  </div>
-                  <div style="font-family: var(--font-display); font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;" id="reviewArtistName">—</div>
-                  <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 8px;" id="reviewArtistGenre">—</div>
-                  <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
-                    <div style="font-size: 0.75rem; color: var(--text-tertiary);">
-                      <span id="reviewArtistRating">4.8</span> <span style="color: var(--gold);">★</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="pricing-breakdown">
-                  <div class="pricing-row">
-                    <span class="pricing-label">Artist Rate (min)</span>
-                    <span class="pricing-value" id="reviewArtistRate">—</span>
-                  </div>
-
-                  <div class="pricing-row">
-                    <span class="pricing-label">Booking Platform Fee (5%)</span>
-                    <span class="pricing-value" id="reviewPlatformFee">—</span>
-                  </div>
-
-                  <div class="pricing-row total">
-                    <span>Total Booking Cost</span>
-                    <span id="reviewTotalCost">—</span>
-                  </div>
-                </div>
-              </div>
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-input" id="contactEmail" placeholder="you@company.com" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Phone</label>
+              <input type="tel" class="form-input" id="contactPhone" placeholder="+971 50 XXX XXXX">
             </div>
           </div>
+        </div>
 
-          <!-- Terms Checkbox -->
-          <div class="checkbox-group">
+        <!-- Section: Promoter Info -->
+        <div class="form-section-block">
+          <div class="section-title">Promoter Info</div>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label">Company Name</label>
+              <input type="text" class="form-input" id="promoterCompany" placeholder="e.g., Beyond Events">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Address</label>
+              <input type="text" class="form-input" id="promoterAddress" placeholder="Street address">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Postal Code</label>
+              <input type="text" class="form-input" id="promoterPostal" placeholder="e.g., 00000">
+            </div>
+            <div class="form-group">
+              <label class="form-label">City</label>
+              <input type="text" class="form-input" id="promoterCity" placeholder="e.g., Dubai">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Country</label>
+              <select class="form-select" id="promoterCountry">
+                <option value="">Select country...</option>
+                <option value="UAE">United Arab Emirates</option>
+                <option value="KSA">Saudi Arabia</option>
+                <option value="Qatar">Qatar</option>
+                <option value="Kuwait">Kuwait</option>
+                <option value="Bahrain">Bahrain</option>
+                <option value="Oman">Oman</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Website</label>
+              <input type="url" class="form-input" id="promoterWebsite" placeholder="https://...">
+            </div>
+            <div class="form-group">
+              <label class="form-label">VAT / Tax Number</label>
+              <input type="text" class="form-input" id="promoterVAT" placeholder="Optional">
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Venue Info -->
+        <div class="form-section-block">
+          <div class="section-title">Venue Info</div>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label">Venue / Company Name</label>
+              <input type="text" class="form-input" id="venueName" placeholder="e.g., WHITE Dubai">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Address</label>
+              <input type="text" class="form-input" id="venueAddress" placeholder="Street address">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Postal Code</label>
+              <input type="text" class="form-input" id="venuePostal" placeholder="e.g., 00000">
+            </div>
+            <div class="form-group">
+              <label class="form-label">City</label>
+              <input type="text" class="form-input" id="venueCity" placeholder="e.g., Dubai">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Country</label>
+              <select class="form-select" id="venueCountry">
+                <option value="">Select country...</option>
+                <option value="UAE">United Arab Emirates</option>
+                <option value="KSA">Saudi Arabia</option>
+                <option value="Qatar">Qatar</option>
+                <option value="Kuwait">Kuwait</option>
+                <option value="Bahrain">Bahrain</option>
+                <option value="Oman">Oman</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Website</label>
+              <input type="url" class="form-input" id="venueWebsite" placeholder="https://...">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Social Media</label>
+              <input type="text" class="form-input" id="venueSocial" placeholder="@venuename">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Capacity</label>
+              <input type="number" class="form-input" id="venueCapacity" placeholder="e.g., 2000" min="1">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Local Airport</label>
+              <input type="text" class="form-input" id="venueAirport" placeholder="e.g., DXB">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Distance to Airport</label>
+              <input type="text" class="form-input" id="venueAirportDist" placeholder="e.g., 25 km">
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Performance Details -->
+        <div class="form-section-block">
+          <div class="section-title">Performance Details</div>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label">Event Name</label>
+              <input type="text" class="form-input" id="eventName" placeholder="e.g., Summer Rooftop Sessions" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Event Time</label>
+              <input type="time" class="form-input" id="eventTime" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Event Website</label>
+              <input type="url" class="form-input" id="eventWebsite" placeholder="https://...">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Ticket Price</label>
+              <input type="text" class="form-input" id="ticketPrice" placeholder="e.g., AED 200 / Free">
+            </div>
+            <div class="form-group" style="grid-column:1/-1">
+              <label class="form-label">Additional Notes</label>
+              <textarea class="form-textarea" id="bookingNotes" rows="3" placeholder="Technical requirements, special requests, etc."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Terms + Submit -->
+        <div class="form-section-block" style="border:1px solid var(--border-gold);background:rgba(201,168,76,0.03)">
+          <div class="checkbox-group" style="margin-bottom:var(--space-lg)">
             <input type="checkbox" id="termsCheckbox" required>
             <label for="termsCheckbox">
-              I agree to the artist's technical requirements, cancellation policy, and platform terms of service. I confirm that all event details are accurate.
+              I agree to the artist's technical requirements, cancellation policy, and platform terms of service. I confirm that all details are accurate.
             </label>
           </div>
-        </div>
-
-        <!-- Form Navigation -->
-        <div class="form-nav">
-          <div class="form-nav-left">
-            <button type="button" class="btn btn-secondary" id="backBtn" onclick="goToStep(currentStep - 1)" style="display: none;">Back</button>
-          </div>
-          <div class="form-nav-right">
-            <button type="button" class="btn btn-secondary" id="nextBtn" onclick="goToStep(currentStep + 1)">Next</button>
-            <button type="submit" class="btn btn-primary" id="submitBtn" style="display: none;">Submit Booking</button>
-          </div>
+          <button type="submit" class="btn btn-primary btn-lg w-full" id="submitBtn">Submit Booking Request</button>
         </div>
       </form>
     </div>
@@ -713,17 +540,9 @@
   <script src="assets/js/app.js" defer></script>
   <script>
     // ─── State Management ─── */
-    let currentStep = 1;
     const formData = {
-      eventName: '',
-      eventDate: '',
-      eventTime: '',
-      eventVenue: '',
-      eventVenueObject: null,
-      eventType: '',
-      expectedAttendance: 0,
       artistId: '',
-      artistData: null
+      artistData: null,
     };
 
     // ─── Initialize on Page Load ─── */
@@ -733,25 +552,41 @@
 
       // Render navigation
       document.getElementById('nav-root').innerHTML = renderNav('bookings');
+      if (typeof hydrateIcons === 'function') hydrateIcons();
 
-      // Load artists from DB + populate venues
+      // Load artists
       const artistResult = await DB.getArtists({});
       const _allArtists = (artistResult.success && artistResult.data.length > 0) ? artistResult.data : (typeof MockData !== 'undefined' ? MockData.artists : []);
-
-      populateVenues();
       renderArtistGrid(_allArtists);
 
-      // Check for artist pre-selection from URL
+      // Pre-select artist from URL
       const params = new URLSearchParams(window.location.search);
       const artistParam = params.get('artist');
       if (artistParam) {
-        selectArtist(artistParam, _allArtists, true);
+        await selectArtist(artistParam, _allArtists, true);
+        onArtistSelected();
       }
 
-      // Setup form event listeners
-      setupFormListeners();
+      // Auto-fill contact info from Auth
+      const user = Auth.user;
+      if (user) {
+        const nameEl = document.getElementById('contactName');
+        const emailEl = document.getElementById('contactEmail');
+        if (nameEl && !nameEl.value) nameEl.value = user.display_name || '';
+        if (emailEl && !emailEl.value) emailEl.value = user.email || '';
+      }
 
-      // Setup artist search
+      // Load profile for promoter info
+      const profile = await DB.getProfile();
+      if (profile.data) {
+        const p = profile.data;
+        const set = (id, val) => { const el = document.getElementById(id); if (el && val && !el.value) el.value = val; };
+        set('contactPhone', p.phone);
+        set('promoterCompany', p.company);
+        set('promoterCity', p.city);
+      }
+
+      // Artist search
       document.getElementById('artistSearch').addEventListener('input', async (e) => {
         const query = e.target.value.toLowerCase();
         if (query.length > 1) {
@@ -762,30 +597,14 @@
         }
       });
 
-      // Setup form submission
+      // Form submission
       document.getElementById('booking-form').addEventListener('submit', (e) => {
         e.preventDefault();
         submitBooking();
       });
-
-      // Initialize back button visibility
-      updateNavButtons();
     });
 
     // ─── Populate Venues Dropdown ─── */
-    async function populateVenues() {
-      const venueSelect = document.getElementById('eventVenue');
-      // Use MockData venues as fallback if DB venues not available
-      const venues = (typeof MockData !== 'undefined' && MockData.venues) ? MockData.venues : [];
-      venues.forEach(venue => {
-        const option = document.createElement('option');
-        option.value = venue.id || venue.name;
-        option.textContent = `${venue.name} — ${venue.city}${venue.capacity ? ' (' + venue.capacity.toLocaleString() + ' capacity)' : ''}`;
-        option.dataset.venueObj = JSON.stringify(venue);
-        venueSelect.appendChild(option);
-      });
-    }
-
     // ─── Render Artist Grid ─── */
     let _currentArtists = [];
     function renderArtistGrid(artists) {
@@ -827,242 +646,86 @@
       formData.artistId = artistId;
       formData.artistData = artist;
       document.getElementById('selectedArtistId').value = artistId;
+      document.getElementById('artistError').style.display = 'none';
 
       renderArtistGrid(pool);
+      onArtistSelected();
     }
 
-    // ─── Setup Form Event Listeners ─── */
-    function setupFormListeners() {
-      document.getElementById('eventName').addEventListener('input', (e) => {
-        formData.eventName = e.target.value;
-      });
-
-      document.getElementById('eventDate').addEventListener('change', (e) => {
-        formData.eventDate = e.target.value;
-      });
-
-      document.getElementById('eventTime').addEventListener('change', (e) => {
-        formData.eventTime = e.target.value;
-      });
-
-      document.getElementById('eventVenue').addEventListener('change', (e) => {
-        const selected = e.target.options[e.target.selectedIndex];
-        formData.eventVenue = e.target.value;
-        if (selected.dataset.venueObj) {
-          formData.eventVenueObject = JSON.parse(selected.dataset.venueObj);
-        }
-      });
-
-      document.getElementById('eventType').addEventListener('change', (e) => {
-        formData.eventType = e.target.value;
-      });
-
-      document.getElementById('expectedAttendance').addEventListener('input', (e) => {
-        formData.expectedAttendance = parseInt(e.target.value) || 0;
-      });
-    }
-
-    // ─── Navigation Between Steps ─── */
-    function goToStep(step) {
-      if (step < 1 || step > 3) return;
-
-      // Validate current step before moving forward
-      if (step > currentStep) {
-        if (!validateStep(currentStep)) {
-          return;
-        }
-      }
-
-      // Update UI
-      currentStep = step;
-      updateFormSections();
-      updateStepIndicator();
-      updateNavButtons();
-      updateReviewSection();
-
-      // Scroll to top
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    // ─── Validate Current Step ─── */
-    function validateStep(step) {
-      clearErrors();
-
-      if (step === 1) {
-        const eventName = document.getElementById('eventName');
-        const eventDate = document.getElementById('eventDate');
-        const eventTime = document.getElementById('eventTime');
-        const eventVenue = document.getElementById('eventVenue');
-        const eventType = document.getElementById('eventType');
-        const expectedAttendance = document.getElementById('expectedAttendance');
-
-        let isValid = true;
-
-        if (!eventName.value.trim()) {
-          eventName.classList.add('invalid');
-          isValid = false;
-        }
-        if (!eventDate.value) {
-          eventDate.classList.add('invalid');
-          isValid = false;
-        }
-        if (!eventTime.value) {
-          eventTime.classList.add('invalid');
-          isValid = false;
-        }
-        if (!eventVenue.value) {
-          eventVenue.classList.add('invalid');
-          isValid = false;
-        }
-        if (!eventType.value) {
-          eventType.classList.add('invalid');
-          isValid = false;
-        }
-        if (!expectedAttendance.value || expectedAttendance.value < 1) {
-          expectedAttendance.classList.add('invalid');
-          isValid = false;
-        }
-
-        return isValid;
-      }
-
-      if (step === 2) {
-        if (!formData.artistId) {
-          document.getElementById('artistError').style.display = 'block';
-          return false;
-        }
-        return true;
-      }
-
-      return true;
-    }
-
-    // ─── Clear Errors ─── */
-    function clearErrors() {
-      document.querySelectorAll('.form-input.invalid, .form-select.invalid').forEach(el => {
-        el.classList.remove('invalid');
-      });
-      document.getElementById('artistError').style.display = 'none';
-    }
-
-    // ─── Update Form Sections ─── */
-    function updateFormSections() {
-      document.querySelectorAll('.form-section').forEach(section => {
-        section.classList.remove('active');
-      });
-      document.querySelector(`.form-section[data-section="${currentStep}"]`).classList.add('active');
-    }
-
-    // ─── Update Step Indicator ─── */
-    function updateStepIndicator() {
-      document.querySelectorAll('.step').forEach((step, idx) => {
-        const stepNum = idx + 1;
-        step.classList.remove('active', 'completed');
-
-        if (stepNum === currentStep) {
-          step.classList.add('active');
-        } else if (stepNum < currentStep) {
-          step.classList.add('completed');
-        }
-      });
-
-      // Update connectors
-      document.querySelectorAll('.step-connector').forEach((connector, idx) => {
-        if (idx < currentStep - 1) {
-          connector.classList.add('active');
-        } else {
-          connector.classList.remove('active');
-        }
-      });
-    }
-
-    // ─── Update Navigation Buttons ─── */
-    function updateNavButtons() {
-      const backBtn = document.getElementById('backBtn');
-      const nextBtn = document.getElementById('nextBtn');
-      const submitBtn = document.getElementById('submitBtn');
-
-      if (currentStep === 1) {
-        backBtn.style.display = 'none';
-        nextBtn.style.display = 'flex';
-        submitBtn.style.display = 'none';
-      } else if (currentStep === 2) {
-        backBtn.style.display = 'flex';
-        nextBtn.style.display = 'flex';
-        submitBtn.style.display = 'none';
-      } else {
-        backBtn.style.display = 'flex';
-        nextBtn.style.display = 'none';
-        submitBtn.style.display = 'flex';
-      }
-    }
-
-    // ─── Update Review Section ─── */
-    function updateReviewSection() {
-      if (currentStep !== 3) return;
-
-      // Event details
-      document.getElementById('reviewEventName').textContent = formData.eventName || '—';
-      document.getElementById('reviewEventDate').textContent = formData.eventDate ? UI.formatDate(formData.eventDate) : '—';
-      document.getElementById('reviewEventTime').textContent = formData.eventTime || '—';
-      document.getElementById('reviewEventVenue').textContent = formData.eventVenueObject ? formData.eventVenueObject.name : '—';
-      document.getElementById('reviewEventType').textContent = formData.eventType || '—';
-      document.getElementById('reviewAttendance').textContent = formData.expectedAttendance.toLocaleString() || '—';
-
-      // Artist details
-      if (formData.artistData) {
-        const artist = formData.artistData;
-        const initials = artist.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
-
-        document.getElementById('reviewArtistInitials').textContent = initials;
-        document.getElementById('reviewArtistName').textContent = artist.name;
-        document.getElementById('reviewArtistGenre').textContent = `${esc(artist.genre)} — ${esc(artist.subgenre)}`;
-        document.getElementById('reviewArtistRating').textContent = artist.rating.toFixed(1);
-
-        // Pricing
-        const artistRate = artist.rate_min;
-        const fee = Math.ceil(artistRate * 0.05);
-        const total = artistRate + fee;
-
-        document.getElementById('reviewArtistRate').textContent = UI.currency(artistRate, artist.currency);
-        document.getElementById('reviewPlatformFee').textContent = UI.currency(fee, artist.currency);
-        document.getElementById('reviewTotalCost').textContent = UI.currency(total, artist.currency);
-      }
+    // ─── Auto-fill when artist selected ─── */
+    function onArtistSelected() {
+      if (!formData.artistData) return;
+      const a = formData.artistData;
+      const feeEl = document.getElementById('artistFee');
+      const headlineEl = document.getElementById('headlineArtist');
+      if (feeEl) feeEl.value = UI.currency(a.rate_min, a.currency || 'AED');
+      if (headlineEl) headlineEl.value = a.name;
     }
 
     // ─── Submit Booking ─── */
     async function submitBooking() {
-      // Final validation
       const termsCheckbox = document.getElementById('termsCheckbox');
       if (!termsCheckbox.checked) {
         UI.toast('Please agree to the terms and conditions', 'warning');
         return;
       }
 
-      const submitBtn = document.querySelector('[onclick="submitBooking()"]');
-      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Submitting...'; }
+      if (!formData.artistId || !formData.artistData) {
+        UI.toast('Please select an artist', 'warning');
+        document.getElementById('artistError').style.display = 'block';
+        document.getElementById('artistGrid').scrollIntoView({ behavior: 'smooth' });
+        return;
+      }
+
+      const eventName = document.getElementById('eventName').value.trim();
+      const eventDate = document.getElementById('eventDate').value;
+      if (!eventName || !eventDate) {
+        UI.toast('Event name and date are required', 'warning');
+        return;
+      }
+
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true; submitBtn.textContent = 'Submitting...';
 
       try {
         const artistRate = formData.artistData.rate_min;
         const fee = Math.ceil(artistRate * 0.05);
-        const total = artistRate + fee;
 
         const bookingPayload = {
           artist_id: formData.artistData.id,
-          venue_name: formData.eventVenue,
-          event_name: formData.eventName,
-          event_date: formData.eventDate,
-          event_time: formData.eventTime,
-          event_type: formData.eventType,
-          expected_attendance: formData.expectedAttendance,
+          venue_name: document.getElementById('venueName').value.trim(),
+          event_name: eventName,
+          event_date: eventDate,
+          event_time: document.getElementById('eventTime').value,
+          event_type: 'booking_request',
+          expected_attendance: parseInt(document.getElementById('venueCapacity').value) || 0,
           fee: artistRate,
           platform_fee: fee,
-          currency: formData.artistData.currency || 'USD',
-          notes: formData.notes || '',
+          currency: formData.artistData.currency || 'AED',
+          notes: JSON.stringify({
+            proposedLineup: document.getElementById('proposedLineup').value,
+            headlineArtist: document.getElementById('headlineArtist').value,
+            contactName: document.getElementById('contactName').value,
+            contactEmail: document.getElementById('contactEmail').value,
+            contactPhone: document.getElementById('contactPhone').value,
+            promoterCompany: document.getElementById('promoterCompany').value,
+            promoterAddress: document.getElementById('promoterAddress').value,
+            promoterCity: document.getElementById('promoterCity').value,
+            promoterCountry: document.getElementById('promoterCountry').value,
+            promoterVAT: document.getElementById('promoterVAT').value,
+            venueAddress: document.getElementById('venueAddress').value,
+            venueCity: document.getElementById('venueCity').value,
+            venueCountry: document.getElementById('venueCountry').value,
+            venueSocial: document.getElementById('venueSocial').value,
+            venueAirport: document.getElementById('venueAirport').value,
+            venueAirportDist: document.getElementById('venueAirportDist').value,
+            eventWebsite: document.getElementById('eventWebsite').value,
+            ticketPrice: document.getElementById('ticketPrice').value,
+            additionalNotes: document.getElementById('bookingNotes').value,
+          }),
         };
 
         const result = await DB.createBooking(bookingPayload);
-
         if (!result.success) throw new Error(result.error || 'Booking failed');
 
         const booking = result.data;
@@ -1070,12 +733,12 @@
 
         // Send email notification to artist
         if (formData.artistData.email) {
-          await Emails.send(formData.artistData.email, 'booking_request', {
+          Emails.send(formData.artistData.email, 'booking_request', {
             promoter_name: Auth.user.display_name || Auth.user.email,
-            event_name: formData.eventName,
-            venue_name: formData.eventVenue,
-            event_date: formData.eventDate,
-            fee: UI.currency(artistRate, formData.artistData.currency || 'USD'),
+            event_name: eventName,
+            venue_name: document.getElementById('venueName').value,
+            event_date: eventDate,
+            fee: UI.currency(artistRate, formData.artistData.currency || 'AED'),
             booking_url: `${window.location.origin}/bookings.html`,
           });
         }
@@ -1086,33 +749,18 @@
       } catch (err) {
         console.error('[ROSTR] Booking submit error:', err);
         UI.toast('Failed to submit booking: ' + err.message, 'error');
-        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit Booking Request'; }
+        submitBtn.disabled = false; submitBtn.textContent = 'Submit Booking Request';
       }
     }
 
     // ─── Reset Form ─── */
     function resetForm() {
-      currentStep = 1;
-      formData.eventName = '';
-      formData.eventDate = '';
-      formData.eventTime = '';
-      formData.eventVenue = '';
-      formData.eventVenueObject = null;
-      formData.eventType = '';
-      formData.expectedAttendance = 0;
       formData.artistId = '';
       formData.artistData = null;
-
       document.getElementById('booking-form').reset();
       document.getElementById('selectedArtistId').value = '';
       document.getElementById('successModal').classList.remove('active');
-
-      updateFormSections();
-      updateStepIndicator();
-      updateNavButtons();
-      // Re-load artist grid
       DB.getArtists({}).then(r => renderArtistGrid(r.success ? r.data : []));
-
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   </script>
