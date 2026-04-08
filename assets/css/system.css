@@ -3,16 +3,17 @@
    Dark glassmorphic · OLED-optimized · Premium nightlife
    ═══════════════════════════════════════════════════════════ */
 
-/* ── Fonts — Modern tech startup pairing ── */
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+/* ── Fonts — Satoshi + JetBrains Mono (taste-skill approved) ── */
+@import url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
 
 /* ── Reset ── */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  /* Surfaces — Deep OLED with layered glass */
-  --bg-base: #08080c;
-  --bg-raised: rgba(16,16,24,0.9);
+  /* Surfaces — Charcoal base, layered glass */
+  --bg-base: #0c0c10;
+  --bg-raised: rgba(18,18,26,0.92);
   --bg-card: rgba(255,255,255,0.035);
   --bg-card-hover: rgba(255,255,255,0.06);
   --bg-input: rgba(255,255,255,0.045);
@@ -21,7 +22,7 @@
   /* Glass — core design language */
   --glass-bg: rgba(255,255,255,0.05);
   --glass-bg-strong: rgba(255,255,255,0.08);
-  --glass-border: rgba(255,255,255,0.09);
+  --glass-border: rgba(255,255,255,0.1);
   --glass-blur: 20px;
   --glass-shine: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.02) 40%, rgba(255,255,255,0) 100%);
 
@@ -35,7 +36,7 @@
   --text-primary: rgba(255,255,255,0.94);
   --text-secondary: rgba(255,255,255,0.56);
   --text-tertiary: rgba(255,255,255,0.32);
-  --text-inverse: #08080c;
+  --text-inverse: #0c0c10;
 
   /* Accent — warm gold */
   --gold: #c9a84c;
@@ -53,15 +54,15 @@
   --status-draft: rgba(255,255,255,0.4);
   --status-draft-bg: rgba(255,255,255,0.05);
 
-  /* Shadows — layered depth */
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.5);
-  --shadow-md: 0 4px 20px rgba(0,0,0,0.5), 0 0 1px rgba(255,255,255,0.05);
-  --shadow-lg: 0 16px 48px rgba(0,0,0,0.6), 0 0 1px rgba(255,255,255,0.08);
+  /* Shadows — tinted to bg hue (taste-skill: no pure black) */
+  --shadow-sm: 0 1px 2px rgba(12,12,16,0.6);
+  --shadow-md: 0 4px 20px rgba(12,12,16,0.5), 0 0 1px rgba(255,255,255,0.05);
+  --shadow-lg: 0 16px 48px rgba(12,12,16,0.6), 0 0 1px rgba(255,255,255,0.08);
   --shadow-gold: 0 0 24px rgba(201,168,76,0.12), 0 0 48px rgba(201,168,76,0.04);
 
-  /* Typography — Space Grotesk + DM Sans */
-  --font-body: 'DM Sans', -apple-system, system-ui, sans-serif;
-  --font-display: 'Space Grotesk', 'DM Sans', sans-serif;
+  /* Typography — Satoshi (taste-approved, premium) */
+  --font-body: 'Satoshi', -apple-system, system-ui, sans-serif;
+  --font-display: 'Satoshi', -apple-system, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
 
   /* Spacing */
@@ -74,14 +75,14 @@
   --space-3xl: 64px;
   --space-4xl: 96px;
 
-  /* Radius — rounded glass aesthetic */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  /* Radius — taste-skill premium rounding */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 2.5rem;
 
   /* Motion — cubic-bezier(0.32, 0.72, 0, 1) */
-  --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --duration-fast: 200ms;
   --duration-base: 400ms;
@@ -105,9 +106,8 @@ body {
   color: var(--text-primary);
   background: var(--bg-base);
   background-image:
-    radial-gradient(ellipse 80% 60% at 10% 0%, rgba(201,168,76,0.035) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 80% at 90% 100%, rgba(100,80,200,0.025) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 50% at 50% 50%, rgba(255,255,255,0.008) 0%, transparent 100%);
+    radial-gradient(ellipse 80% 60% at 10% -10%, rgba(201,168,76,0.03) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 50% at 80% 110%, rgba(201,168,76,0.015) 0%, transparent 60%);
   background-attachment: fixed;
   line-height: 1.6;
   min-height: 100vh;
@@ -314,7 +314,7 @@ a:hover { color: var(--gold); }
   background: rgba(10,10,16,0.55);
   border-radius: calc(var(--radius-lg) - 1px);
   padding: var(--space-lg);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
   height: 100%;
   position: relative;
 }
@@ -352,7 +352,7 @@ a:hover { color: var(--gold); }
   line-height: 1.4;
 }
 
-.btn:active { transform: scale(0.97); }
+.btn:active { transform: scale(0.98); }
 .btn:disabled { opacity: 0.4; pointer-events: none; }
 
 .btn-primary {
