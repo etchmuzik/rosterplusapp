@@ -354,6 +354,14 @@
       if (!Auth.isLoggedIn()) { Auth.require(); return; }
       if (Auth.role !== 'artist') { window.location.replace('dashboard.html'); return; }
 
+      // Onboarding — redirect new artists to profile setup
+      const onboarding = await DB.checkOnboarding();
+      if (!onboarding.complete) {
+        UI.toast('Complete your artist profile to get started', 'info');
+        setTimeout(() => window.location.href = 'artist-profile-edit.html?setup=1', 1500);
+        return;
+      }
+
       document.getElementById('nav-root').innerHTML = renderNav('artist-dashboard');
       document.getElementById('welcome-name').textContent = Auth.user?.display_name || 'Artist';
       if (typeof hydrateIcons === 'function') hydrateIcons();

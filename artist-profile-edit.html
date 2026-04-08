@@ -160,6 +160,23 @@
             <label class="form-label" style="margin:0">Available for bookings</label>
             <div class="toggle" id="availability-toggle" onclick="this.classList.toggle('active')"></div>
           </div>
+          <div class="form-grid" style="margin-top:var(--space-lg)">
+            <div class="form-group">
+              <label class="form-label">Available From</label>
+              <input type="date" class="form-input" id="available-from">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Available Until</label>
+              <input type="date" class="form-input" id="available-to">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Blocked Dates</label>
+            <p class="text-tertiary" style="font-size:0.78rem;margin-bottom:var(--space-sm)">Select dates you are NOT available</p>
+            <input type="date" class="form-input" id="block-date-input" style="max-width:220px;display:inline-block">
+            <button type="button" class="btn btn-secondary btn-sm" style="margin-left:var(--space-sm)" onclick="addBlockedDate()">Block Date</button>
+            <div id="blocked-dates-list" style="display:flex;flex-wrap:wrap;gap:var(--space-xs);margin-top:var(--space-sm)"></div>
+          </div>
         </div>
 
         <!-- Actions -->
@@ -175,6 +192,29 @@
     let _tags = { subgenres: [], cities: [] };
     let _avatarUrl = null;
     let _isSetup = false;
+    let _blockedDates = [];
+
+    function addBlockedDate() {
+      const input = document.getElementById('block-date-input');
+      const date = input.value;
+      if (!date || _blockedDates.includes(date)) return;
+      _blockedDates.push(date);
+      _blockedDates.sort();
+      input.value = '';
+      renderBlockedDates();
+    }
+
+    function removeBlockedDate(idx) {
+      _blockedDates.splice(idx, 1);
+      renderBlockedDates();
+    }
+
+    function renderBlockedDates() {
+      const el = document.getElementById('blocked-dates-list');
+      el.innerHTML = _blockedDates.map((d, i) =>
+        `<span class="tag" style="display:flex;align-items:center;gap:4px;padding:4px 10px;background:rgba(248,113,113,0.1);color:var(--status-cancelled);border:1px solid rgba(248,113,113,0.2);border-radius:var(--radius-sm);font-size:0.82rem">${UI.formatDate(d)} <span style="cursor:pointer;opacity:0.6" onclick="removeBlockedDate(${i})">&times;</span></span>`
+      ).join('');
+    }
 
     function addTag(e, type) {
       if (e.key !== 'Enter') return;
@@ -246,6 +286,10 @@
 
       // Availability
       if (data.status === 'active') document.getElementById('availability-toggle').classList.add('active');
+      if (data.available_from) document.getElementById('available-from').value = data.available_from;
+      if (data.available_to) document.getElementById('available-to').value = data.available_to;
+      _blockedDates = Array.isArray(data.blocked_dates) ? [...data.blocked_dates] : [];
+      renderBlockedDates();
 
       // Avatar
       _avatarUrl = data.avatar_url || data.profiles?.avatar_url || null;
@@ -282,11 +326,19 @@
       };
       if (_avatarUrl) payload.avatar_url = _avatarUrl;
 
+      // Save availability separately
+      const availFrom = document.getElementById('available-from').value || null;
+      const availTo = document.getElementById('available-to').value || null;
+      if (availFrom || availTo || _blockedDates.length) {
+        await DB.updateAvailability({ blocked_dates: _blockedDates, available_from: availFrom, available_to: availTo });
+      }
+
       const result = _isSetup
         ? await DB.createArtistProfile(payload)
         : await DB.updateArtistProfile(payload);
 
       if (result.success) {
+        await DB.completeOnboarding();
         UI.toast('Profile saved!', 'success');
         setTimeout(() => window.location.href = 'artist-dashboard.html', 800);
       } else {

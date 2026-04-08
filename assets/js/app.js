@@ -1025,6 +1025,100 @@ const DB = {
       return { success: true, data: { ...data, name: data.stage_name || data.profiles?.display_name || 'Unknown', bio: data.profiles?.bio || '', avatar_url: data.profiles?.avatar_url, city: data.cities_active?.[0] || data.profiles?.city || '' } };
     } catch(e) { return mockFallback(); }
   },
+  // ── Availability ──
+
+  async updateAvailability({ blocked_dates, available_from, available_to }) {
+    if (DEMO_MODE) return { success: true };
+    if (!Auth.user) return { success: false, error: 'Not authenticated' };
+    try {
+      const { error } = await _sb.from('artists')
+        .update({ blocked_dates, available_from, available_to })
+        .eq('profile_id', Auth.user.id);
+      return error ? { success: false, error: error.message } : { success: true };
+    } catch(e) { return { success: false, error: String(e) }; }
+  },
+
+  async getArtistAvailability(artistId) {
+    if (DEMO_MODE) return { success: true, data: { blocked_dates: [], available_from: null, available_to: null } };
+    try {
+      const { data, error } = await _sb.from('artists')
+        .select('blocked_dates, available_from, available_to')
+        .eq('id', artistId).single();
+      return error ? { success: false, error: error.message } : { success: true, data };
+    } catch(e) { return { success: false, data: { blocked_dates: [], available_from: null, available_to: null } }; }
+  },
+
+  async checkAvailability(artistId, date) {
+    if (DEMO_MODE) return { available: true };
+    try {
+      const { data } = await _sb.from('artists')
+        .select('blocked_dates, available_from, available_to')
+        .eq('id', artistId).single();
+      if (!data) return { available: true };
+      const d = new Date(date);
+      if (data.available_from && d < new Date(data.available_from)) return { available: false, reason: 'Before available range' };
+      if (data.available_to && d > new Date(data.available_to)) return { available: false, reason: 'After available range' };
+      if (data.blocked_dates && data.blocked_dates.includes(date)) return { available: false, reason: 'Date blocked' };
+      // Check existing bookings for double-booking
+      const { data: bookings } = await _sb.from('bookings')
+        .select('id').eq('artist_id', artistId).eq('event_date', date)
+        .in('status', ['confirmed', 'contracted', 'pending']);
+      if (bookings && bookings.length > 0) return { available: false, reason: 'Already booked' };
+      return { available: true };
+    } catch(e) { return { available: true }; }
+  },
+
+  // ── Invoice ──
+
+  async generateInvoice(bookingId) {
+    if (DEMO_MODE) return { success: true, data: { invoice_number: 'INV-DEMO-001' } };
+    if (!Auth.user) return { success: false, error: 'Not authenticated' };
+    try {
+      const { data: booking, error: bErr } = await _sb.from('bookings')
+        .select('*, artists(stage_name, profiles(display_name, city))')
+        .eq('id', bookingId).single();
+      if (bErr || !booking) return { success: false, error: 'Booking not found' };
+
+      const invNum = 'INV-' + new Date().getFullYear() + '-' + Date.now().toString().slice(-6);
+      const invData = {
+        invoice_number: invNum,
+        date: new Date().toISOString(),
+        promoter_id: booking.promoter_id,
+        artist_name: booking.artists?.stage_name || booking.artists?.profiles?.display_name || 'Artist',
+        event_name: booking.event_name,
+        event_date: booking.event_date,
+        venue_name: booking.venue_name,
+        fee: booking.fee,
+        platform_fee: booking.platform_fee || Math.ceil((booking.fee || 0) * 0.05),
+        currency: booking.currency || 'AED',
+        total: (booking.fee || 0) + (booking.platform_fee || Math.ceil((booking.fee || 0) * 0.05)),
+        status: 'issued',
+      };
+
+      await _sb.from('payments').update({ invoice_number: invNum, invoice_data: invData }).eq('booking_id', bookingId);
+      return { success: true, data: invData };
+    } catch(e) { return { success: false, error: String(e) }; }
+  },
+
+  // ── Onboarding ──
+
+  async completeOnboarding() {
+    if (DEMO_MODE) return { success: true };
+    if (!Auth.user) return { success: false, error: 'Not authenticated' };
+    try {
+      await _sb.from('profiles').update({ onboarding_complete: true }).eq('id', Auth.user.id);
+      return { success: true };
+    } catch(e) { return { success: false, error: String(e) }; }
+  },
+
+  async checkOnboarding() {
+    if (DEMO_MODE) return { complete: true };
+    if (!Auth.user) return { complete: true };
+    try {
+      const { data } = await _sb.from('profiles').select('onboarding_complete').eq('id', Auth.user.id).single();
+      return { complete: data?.onboarding_complete === true };
+    } catch(e) { return { complete: true }; }
+  },
 };
 
 // ══════════════════════════════════════════════════════════

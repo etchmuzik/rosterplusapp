@@ -711,6 +711,10 @@
           <div style="font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px">Completed</div>
           <div id="detail-completed"></div>
         </div>
+        <div style="display:flex;gap:var(--space-sm);margin-top:var(--space-lg)">
+          <button class="btn btn-primary btn-sm" id="invoice-btn" onclick="generateInvoicePDF(_currentPaymentId)">Download Invoice</button>
+          <button class="btn btn-ghost btn-sm" onclick="closePaymentDetailModal()">Close</button>
+        </div>
       </div>
     </div>
   </div>
@@ -779,6 +783,7 @@
     let paymentsData = [];
     let upcomingData = [];
     let liveBookings = [];
+    let _currentPaymentId = null;
 
     // ── Render Payment History ──
     function renderPaymentHistory() {
@@ -855,6 +860,7 @@
 
     // ── Open Payment Detail Modal ──
     function openPaymentDetailModal(paymentId) {
+      _currentPaymentId = paymentId;
       const payment = paymentsData.find(p => p.id === paymentId);
       if (!payment) return;
 
@@ -890,6 +896,53 @@
     }
 
     // ── Close Payment Detail Modal ──
+    // ── Generate Invoice PDF ──
+    function generateInvoicePDF(paymentId) {
+      const payment = paymentsData.find(p => p.id === paymentId);
+      if (!payment) return;
+      const artistName = esc(payment.bookings?.artists?.profiles?.display_name || payment.bookings?.artists?.name || 'Artist');
+      const eventName = esc(payment.bookings?.event_name || payment.bookings?.venue_name || 'Event');
+      const base = payment.amount || 0;
+      const fee = Math.round(base * 0.05);
+      const total = base + fee;
+      const cur = payment.currency || 'AED';
+      const invNum = payment.transaction_ref || payment.id.substring(0, 16).toUpperCase();
+      const date = UI.formatDate(payment.created_at);
+
+      const html = `<!DOCTYPE html><html><head><title>Invoice ${invNum}</title>
+        <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,sans-serif;padding:48px;color:#1a1a1a;max-width:800px;margin:0 auto}
+        .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:48px;padding-bottom:24px;border-bottom:2px solid #c9a84c}
+        .brand{font-size:24px;font-weight:800;letter-spacing:-0.04em}.brand span{color:#c9a84c}
+        .inv-title{font-size:14px;color:#666;text-transform:uppercase;letter-spacing:0.05em}
+        .inv-num{font-size:18px;font-weight:700;margin-top:4px}
+        .section{margin-bottom:32px}.section-title{font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#999;margin-bottom:12px}
+        .row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eee;font-size:14px}
+        .row.total{border-top:2px solid #1a1a1a;border-bottom:none;font-weight:700;font-size:16px;padding-top:16px;margin-top:8px}
+        .footer{margin-top:64px;padding-top:24px;border-top:1px solid #eee;font-size:11px;color:#999;text-align:center}
+        @media print{body{padding:24px}}</style></head><body>
+        <div class="header"><div><div class="brand">ROSTR<span>+</span></div><div style="font-size:12px;color:#666;margin-top:4px">rosterplus.io</div></div>
+        <div style="text-align:right"><div class="inv-title">Invoice</div><div class="inv-num">${invNum}</div><div style="font-size:12px;color:#666;margin-top:4px">${date}</div></div></div>
+        <div class="section"><div class="section-title">Billed To</div><div style="font-size:14px"><strong>${esc(Auth.user?.display_name || 'Promoter')}</strong><br>${esc(Auth.user?.email || '')}</div></div>
+        <div class="section"><div class="section-title">Details</div>
+        <div class="row"><span>Artist</span><span>${artistName}</span></div>
+        <div class="row"><span>Event</span><span>${eventName}</span></div>
+        <div class="row"><span>Event Date</span><span>${UI.formatDate(payment.bookings?.event_date)}</span></div>
+        <div class="row"><span>Artist Fee</span><span>${UI.currency(base, cur)}</span></div>
+        <div class="row"><span>Platform Fee (5%)</span><span>${UI.currency(fee, cur)}</span></div>
+        <div class="row total"><span>Total</span><span>${UI.currency(total, cur)}</span></div></div>
+        <div class="section"><div class="section-title">Payment</div>
+        <div class="row"><span>Method</span><span>Bank Transfer</span></div>
+        <div class="row"><span>Status</span><span style="text-transform:capitalize">${payment.status}</span></div></div>
+        <div class="footer">ROSTER+ GCC — Beyond Concierge Events Co. LLC — rosterplus.io<br>This is a computer-generated invoice and does not require a signature.</div>
+        </body></html>`;
+
+      const win = window.open('', '_blank', 'width=800,height=1100');
+      win.document.write(html);
+      win.document.close();
+      win.focus();
+      setTimeout(() => win.print(), 300);
+    }
+
     function closePaymentDetailModal() {
       document.getElementById('payment-detail-modal').classList.remove('active');
     }

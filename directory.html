@@ -531,11 +531,15 @@
                 <div class="filter-group">
                     <select class="filter-select" id="rateFilter">
                         <option value="">All Rates</option>
-                        <option value="0-500">AED 0 - 500</option>
-                        <option value="500-1000">AED 500 - 1,000</option>
-                        <option value="1000-2000">AED 1,000 - 2,000</option>
-                        <option value="2000+">AED 2,000+</option>
+                        <option value="0-2000">AED 0 - 2,000</option>
+                        <option value="2000-5000">AED 2,000 - 5,000</option>
+                        <option value="5000-10000">AED 5,000 - 10,000</option>
+                        <option value="10000+">AED 10,000+</option>
                     </select>
+                </div>
+
+                <div class="filter-group">
+                    <input type="date" class="filter-select" id="dateFilter" title="Check availability on date" style="min-width:160px">
                 </div>
             </div>
         </div>
@@ -634,6 +638,7 @@
             const selectedCity = document.getElementById('cityFilter').value;
             const availableOnly = document.getElementById('availabilityToggle').checked;
             const rateRange = document.getElementById('rateFilter').value;
+            const dateFilter = document.getElementById('dateFilter').value;
 
             const { data } = await DB.getArtists({
                 search: searchTerm,
@@ -643,13 +648,20 @@
             });
 
             filteredArtists = (data || []).filter(artist => {
-                if (!rateRange) return true;
-                const rateMin = artist.rateMin || 0;
-                const rateMax = artist.rateMax || 5000;
-                if (rateRange === '0-500') return rateMin <= 500;
-                if (rateRange === '500-1000') return rateMin <= 1000 && rateMax >= 500;
-                if (rateRange === '1000-2000') return rateMin <= 2000 && rateMax >= 1000;
-                if (rateRange === '2000+') return rateMax >= 2000;
+                // Rate filter
+                if (rateRange) {
+                    const rm = artist.rateMin || artist.rate_min || 0;
+                    if (rateRange === '0-2000' && rm > 2000) return false;
+                    if (rateRange === '2000-5000' && (rm < 2000 || rm > 5000)) return false;
+                    if (rateRange === '5000-10000' && (rm < 5000 || rm > 10000)) return false;
+                    if (rateRange === '10000+' && rm < 10000) return false;
+                }
+                // Date availability filter (client-side check against blocked_dates)
+                if (dateFilter && artist.blocked_dates && Array.isArray(artist.blocked_dates)) {
+                    if (artist.blocked_dates.includes(dateFilter)) return false;
+                }
+                if (dateFilter && artist.available_from && new Date(dateFilter) < new Date(artist.available_from)) return false;
+                if (dateFilter && artist.available_to && new Date(dateFilter) > new Date(artist.available_to)) return false;
                 return true;
             });
 
@@ -704,6 +716,7 @@
             document.getElementById('cityFilter').addEventListener('change', applyFilters);
             document.getElementById('availabilityToggle').addEventListener('change', applyFilters);
             document.getElementById('rateFilter').addEventListener('change', applyFilters);
+            document.getElementById('dateFilter').addEventListener('change', applyFilters);
         }
 
         document.addEventListener('DOMContentLoaded', () => {

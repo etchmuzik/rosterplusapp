@@ -175,7 +175,12 @@
       const result = await DB.updateProfile(updates);
       if (!result.error) {
         if (updates.display_name && Auth.user) Auth.user.display_name = updates.display_name;
+        await DB.completeOnboarding();
         UI.toast('Profile saved!', 'success');
+        if (new URLSearchParams(window.location.search).has('onboarding')) {
+          setTimeout(() => window.location.href = 'dashboard.html', 800);
+          return;
+        }
       } else {
         UI.toast('Failed to save: ' + (result.error || ''), 'error');
       }

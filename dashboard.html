@@ -180,6 +180,7 @@
             </div>
           </div>
           <div id="calendar-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;border:1px solid var(--border-subtle);border-radius:var(--radius-md);overflow:hidden"></div>
+          <div id="cal-day-panel" style="display:none;margin-top:var(--space-md);background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));border:1px solid var(--glass-border);border-radius:var(--radius-md);overflow:hidden"></div>
         </section>
 
         <!-- Analytics Section -->
@@ -238,6 +239,19 @@
       await Auth.ready();
       if (!Auth.isLoggedIn()) { Auth.require(); return; }
       if (Auth.role === 'artist') { window.location.replace('artist-dashboard.html'); return; }
+
+      // Onboarding check — redirect new promoters to settings to complete profile
+      const onboarding = await DB.checkOnboarding();
+      if (!onboarding.complete) {
+        const hasName = Auth.user?.display_name && Auth.user.display_name !== Auth.user.email?.split('@')[0];
+        if (!hasName) {
+          UI.toast('Complete your profile to get started', 'info');
+          setTimeout(() => window.location.href = 'settings.html?onboarding=1', 1500);
+          return;
+        } else {
+          await DB.completeOnboarding();
+        }
+      }
 
       document.getElementById('nav-root').innerHTML = renderNav('dashboard');
 
@@ -501,9 +515,28 @@
       for (let d = 1; d <= days; d++) {
         const isToday = d === today.getDate() && _calM === today.getMonth() && _calY === today.getFullYear();
         const hasBk = bookDates.has(d);
-        h += `<div style="padding:8px;min-height:70px;background:var(--bg-card);border:1px solid ${isToday ? 'var(--gold)' : 'var(--border-subtle)'};cursor:pointer"><div style="font-family:var(--font-mono);font-size:0.82rem;color:var(--text-secondary)">${d}</div>${hasBk ? '<div style="width:6px;height:6px;border-radius:50%;background:var(--gold);margin:4px auto 0"></div>' : ''}</div>`;
+        const dateStr = `${_calY}-${String(_calM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        h += `<div onclick="showDayBookings('${dateStr}')" style="padding:8px;min-height:70px;background:var(--bg-card);border:1px solid ${isToday ? 'var(--gold)' : 'var(--border-subtle)'};cursor:pointer;transition:background 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='var(--bg-card)'"><div style="font-family:var(--font-mono);font-size:0.82rem;color:var(--text-secondary)">${d}</div>${hasBk ? '<div style="width:6px;height:6px;border-radius:50%;background:var(--gold);margin:4px auto 0"></div>' : ''}</div>`;
       }
       document.getElementById('calendar-grid').innerHTML = h;
+    }
+
+    // ── Day detail panel ──
+    function showDayBookings(dateStr) {
+      const dayBookings = _allBookings.filter(b => (b.event_date || b.date) === dateStr);
+      const panel = document.getElementById('cal-day-panel');
+      if (!panel) return;
+      if (dayBookings.length === 0) {
+        panel.innerHTML = `<div style="padding:var(--space-lg);text-align:center;color:var(--text-tertiary);font-size:0.85rem">${UI.formatDate(dateStr)} — No bookings</div>`;
+      } else {
+        panel.innerHTML = `<div style="padding:var(--space-md);border-bottom:1px solid var(--border-subtle);font-weight:600;font-size:0.9rem">${UI.formatDate(dateStr)} — ${dayBookings.length} booking${dayBookings.length > 1 ? 's' : ''}</div>` +
+          dayBookings.map(b => {
+            const name = esc(b.artist_name || b.artists?.stage_name || b.artists?.profiles?.display_name || 'Artist');
+            const venue = esc(b.venue || b.venue_name || '');
+            return `<div style="padding:var(--space-md);border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;gap:var(--space-md)">${UI.avatar(name, 32)}<div style="flex:1;min-width:0"><div style="font-weight:500;font-size:0.88rem">${name}</div><div style="font-size:0.78rem;color:var(--text-tertiary)">${venue} ${b.time || b.event_time || ''}</div></div><div>${UI.statusTag(b.status)}</div></div>`;
+          }).join('');
+      }
+      panel.style.display = 'block';
     }
 
     // ── Analytics ──

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#c9a84c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ROSTR+">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <title>Privacy Policy — ROSTR+ GCC</title>
+  <link rel="stylesheet" href="assets/css/system.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/app.js" defer></script>
+  <style>
+    .legal-container { max-width: 800px; margin: 80px auto 0; padding: var(--space-2xl) var(--space-lg) var(--space-4xl); }
+    .legal-container h1 { margin-bottom: var(--space-xs); }
+    .legal-container .updated { font-size: 0.82rem; color: var(--text-tertiary); margin-bottom: var(--space-3xl); }
+    .legal-container h2 { font-size: 1.1rem; font-weight: 600; margin: var(--space-2xl) 0 var(--space-md); color: var(--gold-text); }
+    .legal-container p, .legal-container li { font-size: 0.92rem; color: var(--text-secondary); line-height: 1.8; margin-bottom: var(--space-md); }
+    .legal-container ul { padding-left: var(--space-lg); margin-bottom: var(--space-md); }
+    .legal-container li { margin-bottom: var(--space-xs); }
+    .legal-container a { color: var(--gold-text); }
+    .legal-container table { width: 100%; border-collapse: collapse; margin: var(--space-md) 0; }
+    .legal-container th, .legal-container td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border-subtle); font-size: 0.88rem; }
+    .legal-container th { color: var(--text-tertiary); font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .legal-container td { color: var(--text-secondary); }
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+    <div id="nav-root"></div>
+    <div class="legal-container">
+      <h1>Privacy Policy</h1>
+      <p class="updated">Last updated: April 9, 2026</p>
+
+      <h2>1. Introduction</h2>
+      <p>Beyond Concierge Events Co. LLC ("the Company," "we," "us") operates the ROSTR+ platform at rosterplus.io. This Privacy Policy explains how we collect, use, store, and protect your personal data in compliance with the UAE Federal Decree-Law No. 45/2021 on the Protection of Personal Data (PDPL) and applicable GCC data protection regulations.</p>
+
+      <h2>2. Data We Collect</h2>
+      <table>
+        <thead><tr><th>Data Type</th><th>Examples</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>Account Data</td><td>Name, email, password, role</td><td>Authentication, account management</td></tr>
+          <tr><td>Profile Data</td><td>Stage name, bio, photos, social links, city</td><td>Public profile display, artist discovery</td></tr>
+          <tr><td>Booking Data</td><td>Event details, dates, venues, fees</td><td>Booking management, contracts</td></tr>
+          <tr><td>Payment Data</td><td>Transaction amounts, bank transfer references</td><td>Payment tracking, invoicing</td></tr>
+          <tr><td>Communication Data</td><td>Messages between users</td><td>In-platform messaging</td></tr>
+          <tr><td>Usage Data</td><td>Pages visited, features used, device info</td><td>Platform improvement, analytics</td></tr>
+        </tbody>
+      </table>
+
+      <h2>3. How We Use Your Data</h2>
+      <ul>
+        <li>To provide and maintain the Platform's services.</li>
+        <li>To match promoters with artists based on genre, location, and availability.</li>
+        <li>To facilitate booking requests, contracts, and payment tracking.</li>
+        <li>To send transactional emails (booking confirmations, contract notifications).</li>
+        <li>To prevent fraud and ensure platform security.</li>
+        <li>To improve the Platform based on usage patterns.</li>
+      </ul>
+
+      <h2>4. Legal Basis for Processing</h2>
+      <p>We process personal data based on:</p>
+      <ul>
+        <li><strong>Consent:</strong> When you create an account and agree to these terms.</li>
+        <li><strong>Contractual necessity:</strong> To fulfill booking agreements between promoters and artists.</li>
+        <li><strong>Legitimate interest:</strong> To improve platform security and user experience.</li>
+        <li><strong>Legal obligation:</strong> To comply with UAE tax and business regulations.</li>
+      </ul>
+
+      <h2>5. Data Sharing</h2>
+      <p>We share your data only with:</p>
+      <ul>
+        <li><strong>Other users:</strong> Your public profile (name, bio, genre, rates) is visible to all platform users. Private data (email, phone) is shared only with confirmed booking partners.</li>
+        <li><strong>Service providers:</strong> Supabase (database hosting, EU region), Resend (transactional email delivery).</li>
+        <li><strong>Legal authorities:</strong> When required by UAE law or court order.</li>
+      </ul>
+      <p>We do not sell your personal data to third parties.</p>
+
+      <h2>6. Data Storage and Security</h2>
+      <ul>
+        <li>Data is stored on Supabase infrastructure in the EU-West-1 region.</li>
+        <li>All data in transit is encrypted via TLS/HTTPS.</li>
+        <li>Passwords are hashed using bcrypt (never stored in plaintext).</li>
+        <li>Row-Level Security (RLS) policies restrict data access at the database level.</li>
+        <li>We implement Content Security Policy (CSP), HSTS, and X-Frame-Options headers.</li>
+      </ul>
+
+      <h2>7. Data Retention</h2>
+      <ul>
+        <li>Account data: retained while your account is active, deleted within 30 days of account deletion.</li>
+        <li>Booking and payment records: retained for 7 years for tax compliance (UAE Commercial Transactions Law).</li>
+        <li>Messages: retained for 1 year after the last message in a conversation.</li>
+        <li>Usage analytics: aggregated and anonymized after 12 months.</li>
+      </ul>
+
+      <h2>8. Your Rights</h2>
+      <p>Under the UAE PDPL and applicable regulations, you have the right to:</p>
+      <ul>
+        <li><strong>Access:</strong> Request a copy of your personal data.</li>
+        <li><strong>Correction:</strong> Update inaccurate or incomplete data.</li>
+        <li><strong>Deletion:</strong> Request deletion of your account and associated data.</li>
+        <li><strong>Portability:</strong> Receive your data in a machine-readable format.</li>
+        <li><strong>Objection:</strong> Object to processing based on legitimate interest.</li>
+        <li><strong>Withdrawal:</strong> Withdraw consent at any time (this does not affect prior processing).</li>
+      </ul>
+      <p>To exercise these rights, contact <a href="mailto:hi@rosterplus.io">hi@rosterplus.io</a>.</p>
+
+      <h2>9. Cookies and Tracking</h2>
+      <p>The Platform uses localStorage for session management. We do not use third-party tracking cookies. The service worker caches static assets for offline performance only.</p>
+
+      <h2>10. International Data Transfers</h2>
+      <p>Your data may be processed outside the UAE (Supabase EU infrastructure). We ensure adequate protection through standard contractual clauses and the service provider's compliance with GDPR.</p>
+
+      <h2>11. Children's Privacy</h2>
+      <p>The Platform is not intended for users under 18 years of age. We do not knowingly collect data from minors.</p>
+
+      <h2>12. Changes to This Policy</h2>
+      <p>We may update this Privacy Policy periodically. Material changes will be communicated via email to registered users. The "Last updated" date at the top reflects the most recent revision.</p>
+
+      <h2>13. Contact</h2>
+      <p>Data Protection inquiries:<br>
+      Beyond Concierge Events Co. LLC<br>
+      Email: <a href="mailto:hi@rosterplus.io">hi@rosterplus.io</a><br>
+      Website: rosterplus.io</p>
+    </div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof renderNav === 'function') {
+        document.getElementById('nav-root').innerHTML = renderNav('');
+      }
+    });
+  </script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
+</body>
+</html>
