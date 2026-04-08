@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#c9a84c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ROSTR+">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <title>Invite — ROSTR+ GCC</title>
+  <link rel="stylesheet" href="assets/css/system.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/app.js" defer></script>
+  <style>
+    .invite-container { max-width: 700px; margin: 80px auto 0; padding: var(--space-2xl) var(--space-lg); }
+    .invite-form-card { background: var(--glass-bg); backdrop-filter: blur(var(--glass-blur)); -webkit-backdrop-filter: blur(var(--glass-blur)); border: 1px solid var(--glass-border); border-radius: var(--radius-lg); padding: var(--space-xl); margin-bottom: var(--space-2xl); }
+    .invite-row { display: flex; align-items: flex-end; gap: var(--space-md); margin-bottom: var(--space-md); }
+    .invite-row .form-group { flex: 1; margin: 0; }
+    .sent-list { margin-top: var(--space-xl); }
+    .sent-item { display: flex; align-items: center; gap: var(--space-md); padding: var(--space-md); border-bottom: 1px solid var(--border-subtle); }
+    .sent-item:last-child { border-bottom: none; }
+    .sent-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--gold-dim); display: flex; align-items: center; justify-content: center; font-weight: 600; color: var(--gold-text); font-size: 0.82rem; flex-shrink: 0; }
+    .sent-info { flex: 1; min-width: 0; }
+    .sent-name { font-weight: 500; font-size: 0.9rem; }
+    .sent-email { font-size: 0.78rem; color: var(--text-tertiary); }
+    .sent-status { font-size: 0.78rem; }
+    .bulk-textarea { min-height: 100px; }
+    @media (max-width: 640px) { .invite-row { flex-direction: column; align-items: stretch; } }
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+    <div id="nav-root"></div>
+    <div class="invite-container">
+      <h1 style="margin-bottom:var(--space-xs)">Invite People</h1>
+      <p class="text-tertiary" style="margin-bottom:var(--space-2xl)">Invite artists or promoters to join ROSTR+. They'll receive an email with a link to sign up.</p>
+
+      <!-- Single Invite -->
+      <div class="invite-form-card">
+        <div style="font-weight:600;margin-bottom:var(--space-lg)">Send an Invitation</div>
+        <div class="invite-row">
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-input" id="invite-email" placeholder="artist@email.com" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Name (optional)</label>
+            <input type="text" class="form-input" id="invite-name" placeholder="Their name">
+          </div>
+          <div class="form-group" style="max-width:140px">
+            <label class="form-label">Role</label>
+            <select class="form-select" id="invite-role">
+              <option value="artist">Artist</option>
+              <option value="promoter">Promoter</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:var(--space-md)">
+          <label class="form-label">Personal Message (optional)</label>
+          <textarea class="form-textarea" id="invite-message" rows="2" placeholder="Hey! Check out ROSTR+ — I think you'd love it."></textarea>
+        </div>
+        <button class="btn btn-primary" id="send-btn" onclick="sendSingleInvite()">Send Invitation</button>
+      </div>
+
+      <!-- Bulk Invite -->
+      <div class="invite-form-card">
+        <div style="font-weight:600;margin-bottom:var(--space-sm)">Bulk Invite</div>
+        <p class="text-tertiary" style="font-size:0.82rem;margin-bottom:var(--space-md)">Paste multiple email addresses (one per line or comma-separated)</p>
+        <div class="form-group" style="margin-bottom:var(--space-md)">
+          <textarea class="form-textarea bulk-textarea" id="bulk-emails" rows="4" placeholder="artist1@email.com&#10;artist2@email.com&#10;artist3@email.com"></textarea>
+        </div>
+        <div class="invite-row" style="margin-bottom:0">
+          <div class="form-group" style="max-width:140px">
+            <label class="form-label">Role</label>
+            <select class="form-select" id="bulk-role">
+              <option value="artist">Artist</option>
+              <option value="promoter">Promoter</option>
+            </select>
+          </div>
+          <button class="btn btn-secondary" id="bulk-btn" onclick="sendBulkInvites()">Send All</button>
+        </div>
+      </div>
+
+      <!-- Sent Invitations -->
+      <div class="sent-list">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-md)">
+          <h3>Sent Invitations</h3>
+          <span class="text-tertiary" style="font-size:0.82rem" id="invite-count">0 sent</span>
+        </div>
+        <div id="invitations-list" style="background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));border:1px solid var(--glass-border);border-radius:var(--radius-md);overflow:hidden">
+          <div style="padding:var(--space-xl);text-align:center;color:var(--text-tertiary);font-size:0.85rem">No invitations sent yet</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function sendSingleInvite() {
+      const email = document.getElementById('invite-email').value.trim();
+      const name = document.getElementById('invite-name').value.trim();
+      const role = document.getElementById('invite-role').value;
+      const message = document.getElementById('invite-message').value.trim();
+
+      if (!email) { UI.toast('Email is required', 'warning'); return; }
+
+      const btn = document.getElementById('send-btn');
+      btn.disabled = true; btn.textContent = 'Sending...';
+
+      const result = await DB.sendInvitation({ email, name, role, message });
+      if (result.success) {
+        UI.toast(`Invitation sent to ${esc(email)}`, 'success');
+        document.getElementById('invite-email').value = '';
+        document.getElementById('invite-name').value = '';
+        document.getElementById('invite-message').value = '';
+        addNotification(`Invitation sent to ${email}`, 'invite');
+        loadInvitations();
+      } else {
+        UI.toast('Failed: ' + (result.error || ''), 'error');
+      }
+      btn.disabled = false; btn.textContent = 'Send Invitation';
+    }
+
+    async function sendBulkInvites() {
+      const raw = document.getElementById('bulk-emails').value.trim();
+      const role = document.getElementById('bulk-role').value;
+      if (!raw) { UI.toast('Paste email addresses', 'warning'); return; }
+
+      const emails = raw.split(/[\n,;]+/).map(e => e.trim()).filter(e => e && e.includes('@'));
+      if (emails.length === 0) { UI.toast('No valid emails found', 'warning'); return; }
+
+      const btn = document.getElementById('bulk-btn');
+      btn.disabled = true; btn.textContent = `Sending ${emails.length}...`;
+
+      let sent = 0;
+      for (const email of emails) {
+        const result = await DB.sendInvitation({ email, role });
+        if (result.success) sent++;
+      }
+
+      UI.toast(`${sent} of ${emails.length} invitations sent`, 'success');
+      document.getElementById('bulk-emails').value = '';
+      addNotification(`${sent} bulk invitations sent`, 'invite');
+      loadInvitations();
+      btn.disabled = false; btn.textContent = 'Send All';
+    }
+
+    async function loadInvitations() {
+      const result = await DB.getMyInvitations();
+      const list = document.getElementById('invitations-list');
+      const count = document.getElementById('invite-count');
+
+      if (!result.success || !result.data.length) {
+        list.innerHTML = '<div style="padding:var(--space-xl);text-align:center;color:var(--text-tertiary);font-size:0.85rem">No invitations sent yet</div>';
+        count.textContent = '0 sent';
+        return;
+      }
+
+      count.textContent = `${result.data.length} sent`;
+      list.innerHTML = result.data.map(inv => {
+        const initials = (inv.name || inv.email).substring(0, 2).toUpperCase();
+        const statusColor = inv.status === 'accepted' ? 'var(--status-confirmed)' : inv.status === 'pending' ? 'var(--status-pending)' : 'var(--text-tertiary)';
+        const statusText = inv.status === 'accepted' ? 'Joined' : 'Pending';
+        const time = inv.created_at ? UI.formatDate(inv.created_at) : '';
+        return `<div class="sent-item">
+          <div class="sent-avatar">${esc(initials)}</div>
+          <div class="sent-info">
+            <div class="sent-name">${esc(inv.name || inv.email)}</div>
+            <div class="sent-email">${esc(inv.email)} &middot; ${inv.role} &middot; ${time}</div>
+          </div>
+          <div class="sent-status" style="color:${statusColor}">${statusText}</div>
+        </div>`;
+      }).join('');
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+      await Auth.ready();
+      if (!Auth.isLoggedIn()) { Auth.require(); return; }
+      document.getElementById('nav-root').innerHTML = renderNav('invite');
+      if (typeof hydrateIcons === 'function') hydrateIcons();
+      loadInvitations();
+    });
+  </script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
+</body>
+</html>

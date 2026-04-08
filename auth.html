@@ -348,18 +348,25 @@
         document.getElementById('role-icon-artist').innerHTML = UI.icon('music', 18);
       } catch(e) { console.warn('Icon render skipped:', e); }
 
-      // Check URL for pre-selected role — both promoter and artist should go to signup
+      // Check URL for pre-selected role or invite token
       const params = new URLSearchParams(window.location.search);
       const roleParam = params.get('role');
-      if (roleParam === 'promoter' || roleParam === 'artist') {
+      const inviteToken = params.get('invite');
+
+      if (roleParam === 'promoter' || roleParam === 'artist' || inviteToken) {
         switchTab('signup');
-        if (roleParam === 'artist') {
+        const role = roleParam || 'artist';
+        if (role === 'artist') {
           document.querySelectorAll('.role-option').forEach(el => el.classList.remove('selected'));
           document.querySelectorAll('.role-option')[1].classList.add('selected');
           document.getElementById('signup-role').value = 'artist';
           selectedRole = 'artist';
         }
-        // promoter is already selected by default
+      }
+
+      // Store invite token for post-signup acceptance
+      if (inviteToken) {
+        sessionStorage.setItem('rostr_invite_token', inviteToken);
       }
     });
 
@@ -444,6 +451,9 @@
 
         const result = await Auth.signUp(email, password, role, name);
         if (result.success) {
+          // Accept invite if present
+          const invToken = sessionStorage.getItem('rostr_invite_token');
+          if (invToken) { DB.acceptInvitation(invToken); sessionStorage.removeItem('rostr_invite_token'); }
           window.location.href = role === 'artist' ? 'artist-profile-edit.html?setup=1' : 'dashboard.html';
         } else {
           showError(result.error || 'Sign up failed');

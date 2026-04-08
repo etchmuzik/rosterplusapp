@@ -5,7 +5,7 @@ const FROM_EMAIL = 'ROSTER+ <book@rosterplus.io>';
 
 interface EmailPayload {
   to: string;
-  type: 'booking_confirmation' | 'booking_request' | 'contract_signed' | 'payment_received' | 'booking_accepted' | 'booking_rejected';
+  type: 'booking_confirmation' | 'booking_request' | 'contract_signed' | 'payment_received' | 'booking_accepted' | 'booking_rejected' | 'invitation';
   data: Record<string, string>;
 }
 
@@ -94,6 +94,20 @@ const templates: Record<string, (d: Record<string, string>) => { subject: string
         <p style="color:rgba(255,255,255,0.7)"><strong>${d.artist_name}</strong> is unable to accept your booking request at this time.</p>
         <a href="${d.browse_url}" style="display:inline-block;background:#c9a84c;color:#000;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;margin-top:16px">Browse Other Artists</a>
         <p style="color:rgba(255,255,255,0.4);font-size:12px;margin-top:32px">ROSTER+ — The GCC Booking Platform</p>
+      </div>
+    `,
+  }),
+
+  invitation: (d) => ({
+    subject: `You're invited to join ROSTER+ — ${d.inviter_name} wants to connect`,
+    html: `
+      <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0a0a0f;color:#fff;padding:40px;border-radius:12px">
+        <h1 style="color:#c9a84c;font-size:24px;margin-bottom:8px">You're Invited to ROSTER+</h1>
+        <p style="color:rgba(255,255,255,0.7)"><strong>${d.inviter_name}</strong> has invited you to join ROSTER+, the GCC's premier artist booking platform.</p>
+        ${d.message ? `<div style="background:#1a1a22;border-radius:8px;padding:16px;margin:20px 0;border-left:3px solid #c9a84c"><p style="color:rgba(255,255,255,0.8);font-style:italic;margin:0">"${d.message}"</p></div>` : ''}
+        <p style="color:rgba(255,255,255,0.6);font-size:14px;margin:16px 0">Join as ${d.role === 'artist' ? 'an Artist' : 'a Promoter'} and start booking today.</p>
+        <a href="${d.invite_url}" style="display:inline-block;background:#c9a84c;color:#000;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;margin-top:8px;font-size:16px">Accept Invitation</a>
+        <p style="color:rgba(255,255,255,0.3);font-size:12px;margin-top:32px">ROSTER+ — The GCC Booking Platform<br>rosterplus.io</p>
       </div>
     `,
   }),

@@ -441,6 +441,7 @@ function renderNav(activePage = '') {
             <div class="nav-avatar" onclick="document.getElementById('user-menu').classList.toggle('hidden')">${Auth.user?.display_name?.charAt(0)?.toUpperCase() || 'U'}</div>
             <div id="user-menu" class="hidden" style="position:absolute;top:56px;right:24px;background:var(--bg-raised);border:1px solid var(--border-medium);border-radius:var(--radius-md);padding:8px;min-width:180px;box-shadow:var(--shadow-lg);z-index:1001">
               <div style="padding:8px 12px;font-size:0.82rem;color:var(--text-tertiary);border-bottom:1px solid var(--border-subtle);margin-bottom:4px" data-user-name>${Auth.user?.display_name || ''}</div>
+              <a href="/invite.html" class="sidebar-item" style="font-size:0.85rem">${UI.icon('send', 14)} Invite</a>
               <a href="/settings.html" class="sidebar-item" style="font-size:0.85rem">${UI.icon('settings', 14)} Settings</a>
               ${Auth.role === 'admin' ? `<a href="/admin.html" class="sidebar-item" style="font-size:0.85rem">${UI.icon('shield', 14)} Admin</a>` : ''}
               <button class="sidebar-item" style="font-size:0.85rem;color:var(--status-cancelled)" onclick="Auth.signOut()">${UI.icon('logout', 14)} Sign out</button>
@@ -1118,6 +1119,51 @@ const DB = {
       const { data } = await _sb.from('profiles').select('onboarding_complete').eq('id', Auth.user.id).single();
       return { complete: data?.onboarding_complete === true };
     } catch(e) { return { complete: true }; }
+  },
+
+  // ── Invitations ──
+
+  async sendInvitation({ email, name, role, message }) {
+    if (DEMO_MODE) return { success: true, data: { id: 'demo-inv-1', token: 'demo-token' } };
+    if (!Auth.user) return { success: false, error: 'Not authenticated' };
+    try {
+      const { data, error } = await _sb.from('invitations')
+        .insert({ invited_by: Auth.user.id, email, name: name || '', role: role || 'artist', message: message || '' })
+        .select().single();
+      if (error) return { success: false, error: error.message };
+
+      // Send invitation email
+      const inviteUrl = `${window.location.origin}/auth.html?invite=${data.token}&role=${role || 'artist'}`;
+      await Emails.send(email, 'invitation', {
+        inviter_name: Auth.user.display_name || Auth.user.email,
+        role: role || 'artist',
+        message: message || '',
+        invite_url: inviteUrl,
+      });
+
+      return { success: true, data };
+    } catch(e) { return { success: false, error: String(e) }; }
+  },
+
+  async getMyInvitations() {
+    if (DEMO_MODE) return { success: true, data: [] };
+    if (!Auth.user) return { success: false, error: 'Not authenticated' };
+    try {
+      const { data, error } = await _sb.from('invitations')
+        .select('*').eq('invited_by', Auth.user.id)
+        .order('created_at', { ascending: false });
+      return error ? { success: false, error: error.message } : { success: true, data: data || [] };
+    } catch(e) { return { success: true, data: [] }; }
+  },
+
+  async acceptInvitation(token) {
+    if (DEMO_MODE) return { success: true };
+    try {
+      const { error } = await _sb.from('invitations')
+        .update({ status: 'accepted', accepted_at: new Date().toISOString() })
+        .eq('token', token);
+      return error ? { success: false, error: error.message } : { success: true };
+    } catch(e) { return { success: false, error: String(e) }; }
   },
 };
 
