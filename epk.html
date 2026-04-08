@@ -49,7 +49,11 @@
     .edit-btn { position: absolute; top: var(--space-sm); right: var(--space-sm); opacity: 0; transition: opacity var(--duration-fast); }
     .epk-section:hover .edit-btn { opacity: 1; }
     .epk-section { position: relative; }
-    @media (max-width: 768px) { .epk-name { font-size: 2rem; } .epk-socials { flex-wrap: wrap; justify-content: center; } .perf-item { flex-direction: column; align-items: flex-start; } }
+    .epk-badges { display: flex; gap: var(--space-xs); justify-content: center; margin: var(--space-md) 0; flex-wrap: wrap; }
+    .epk-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 100px; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.02em; border: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary); background: rgba(255,255,255,0.04); }
+    .epk-badge.verified { border-color: rgba(52,211,153,0.3); color: var(--status-confirmed); background: rgba(52,211,153,0.08); }
+    .epk-badge.gold { border-color: rgba(201,168,76,0.3); color: var(--gold-text); background: rgba(201,168,76,0.08); }
+    @media (max-width: 768px) { .epk-name { font-size: 2rem; } .epk-socials { flex-wrap: wrap; justify-content: center; } .perf-item { flex-direction: column; align-items: flex-start; } #epk-inquiry-form > div { grid-template-columns: 1fr !important; } }
     @media print {
       body { background: #fff !important; color: #1a1a1a !important; }
       .nav, #nav-root, .share-bar, .epk-footer, .btn, .epk-socials, .media-embed { display: none !important; }
@@ -131,11 +135,23 @@
 
       const artistIdForBooking = _artistId || data.id;
 
+      // Achievement badges
+      const badges = [];
+      if (data.verified) badges.push('<span class="epk-badge verified">${UI.icon("verified", 12)} Verified Pro</span>');
+      if (bookings >= 100) badges.push('<span class="epk-badge">' + bookings + '+ Events</span>');
+      else if (bookings >= 10) badges.push('<span class="epk-badge">' + bookings + ' Events</span>');
+      if (rating >= 4.5) badges.push('<span class="epk-badge gold">Top Rated</span>');
+      const badgesHtml = badges.length ? '<div class="epk-badges">' + badges.join('') + '</div>' : '';
+
+      // QR code (uses a free API)
+      const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=120x120&color=c9a84c&bgcolor=0c0c10&data=' + encodeURIComponent(window.location.href);
+
       document.getElementById('epk-content').innerHTML = `
         <div class="epk-hero">
           <div class="avatar-xlarge">${avatar ? `<img src="${avatar}" alt="${name}">` : initials}</div>
           <div class="epk-name">${name}</div>
           <div class="epk-meta">${city} ${genre ? '· ' + genre : ''} ${rating ? '· ★ ' + rating.toFixed(1) : ''}</div>
+          ${badgesHtml}
           <div>${genreTags}</div>
           ${socialLinks ? `<div class="epk-socials">${socialLinks}</div>` : ''}
           ${editBtnHtml}
@@ -155,8 +171,8 @@
         <!-- Media Embed -->
         ${(social.soundcloud || social.spotify || social.youtube) ? `<div class="epk-section"><div class="epk-section-title">Listen</div>${UI.mediaEmbed(social.soundcloud || social.spotify || social.youtube)}</div>` : ''}
 
-        <!-- Photo Gallery -->
-        ${(data.epk_gallery && data.epk_gallery.length) ? `<div class="epk-section"><div class="epk-section-title">Photos</div><div class="photo-gallery">${data.epk_gallery.map(url => `<img src="${esc(url)}" alt="Photo" onclick="(function(){let lb=document.getElementById('lb');if(!lb){lb=document.createElement('div');lb.id='lb';lb.className='lightbox';lb.onclick=()=>lb.classList.remove('active');document.body.appendChild(lb)}lb.innerHTML='<img src=\\''+url+'\\' alt=Photo>';lb.classList.add('active')})()">`).join('')}</div></div>` : ''}
+        <!-- Photo Gallery with download -->
+        ${(data.epk_gallery && data.epk_gallery.length) ? `<div class="epk-section"><div class="epk-section-title" style="display:flex;justify-content:space-between;align-items:center">Photos <span style="font-size:0.72rem;color:var(--text-tertiary);text-transform:none;letter-spacing:0">Click to zoom · Right-click to download</span></div><div class="photo-gallery">${data.epk_gallery.map((url, idx) => `<img src="${esc(url)}" alt="Press photo ${idx+1}" onclick="(function(){let lb=document.getElementById('lb');if(!lb){lb=document.createElement('div');lb.id='lb';lb.className='lightbox';lb.onclick=()=>lb.classList.remove('active');document.body.appendChild(lb)}lb.innerHTML='<img src=\\'${url}\\' alt=Photo>';lb.classList.add('active')})()">`).join('')}</div></div>` : ''}
 
         <div class="epk-section">
           <div class="epk-section-title">Press</div>
@@ -183,12 +199,37 @@
           </div>
         </div>
 
-        <div class="share-bar">
-          <span style="font-size:0.85rem;color:var(--text-secondary)">Share:</span>
-          <div class="share-url" id="share-url">${window.location.href}</div>
-          <button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('share-url').textContent);UI.toast('Link copied!','success')">Copy</button>
-          <a href="https://wa.me/?text=${encodeURIComponent(esc(name) + ' — EPK | ROSTR+ GCC\\n' + window.location.href)}" target="_blank" rel="noopener" class="btn btn-sm" style="background:#25D366;color:#fff;border:none">WhatsApp</a>
-          <button class="btn btn-ghost btn-sm" onclick="window.print()">Save PDF</button>
+        <!-- Quick Inquiry Form (no login required) -->
+        <div class="epk-section">
+          <div class="epk-section-title">Quick Inquiry</div>
+          <p style="color:var(--text-tertiary);font-size:0.85rem;margin-bottom:var(--space-md)">Interested in booking ${name}? Send a quick inquiry — no account needed.</p>
+          <form id="epk-inquiry-form" onsubmit="submitInquiry(event)" style="display:flex;flex-direction:column;gap:var(--space-md)">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-md)">
+              <input type="text" class="form-input" id="inq-name" placeholder="Your name" required>
+              <input type="email" class="form-input" id="inq-email" placeholder="Your email" required>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-md)">
+              <input type="text" class="form-input" id="inq-company" placeholder="Company / Venue (optional)">
+              <input type="date" class="form-input" id="inq-date" placeholder="Event date">
+            </div>
+            <textarea class="form-textarea" id="inq-message" rows="3" placeholder="Tell us about your event..." required></textarea>
+            <button type="submit" class="btn btn-primary" id="inq-submit">Send Inquiry</button>
+          </form>
+        </div>
+
+        <!-- QR Code + Share -->
+        <div style="display:grid;grid-template-columns:1fr auto;gap:var(--space-xl);align-items:start;margin-top:var(--space-xl)">
+          <div class="share-bar" style="margin:0">
+            <span style="font-size:0.85rem;color:var(--text-secondary)">Share:</span>
+            <div class="share-url" id="share-url">${window.location.href}</div>
+            <button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('share-url').textContent);UI.toast('Link copied!','success')">Copy</button>
+            <a href="https://wa.me/?text=${encodeURIComponent(esc(name) + ' — EPK | ROSTR+ GCC\\n' + window.location.href)}" target="_blank" rel="noopener" class="btn btn-sm" style="background:#25D366;color:#fff;border:none">WhatsApp</a>
+            <button class="btn btn-ghost btn-sm" onclick="window.print()">Save PDF</button>
+          </div>
+          <div style="text-align:center">
+            <img src="${qrUrl}" alt="QR Code" width="100" height="100" style="border-radius:var(--radius-sm);border:1px solid var(--border-subtle)">
+            <div style="font-size:0.68rem;color:var(--text-tertiary);margin-top:4px">Scan to view EPK</div>
+          </div>
         </div>
 
         <div class="epk-footer">
@@ -200,6 +241,43 @@
     }
 
     // Init
+    async function submitInquiry(e) {
+      e.preventDefault();
+      const btn = document.getElementById('inq-submit');
+      btn.disabled = true; btn.textContent = 'Sending...';
+
+      const name = document.getElementById('inq-name').value.trim();
+      const email = document.getElementById('inq-email').value.trim();
+      const company = document.getElementById('inq-company').value.trim();
+      const date = document.getElementById('inq-date').value;
+      const message = document.getElementById('inq-message').value.trim();
+      const artistName = _epkData?.stage_name || _epkData?.name || 'Artist';
+
+      // Send email to platform (book@rosterplus.io) with inquiry details
+      await Emails.send('book@rosterplus.io', 'booking_request', {
+        promoter_name: name + (company ? ' (' + company + ')' : ''),
+        event_name: 'EPK Inquiry' + (date ? ' — ' + date : ''),
+        venue_name: company || 'Via EPK',
+        event_date: date || 'TBD',
+        fee: 'To be discussed',
+        booking_url: window.location.href,
+      });
+
+      // Also try to email the artist directly if we have their email
+      if (_epkData?.email) {
+        await Emails.send(_epkData.email, 'booking_request', {
+          promoter_name: name,
+          event_name: message.substring(0, 60),
+          venue_name: company || 'Direct inquiry',
+          event_date: date || 'TBD',
+          fee: 'To be discussed',
+          booking_url: 'mailto:' + email,
+        });
+      }
+
+      document.getElementById('epk-inquiry-form').innerHTML = '<div style="text-align:center;padding:var(--space-xl);color:var(--status-confirmed)"><div style="font-size:1.5rem;margin-bottom:var(--space-sm)">Inquiry Sent</div><p style="color:var(--text-secondary)">Thank you, ' + esc(name) + '. We\'ll get back to you shortly.</p></div>';
+    }
+
     document.addEventListener('DOMContentLoaded', async function() {
       await Auth.ready();
       document.getElementById('nav-root').innerHTML = renderNav('epk');
