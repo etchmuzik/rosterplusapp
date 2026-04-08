@@ -50,6 +50,20 @@
     .epk-section:hover .edit-btn { opacity: 1; }
     .epk-section { position: relative; }
     @media (max-width: 768px) { .epk-name { font-size: 2rem; } .epk-socials { flex-wrap: wrap; justify-content: center; } .perf-item { flex-direction: column; align-items: flex-start; } }
+    @media print {
+      body { background: #fff !important; color: #1a1a1a !important; }
+      .nav, #nav-root, .share-bar, .epk-footer, .btn, .epk-socials, .media-embed { display: none !important; }
+      .epk-container { margin: 0; padding: 20px; max-width: 100%; }
+      .epk-hero { padding: 20px 0; border-bottom: 2px solid #c9a84c; }
+      .epk-name { color: #1a1a1a; font-size: 2rem; }
+      .epk-meta, .epk-section-title { color: #666; }
+      .quote-text, p { color: #333; }
+      .quote-card, .perf-item, .rider-item { border-color: #eee; background: #fafafa; }
+      .epk-booking { border: 1px solid #eee; }
+      .tag--gold { background: #f5f0e0; color: #8b7530; border: 1px solid #d4c48c; }
+      .avatar-xlarge { border-color: #c9a84c; }
+      .photo-gallery img { width: 150px; height: 100px; }
+    }
   </style>
 </head>
 <body>
@@ -127,7 +141,22 @@
           ${editBtnHtml}
         </div>
 
+        <!-- Trust Stats -->
+        <div class="epk-section">
+          <div class="trust-stats" style="justify-content:center">
+            <div class="trust-stat">${UI.stars(rating)} <span class="trust-value">${rating.toFixed(1)}</span></div>
+            <div class="trust-stat"><span class="trust-value">${bookings}</span> events</div>
+            <div class="trust-stat"><span class="trust-value">${Array.isArray(data.cities_active) ? data.cities_active.length : 1}</span> cities</div>
+          </div>
+        </div>
+
         ${bio ? `<div class="epk-section"><div class="epk-section-title">About</div><p style="color:var(--text-secondary);line-height:1.8;font-size:1.05rem">${bio}</p></div>` : ''}
+
+        <!-- Media Embed -->
+        ${(social.soundcloud || social.spotify || social.youtube) ? `<div class="epk-section"><div class="epk-section-title">Listen</div>${UI.mediaEmbed(social.soundcloud || social.spotify || social.youtube)}</div>` : ''}
+
+        <!-- Photo Gallery -->
+        ${(data.epk_gallery && data.epk_gallery.length) ? `<div class="epk-section"><div class="epk-section-title">Photos</div><div class="photo-gallery">${data.epk_gallery.map(url => `<img src="${esc(url)}" alt="Photo" onclick="(function(){let lb=document.getElementById('lb');if(!lb){lb=document.createElement('div');lb.id='lb';lb.className='lightbox';lb.onclick=()=>lb.classList.remove('active');document.body.appendChild(lb)}lb.innerHTML='<img src=\\''+url+'\\' alt=Photo>';lb.classList.add('active')})()">`).join('')}</div></div>` : ''}
 
         <div class="epk-section">
           <div class="epk-section-title">Press</div>
@@ -159,6 +188,7 @@
           <div class="share-url" id="share-url">${window.location.href}</div>
           <button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('share-url').textContent);UI.toast('Link copied!','success')">Copy</button>
           <a href="https://wa.me/?text=${encodeURIComponent(esc(name) + ' — EPK | ROSTR+ GCC\\n' + window.location.href)}" target="_blank" rel="noopener" class="btn btn-sm" style="background:#25D366;color:#fff;border:none">WhatsApp</a>
+          <button class="btn btn-ghost btn-sm" onclick="window.print()">Save PDF</button>
         </div>
 
         <div class="epk-footer">

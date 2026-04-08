@@ -541,6 +541,16 @@
                 <div class="filter-group">
                     <input type="date" class="filter-select" id="dateFilter" title="Check availability on date" style="min-width:160px">
                 </div>
+
+                <div class="filter-group">
+                    <select class="filter-select" id="sortBy" onchange="sortArtists()">
+                        <option value="">Sort by...</option>
+                        <option value="rating">Top Rated</option>
+                        <option value="bookings">Most Booked</option>
+                        <option value="price-low">Best Value</option>
+                        <option value="price-high">Highest Rate</option>
+                    </select>
+                </div>
             </div>
         </div>
 
@@ -614,14 +624,16 @@
                             </div>
                         </div>
 
+                        ${artist.bio ? `<div style="font-size:0.78rem;color:var(--text-tertiary);line-height:1.5;margin-bottom:var(--space-sm);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(artist.bio.substring(0, 100))}</div>` : ''}
+
                         <div class="card-footer">
                             <div class="rating-info">
-                                ${renderStarIcon()}
-                                <span>${artist.rating.toFixed(1)}</span>
-                                <span style="color: rgba(255, 255, 255, 0.4);">(${artist.reviewCount})</span>
+                                ${window.UI ? UI.stars(artist.rating) : renderStarIcon()}
+                                <span>${(artist.rating || 0).toFixed(1)}</span>
+                                <span style="color:rgba(255,255,255,0.3);font-size:0.78rem">${artist.bookings || artist.reviewCount || 0} booked</span>
                             </div>
                             <div class="availability-badge ${availabilityClass}">
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                                <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor">
                                     <circle cx="12" cy="12" r="10"></circle>
                                 </svg>
                                 ${availabilityText}
@@ -667,6 +679,19 @@
 
             renderArtists();
             updateResultsInfo();
+        }
+
+        function sortArtists() {
+            const sortBy = document.getElementById('sortBy').value;
+            if (!sortBy) return;
+            filteredArtists.sort((a, b) => {
+                if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
+                if (sortBy === 'bookings') return (b.bookings || b.reviewCount || 0) - (a.bookings || a.reviewCount || 0);
+                if (sortBy === 'price-low') return (a.rateMin || a.rate_min || 0) - (b.rateMin || b.rate_min || 0);
+                if (sortBy === 'price-high') return (b.rateMin || b.rate_min || 0) - (a.rateMin || a.rate_min || 0);
+                return 0;
+            });
+            renderArtists();
         }
 
         function renderArtists() {

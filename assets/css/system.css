@@ -798,6 +798,45 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   .avatar-xlarge { width: 120px !important; height: 120px !important; font-size: 3rem !important; }
 }
 
+/* ── Star Rating ── */
+.stars { display: inline-flex; gap: 1px; }
+.stars .star { color: var(--border-medium); font-size: 0.85rem; }
+.stars .star.filled { color: var(--gold); }
+
+/* ── Service Tags ── */
+.service-tags { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
+.service-tag { padding: 3px 10px; border-radius: 100px; font-size: 0.72rem; font-weight: 500; letter-spacing: 0.02em; border: 1px solid rgba(255,255,255,0.08); color: var(--text-secondary); background: rgba(255,255,255,0.03); }
+
+/* ── Photo Gallery ── */
+.photo-gallery { display: flex; gap: var(--space-sm); overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: var(--space-sm); scroll-snap-type: x mandatory; }
+.photo-gallery img { width: 200px; height: 140px; object-fit: cover; border-radius: var(--radius-md); flex-shrink: 0; scroll-snap-align: start; cursor: pointer; border: 1px solid var(--border-subtle); transition: transform var(--duration-fast) var(--ease-out), border-color var(--duration-fast); }
+.photo-gallery img:hover { transform: scale(1.03); border-color: var(--gold); }
+
+/* ── Lightbox ── */
+.lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; display: flex; align-items: center; justify-content: center; cursor: zoom-out; opacity: 0; pointer-events: none; transition: opacity var(--duration-base); }
+.lightbox.active { opacity: 1; pointer-events: all; }
+.lightbox img { max-width: 90vw; max-height: 90vh; object-fit: contain; border-radius: var(--radius-md); }
+
+/* ── Media Embed ── */
+.media-embed { border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-subtle); margin-bottom: var(--space-md); }
+.media-embed iframe { width: 100%; border: none; }
+
+/* ── Trust Stats ── */
+.trust-stats { display: flex; gap: var(--space-lg); flex-wrap: wrap; }
+.trust-stat { display: flex; align-items: center; gap: var(--space-sm); font-size: 0.85rem; color: var(--text-secondary); }
+.trust-stat .trust-value { font-weight: 600; color: var(--text-primary); }
+
+/* ── Mini Calendar ── */
+.mini-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; font-size: 0.7rem; }
+.mini-cal-day { width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-family: var(--font-mono); }
+.mini-cal-day.available { background: rgba(52,211,153,0.15); color: var(--status-confirmed); }
+.mini-cal-day.blocked { background: rgba(248,113,113,0.1); color: var(--status-cancelled); }
+.mini-cal-day.today { border: 1px solid var(--gold); }
+
+/* ── Profile Completeness ── */
+.completeness-bar { height: 6px; background: var(--bg-input); border-radius: 3px; overflow: hidden; }
+.completeness-fill { height: 100%; background: linear-gradient(90deg, var(--gold), #34d399); border-radius: 3px; transition: width var(--duration-base) var(--ease-out); }
+
 /* ── Utility ── */
 .flex { display: flex; }
 .flex-col { flex-direction: column; }

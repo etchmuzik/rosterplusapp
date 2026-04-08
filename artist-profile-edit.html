@@ -35,6 +35,17 @@
     .char-count { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-tertiary); text-align: right; margin-top: 4px; }
     .setup-banner { background: var(--gold-dim); border: 1px solid var(--gold); border-radius: var(--radius-md); padding: var(--space-lg); margin-bottom: var(--space-xl); text-align: center; }
     .setup-banner h2 { color: var(--gold-text); margin-bottom: var(--space-xs); }
+    .service-tag-check { display:flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--border-subtle);border-radius:100px;font-size:0.82rem;color:var(--text-secondary);cursor:pointer;transition:all var(--duration-fast) }
+    .service-tag-check:has(input:checked) { border-color:var(--gold);background:var(--gold-dim);color:var(--gold-text) }
+    .service-tag-check input { accent-color:var(--gold);width:14px;height:14px }
+    .gallery-thumb { position:relative;aspect-ratio:4/3;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border-subtle) }
+    .gallery-thumb img { width:100%;height:100%;object-fit:cover }
+    .gallery-thumb .remove-btn { position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,0.7);border:none;color:var(--status-cancelled);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.85rem }
+    .rider-row,.quote-row { display:flex;align-items:center;gap:var(--space-sm);padding:var(--space-sm) var(--space-md);background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);font-size:0.85rem }
+    .rider-row .remove,.quote-row .remove { cursor:pointer;color:var(--status-cancelled);opacity:0.6;font-size:1rem }
+    .rider-row .remove:hover,.quote-row .remove:hover { opacity:1 }
+    .completeness-wrap { margin-bottom:var(--space-xl) }
+    .completeness-label { font-size:0.82rem;color:var(--text-tertiary);margin-bottom:var(--space-xs);display:flex;justify-content:space-between }
     @media (max-width: 768px) { .form-grid { grid-template-columns: 1fr; } .avatar-row { flex-direction: column; text-align: center; } }
   </style>
 </head>
@@ -42,6 +53,7 @@
   <div class="page-shell">
     <div id="nav-root"></div>
     <div class="profile-container">
+      <div id="completeness-wrap" class="completeness-wrap"></div>
       <div id="setup-banner" style="display:none" class="setup-banner">
         <h2>Complete Your Artist Profile</h2>
         <p class="text-secondary">Fill in your details so promoters can find and book you.</p>
@@ -146,6 +158,58 @@
           </div>
         </div>
 
+        <!-- Gallery -->
+        <div class="form-section">
+          <div class="section-header">Photo Gallery</div>
+          <p class="text-tertiary" style="font-size:0.82rem;margin-bottom:var(--space-md)">Upload up to 6 performance photos. These appear on your profile and EPK.</p>
+          <div id="gallery-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-sm);margin-bottom:var(--space-md)"></div>
+          <label class="btn btn-secondary btn-sm" style="cursor:pointer">
+            Add Photo
+            <input type="file" accept="image/*" style="display:none" onchange="uploadGalleryPhoto(this.files[0])">
+          </label>
+        </div>
+
+        <!-- Tech Rider -->
+        <div class="form-section">
+          <div class="section-header">Technical Rider</div>
+          <p class="text-tertiary" style="font-size:0.82rem;margin-bottom:var(--space-md)">Specify your technical requirements for venues.</p>
+          <div id="rider-items" style="display:flex;flex-direction:column;gap:var(--space-xs);margin-bottom:var(--space-md)"></div>
+          <div style="display:flex;gap:var(--space-sm)">
+            <input type="text" class="form-input" id="rider-category" placeholder="Category (e.g., DJ Equipment)" style="flex:1">
+            <input type="text" class="form-input" id="rider-item" placeholder="Item (e.g., 2x CDJ-3000)" style="flex:1">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="addRiderItem()">Add</button>
+          </div>
+        </div>
+
+        <!-- Press Quotes -->
+        <div class="form-section">
+          <div class="section-header">Press Quotes</div>
+          <p class="text-tertiary" style="font-size:0.82rem;margin-bottom:var(--space-md)">Add press mentions or client testimonials.</p>
+          <div id="quote-items" style="display:flex;flex-direction:column;gap:var(--space-xs);margin-bottom:var(--space-md)"></div>
+          <div style="display:flex;gap:var(--space-sm);flex-wrap:wrap">
+            <input type="text" class="form-input" id="quote-source" placeholder="Source (e.g., TimeOut Dubai)" style="flex:1;min-width:150px">
+            <input type="text" class="form-input" id="quote-text" placeholder="Quote text..." style="flex:2;min-width:200px">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="addQuote()">Add</button>
+          </div>
+        </div>
+
+        <!-- Service Tags -->
+        <div class="form-section">
+          <div class="section-header">Services Offered</div>
+          <div style="display:flex;flex-wrap:wrap;gap:var(--space-sm)" id="service-tags-grid">
+            <label class="service-tag-check"><input type="checkbox" value="Nightclubs"> Nightclubs</label>
+            <label class="service-tag-check"><input type="checkbox" value="Festivals"> Festivals</label>
+            <label class="service-tag-check"><input type="checkbox" value="Weddings"> Weddings</label>
+            <label class="service-tag-check"><input type="checkbox" value="Corporate Events"> Corporate Events</label>
+            <label class="service-tag-check"><input type="checkbox" value="Private Parties"> Private Parties</label>
+            <label class="service-tag-check"><input type="checkbox" value="Beach Clubs"> Beach Clubs</label>
+            <label class="service-tag-check"><input type="checkbox" value="Lounges"> Lounges</label>
+            <label class="service-tag-check"><input type="checkbox" value="Live Performance"> Live Performance</label>
+            <label class="service-tag-check"><input type="checkbox" value="Open Format"> Open Format</label>
+            <label class="service-tag-check"><input type="checkbox" value="Last-Minute Available"> Last-Minute Available</label>
+          </div>
+        </div>
+
         <!-- Location & Availability -->
         <div class="form-section">
           <div class="section-header">Location & Availability</div>
@@ -193,6 +257,71 @@
     let _avatarUrl = null;
     let _isSetup = false;
     let _blockedDates = [];
+    let _gallery = [];
+    let _rider = [];
+    let _quotes = [];
+
+    // Gallery
+    async function uploadGalleryPhoto(file) {
+      if (!file) return;
+      if (_gallery.length >= 6) { UI.toast('Maximum 6 photos', 'warning'); return; }
+      UI.toast('Uploading...', 'info');
+      const result = await Storage.upload(file, `gallery/${Auth.user.id}/${Date.now()}.${file.name.split('.').pop()}`);
+      if (result.url) { _gallery.push(result.url); renderGallery(); UI.toast('Photo added', 'success'); }
+      else { UI.toast(result.error || 'Upload failed', 'error'); }
+    }
+    function removeGalleryPhoto(idx) { _gallery.splice(idx, 1); renderGallery(); }
+    function renderGallery() {
+      document.getElementById('gallery-grid').innerHTML = _gallery.map((url, i) =>
+        `<div class="gallery-thumb"><img src="${url}" alt="Photo ${i+1}"><button type="button" class="remove-btn" onclick="removeGalleryPhoto(${i})">&times;</button></div>`
+      ).join('') || '<div style="grid-column:1/-1;color:var(--text-tertiary);font-size:0.82rem">No photos yet</div>';
+    }
+
+    // Tech Rider
+    function addRiderItem() {
+      const cat = document.getElementById('rider-category').value.trim();
+      const item = document.getElementById('rider-item').value.trim();
+      if (!cat || !item) return;
+      _rider.push({ category: cat, item }); document.getElementById('rider-category').value = ''; document.getElementById('rider-item').value = ''; renderRider();
+    }
+    function removeRiderItem(idx) { _rider.splice(idx, 1); renderRider(); }
+    function renderRider() {
+      document.getElementById('rider-items').innerHTML = _rider.map((r, i) =>
+        `<div class="rider-row"><span style="flex:1;font-weight:500">${esc(r.category)}</span><span style="flex:1;color:var(--text-secondary)">${esc(r.item)}</span><span class="remove" onclick="removeRiderItem(${i})">&times;</span></div>`
+      ).join('');
+    }
+
+    // Press Quotes
+    function addQuote() {
+      const source = document.getElementById('quote-source').value.trim();
+      const text = document.getElementById('quote-text').value.trim();
+      if (!source || !text) return;
+      _quotes.push({ source, quote: text, date: new Date().toISOString().substring(0, 7) }); document.getElementById('quote-source').value = ''; document.getElementById('quote-text').value = ''; renderQuotes();
+    }
+    function removeQuote(idx) { _quotes.splice(idx, 1); renderQuotes(); }
+    function renderQuotes() {
+      document.getElementById('quote-items').innerHTML = _quotes.map((q, i) =>
+        `<div class="quote-row"><span style="flex:1;font-style:italic;color:var(--text-secondary)">"${esc(q.quote)}"</span><span style="color:var(--gold-text);font-size:0.82rem;white-space:nowrap">${esc(q.source)}</span><span class="remove" onclick="removeQuote(${i})">&times;</span></div>`
+      ).join('');
+    }
+
+    // Profile Completeness
+    function updateCompleteness() {
+      const checks = [
+        !!document.getElementById('stage-name').value.trim(),
+        !!document.getElementById('genre').value,
+        !!document.getElementById('bio').value.trim(),
+        !!document.getElementById('rate-min').value,
+        !!_avatarUrl,
+        _tags.cities.length > 0,
+        _gallery.length > 0,
+        _rider.length > 0,
+        Object.values({ i: document.getElementById('social-instagram').value, s: document.getElementById('social-soundcloud').value, sp: document.getElementById('social-spotify').value, y: document.getElementById('social-youtube').value }).some(v => !!v),
+      ];
+      const pct = Math.round((checks.filter(Boolean).length / checks.length) * 100);
+      const wrap = document.getElementById('completeness-wrap');
+      if (wrap) wrap.innerHTML = `<div class="completeness-label"><span>Profile Completeness</span><span style="color:var(--gold-text)">${pct}%</span></div><div class="completeness-bar"><div class="completeness-fill" style="width:${pct}%"></div></div>`;
+    }
 
     function addBlockedDate() {
       const input = document.getElementById('block-date-input');
@@ -291,6 +420,20 @@
       _blockedDates = Array.isArray(data.blocked_dates) ? [...data.blocked_dates] : [];
       renderBlockedDates();
 
+      // Gallery, Rider, Quotes, Service Tags
+      _gallery = Array.isArray(data.epk_gallery) ? [...data.epk_gallery] : [];
+      renderGallery();
+      _rider = Array.isArray(data.tech_rider) ? [...data.tech_rider] : [];
+      renderRider();
+      _quotes = Array.isArray(data.press_quotes) ? [...data.press_quotes] : [];
+      renderQuotes();
+      if (Array.isArray(data.service_tags)) {
+        document.querySelectorAll('#service-tags-grid input[type="checkbox"]').forEach(cb => {
+          cb.checked = data.service_tags.includes(cb.value);
+        });
+      }
+      updateCompleteness();
+
       // Avatar
       _avatarUrl = data.avatar_url || data.profiles?.avatar_url || null;
       const preview = document.getElementById('avatar-preview');
@@ -323,6 +466,10 @@
           spotify: document.getElementById('social-spotify').value.trim(),
           youtube: document.getElementById('social-youtube').value.trim(),
         },
+        epk_gallery: _gallery,
+        tech_rider: _rider,
+        press_quotes: _quotes,
+        service_tags: Array.from(document.querySelectorAll('#service-tags-grid input:checked')).map(cb => cb.value),
       };
       if (_avatarUrl) payload.avatar_url = _avatarUrl;
 
@@ -367,6 +514,10 @@
         populateForm(result.data);
         _isSetup = false; // Profile exists, switch to update mode
       }
+
+      // Update completeness on any input change
+      document.getElementById('profile-form').addEventListener('input', updateCompleteness);
+      updateCompleteness();
     });
   </script>
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>

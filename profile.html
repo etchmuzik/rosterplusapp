@@ -794,6 +794,24 @@
             <p class="bio-text">${esc(artist.bio)}</p>
           </div>
 
+          <!-- Trust Stats -->
+          <div style="margin-bottom:var(--space-xl)">
+            <div class="trust-stats">
+              <div class="trust-stat">${UI.stars(artist.rating)} <span class="trust-value">${(artist.rating || 0).toFixed(1)}</span></div>
+              <div class="trust-stat"><span class="trust-value">${artist.bookings || 0}</span> events</div>
+              <div class="trust-stat">${UI.icon('check', 14)} Responds in 2-4 hrs</div>
+            </div>
+          </div>
+
+          <!-- Service Tags -->
+          ${(artist.service_tags && artist.service_tags.length) ? `<div style="margin-bottom:var(--space-xl)"><div class="service-tags">${artist.service_tags.map(t => `<span class="service-tag">${esc(t)}</span>`).join('')}</div></div>` : ''}
+
+          <!-- Media Embed -->
+          ${(artist.social?.soundcloud || artist.social?.spotify || artist.social?.youtube) ? `<div style="margin-bottom:var(--space-xl)"><h3 style="margin-bottom:var(--space-md)">Listen</h3>${UI.mediaEmbed(artist.social.soundcloud || artist.social.spotify || artist.social.youtube)}</div>` : ''}
+
+          <!-- Photo Gallery -->
+          ${(artist.epk_gallery && artist.epk_gallery.length) ? `<div style="margin-bottom:var(--space-xl)"><h3 style="margin-bottom:var(--space-md)">Photos</h3><div class="photo-gallery">${artist.epk_gallery.map(url => `<img src="${esc(url)}" alt="Performance photo" onclick="openLightbox(this.src)">`).join('')}</div></div>` : ''}
+
           <!-- Social Links -->
           <div class="social-section">
             <h3>Follow</h3>
@@ -839,12 +857,12 @@
               <div class="quick-stats">
                 <div class="stat-mini">
                   <div class="stat-mini-label">Rating</div>
-                  <div class="stat-mini-value">${artist.rating}</div>
-                  <div style="font-size:0.75rem;color:var(--status-confirmed)">${ratingStars}</div>
+                  <div class="stat-mini-value">${(artist.rating || 0).toFixed(1)}</div>
+                  <div>${UI.stars(artist.rating)}</div>
                 </div>
                 <div class="stat-mini">
                   <div class="stat-mini-label">Bookings</div>
-                  <div class="stat-mini-value">${artist.bookings}</div>
+                  <div class="stat-mini-value">${artist.bookings || 0}</div>
                 </div>
               </div>
 
@@ -852,6 +870,12 @@
               <div class="stat-mini">
                 <div class="stat-mini-label">Response Time</div>
                 <div class="stat-mini-value" style="font-size:1rem">2-4 hours</div>
+              </div>
+
+              <!-- Mini Availability Calendar -->
+              <div style="margin-top:var(--space-md)">
+                <div class="stat-mini-label" style="margin-bottom:var(--space-xs)">Next 30 Days</div>
+                <div class="mini-cal" id="mini-cal"></div>
               </div>
 
               <!-- Book Button -->
@@ -880,6 +904,31 @@
     }
 
     // Initialize page
+    // Lightbox
+    function openLightbox(src) {
+      let lb = document.getElementById('lightbox');
+      if (!lb) { lb = document.createElement('div'); lb.id = 'lightbox'; lb.className = 'lightbox'; lb.onclick = () => lb.classList.remove('active'); document.body.appendChild(lb); }
+      lb.innerHTML = `<img src="${src}" alt="Photo">`;
+      lb.classList.add('active');
+    }
+
+    // Mini availability calendar (next 30 days)
+    function renderMiniCal(artist) {
+      const el = document.getElementById('mini-cal');
+      if (!el) return;
+      const today = new Date();
+      const blocked = Array.isArray(artist.blocked_dates) ? artist.blocked_dates : [];
+      let html = '';
+      for (let i = 0; i < 30; i++) {
+        const d = new Date(today); d.setDate(today.getDate() + i);
+        const ds = d.toISOString().split('T')[0];
+        const isBlocked = blocked.includes(ds);
+        const isToday = i === 0;
+        html += `<div class="mini-cal-day ${isBlocked ? 'blocked' : 'available'} ${isToday ? 'today' : ''}" title="${ds}">${d.getDate()}</div>`;
+      }
+      el.innerHTML = html;
+    }
+
     document.addEventListener('DOMContentLoaded', async () => {
       await Auth.ready();
 
@@ -896,6 +945,7 @@
       if (artist) {
         profileRoot.innerHTML = await renderProfile(artist);
         if (typeof hydrateIcons === 'function') hydrateIcons(profileRoot);
+        renderMiniCal(artist);
         document.title = `${esc(artist.name)} — ROSTR+ GCC`;
       } else {
         profileRoot.innerHTML = renderEmptyState();

@@ -305,6 +305,31 @@ const UI = {
   },
 
   // Status tag
+  stars(rating, max = 5) {
+    const r = Math.round((rating || 0) * 2) / 2;
+    let html = '<span class="stars">';
+    for (let i = 1; i <= max; i++) {
+      html += `<span class="star ${i <= r ? 'filled' : ''}">&#9733;</span>`;
+    }
+    return html + '</span>';
+  },
+
+  mediaEmbed(url) {
+    if (!url) return '';
+    if (url.includes('soundcloud.com')) {
+      return `<div class="media-embed"><iframe height="166" scrolling="no" src="https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%23c9a84c&auto_play=false&show_artwork=true" loading="lazy"></iframe></div>`;
+    }
+    if (url.includes('open.spotify.com')) {
+      const spotifyUri = url.replace('https://open.spotify.com/', '').replace(/\//g, ':').split('?')[0];
+      return `<div class="media-embed"><iframe height="152" src="https://open.spotify.com/embed/${url.split('open.spotify.com/')[1]?.split('?')[0]}" allow="encrypted-media" loading="lazy"></iframe></div>`;
+    }
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      const id = url.includes('youtu.be/') ? url.split('youtu.be/')[1]?.split('?')[0] : new URLSearchParams(new URL(url).search).get('v');
+      if (id) return `<div class="media-embed"><iframe height="315" src="https://www.youtube-nocookie.com/embed/${id}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`;
+    }
+    return '';
+  },
+
   statusTag(status) {
     const map = {
       confirmed: 'confirmed', signed: 'confirmed',
