@@ -106,7 +106,13 @@
 
         <!-- BOOKING REQUESTS -->
         <section id="view-requests" class="view-section">
-          <h2 style="margin-bottom:var(--space-lg)">Booking Requests</h2>
+          <h2 style="margin-bottom:var(--space-md)">Booking Requests</h2>
+          <div style="display:flex;gap:var(--space-xs);margin-bottom:var(--space-lg);flex-wrap:wrap" id="request-filters">
+            <button class="btn btn-sm btn-secondary" style="font-size:0.78rem" onclick="filterRequests('all')" data-filter="all">All</button>
+            <button class="btn btn-sm btn-ghost" style="font-size:0.78rem" onclick="filterRequests('pending')" data-filter="pending">Pending</button>
+            <button class="btn btn-sm btn-ghost" style="font-size:0.78rem" onclick="filterRequests('confirmed')" data-filter="confirmed">Confirmed</button>
+            <button class="btn btn-sm btn-ghost" style="font-size:0.78rem" onclick="filterRequests('cancelled')" data-filter="cancelled">Cancelled</button>
+          </div>
           <div id="all-requests" class="table-wrap"></div>
         </section>
 
@@ -126,6 +132,7 @@
             </div>
           </div>
           <div id="calendar-grid" class="calendar-grid"></div>
+          <div id="artist-cal-panel" style="display:none;margin-top:var(--space-md);background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));border:1px solid var(--glass-border);border-radius:var(--radius-md);overflow:hidden"></div>
         </section>
 
         <!-- EARNINGS -->
@@ -204,7 +211,7 @@
 
     function renderMessages(msgs) {
       const el = document.getElementById('recent-messages');
-      if (!msgs.length) { el.innerHTML = '<div class="text-tertiary" style="padding:var(--space-lg)">No messages yet</div>'; return; }
+      if (!msgs.length) { el.innerHTML = '<div style="padding:var(--space-xl);text-align:center"><div class="text-tertiary" style="margin-bottom:var(--space-sm)">No messages yet</div><a href="directory.html" class="btn btn-secondary btn-sm">Browse Artists</a></div>'; return; }
       el.innerHTML = msgs.slice(0, 5).map(msg => {
         const name = esc(msg.other_user_name || msg.sender?.display_name || 'Unknown');
         const preview = esc((msg.content || msg.last_message || '').substring(0, 60));
@@ -240,7 +247,8 @@
       for (let d = 1; d <= daysInMonth; d++) {
         const isToday = d === today.getDate() && _calMonth === today.getMonth() && _calYear === today.getFullYear();
         const hasBooking = bookingDates.has(d);
-        html += `<div class="calendar-cell ${isToday ? 'today' : ''} ${hasBooking ? 'has-booking' : ''}"><div class="day-num">${d}</div></div>`;
+        const dateStr = `${_calYear}-${String(_calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        html += `<div class="calendar-cell ${isToday ? 'today' : ''} ${hasBooking ? 'has-booking' : ''}" onclick="showArtistDayBookings('${dateStr}')" style="cursor:pointer"><div class="day-num">${d}</div></div>`;
       }
       // Next month padding
       const totalCells = firstDay + daysInMonth;
@@ -313,6 +321,36 @@
       }
     }
 
+    // ── Filter requests by status ──
+    let _activeRequestFilter = 'all';
+    function filterRequests(status) {
+      _activeRequestFilter = status;
+      document.querySelectorAll('#request-filters button').forEach(b => {
+        b.className = b.dataset.filter === status ? 'btn btn-sm btn-secondary' : 'btn btn-sm btn-ghost';
+        b.style.fontSize = '0.78rem';
+      });
+      const filtered = status === 'all' ? _bookings : _bookings.filter(b => b.status === status);
+      renderTable(filtered, 'all-requests', status === 'pending' || status === 'all', 'No ' + status + ' bookings');
+    }
+
+    // ── Calendar day click ──
+    function showArtistDayBookings(dateStr) {
+      const dayBookings = _bookings.filter(b => (b.event_date || b.date) === dateStr);
+      const panel = document.getElementById('artist-cal-panel');
+      if (!panel) return;
+      if (dayBookings.length === 0) {
+        panel.innerHTML = `<div style="padding:var(--space-lg);text-align:center;color:var(--text-tertiary);font-size:0.85rem">${UI.formatDate(dateStr)} — No bookings</div>`;
+      } else {
+        panel.innerHTML = `<div style="padding:var(--space-md);border-bottom:1px solid var(--border-subtle);font-weight:600;font-size:0.9rem">${UI.formatDate(dateStr)} — ${dayBookings.length} booking${dayBookings.length > 1 ? 's' : ''}</div>` +
+          dayBookings.map(b => {
+            const pName = esc(b.promoter_name || b.promoter?.display_name || 'Promoter');
+            const venue = esc(b.venue_name || b.event_name || '');
+            return `<div style="padding:var(--space-md);border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;gap:var(--space-md)">${UI.avatar(pName, 32)}<div style="flex:1;min-width:0"><div style="font-weight:500;font-size:0.88rem">${venue}</div><div style="font-size:0.78rem;color:var(--text-tertiary)">${pName}</div></div><div>${UI.statusTag(b.status)}</div></div>`;
+          }).join('');
+      }
+      panel.style.display = 'block';
+    }
+
     function refreshUI() {
       const pending = _bookings.filter(b => b.status === 'pending');
       const confirmed = _bookings.filter(b => b.status === 'confirmed' || b.status === 'contracted');
@@ -322,8 +360,9 @@
       document.getElementById('stat-confirmed').textContent = confirmed.length;
 
       renderTable(pending.slice(0, 5), 'pending-requests', true, 'No pending requests — enjoy the downtime!');
-      renderTable(upcoming.slice(0, 5), 'upcoming-gigs', false, 'No upcoming gigs yet');
-      renderTable(_bookings, 'all-requests', true, 'No booking requests yet');
+      renderTable(upcoming.slice(0, 5), 'upcoming-gigs', false, 'No upcoming gigs yet — <a href="directory.html" style="color:var(--gold-text)">get discovered</a>');
+      // Apply active filter to requests tab
+      filterRequests(_activeRequestFilter);
       renderTable(upcoming, 'all-upcoming', false, 'No upcoming gigs');
       renderCalendar();
 

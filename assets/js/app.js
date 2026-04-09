@@ -1140,6 +1140,8 @@ const DB = {
   async checkOnboarding() {
     if (DEMO_MODE) return { complete: true };
     if (!Auth.user) return { complete: true };
+    // Demo/localStorage users skip onboarding
+    if (localStorage.getItem('rostr_demo_user')) return { complete: true };
     try {
       const { data } = await _sb.from('profiles').select('onboarding_complete').eq('id', Auth.user.id).single();
       return { complete: data?.onboarding_complete === true };
