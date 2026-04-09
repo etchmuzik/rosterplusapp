@@ -135,13 +135,7 @@
 
       const artistIdForBooking = _artistId || data.id;
 
-      // Achievement badges
-      const badges = [];
-      if (data.verified) badges.push('<span class="epk-badge verified">${UI.icon("verified", 12)} Verified Pro</span>');
-      if (bookings >= 100) badges.push('<span class="epk-badge">' + bookings + '+ Events</span>');
-      else if (bookings >= 10) badges.push('<span class="epk-badge">' + bookings + ' Events</span>');
-      if (rating >= 4.5) badges.push('<span class="epk-badge gold">Top Rated</span>');
-      const badgesHtml = badges.length ? '<div class="epk-badges">' + badges.join('') + '</div>' : '';
+      const badgesHtml = '';
 
       // QR code (uses a free API)
       const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=120x120&color=c9a84c&bgcolor=0c0c10&data=' + encodeURIComponent(window.location.href);
@@ -150,21 +144,13 @@
         <div class="epk-hero">
           <div class="avatar-xlarge">${avatar ? `<img src="${avatar}" alt="${name}">` : initials}</div>
           <div class="epk-name">${name}</div>
-          <div class="epk-meta">${city} ${genre ? '· ' + genre : ''} ${rating ? '· ★ ' + rating.toFixed(1) : ''}</div>
+          <div class="epk-meta">${city} ${genre ? '· ' + genre : ''}</div>
           ${badgesHtml}
           <div>${genreTags}</div>
           ${socialLinks ? `<div class="epk-socials">${socialLinks}</div>` : ''}
           ${editBtnHtml}
         </div>
 
-        <!-- Trust Stats -->
-        <div class="epk-section">
-          <div class="trust-stats" style="justify-content:center">
-            <div class="trust-stat">${UI.stars(rating)} <span class="trust-value">${rating.toFixed(1)}</span></div>
-            <div class="trust-stat"><span class="trust-value">${bookings}</span> events</div>
-            <div class="trust-stat"><span class="trust-value">${Array.isArray(data.cities_active) ? data.cities_active.length : 1}</span> cities</div>
-          </div>
-        </div>
 
         ${bio ? `<div class="epk-section"><div class="epk-section-title">About</div><p style="color:var(--text-secondary);line-height:1.8;font-size:1.05rem">${bio}</p></div>` : ''}
 

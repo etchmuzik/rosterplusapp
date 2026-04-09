@@ -794,14 +794,6 @@
             <p class="bio-text">${esc(artist.bio)}</p>
           </div>
 
-          <!-- Trust Stats -->
-          <div style="margin-bottom:var(--space-xl)">
-            <div class="trust-stats">
-              <div class="trust-stat">${UI.stars(artist.rating)} <span class="trust-value">${(artist.rating || 0).toFixed(1)}</span></div>
-              <div class="trust-stat"><span class="trust-value">${artist.bookings || 0}</span> events</div>
-              <div class="trust-stat">${UI.icon('check', 14)} Responds in 2-4 hrs</div>
-            </div>
-          </div>
 
           <!-- Service Tags -->
           ${(artist.service_tags && artist.service_tags.length) ? `<div style="margin-bottom:var(--space-xl)"><div class="service-tags">${artist.service_tags.map(t => `<span class="service-tag">${esc(t)}</span>`).join('')}</div></div>` : ''}
@@ -856,20 +848,9 @@
               <!-- Quick Stats -->
               <div class="quick-stats">
                 <div class="stat-mini">
-                  <div class="stat-mini-label">Rating</div>
-                  <div class="stat-mini-value">${(artist.rating || 0).toFixed(1)}</div>
-                  <div>${UI.stars(artist.rating)}</div>
+                  <div class="stat-mini-label">Response Time</div>
+                  <div class="stat-mini-value" style="font-size:1rem">2-4 hours</div>
                 </div>
-                <div class="stat-mini">
-                  <div class="stat-mini-label">Bookings</div>
-                  <div class="stat-mini-value">${artist.bookings || 0}</div>
-                </div>
-              </div>
-
-              <!-- Response Time -->
-              <div class="stat-mini">
-                <div class="stat-mini-label">Response Time</div>
-                <div class="stat-mini-value" style="font-size:1rem">2-4 hours</div>
               </div>
 
               <!-- Mini Availability Calendar -->

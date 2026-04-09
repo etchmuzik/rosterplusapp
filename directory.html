@@ -628,9 +628,7 @@
 
                         <div class="card-footer">
                             <div class="rating-info">
-                                ${window.UI ? UI.stars(artist.rating) : renderStarIcon()}
-                                <span>${(artist.rating || 0).toFixed(1)}</span>
-                                <span style="color:rgba(255,255,255,0.3);font-size:0.78rem">${artist.bookings || artist.reviewCount || 0} booked</span>
+                                <span style="color:var(--text-secondary);font-size:0.82rem">${esc(artist.city || '')}</span>
                             </div>
                             <div class="availability-badge ${availabilityClass}">
                                 <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor">
