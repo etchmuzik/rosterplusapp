@@ -742,7 +742,15 @@
             document.getElementById('dateFilter').addEventListener('change', applyFilters);
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Directory is for promoters shopping for artists — redirect artists away
+            if (typeof Auth !== 'undefined') {
+                await Auth.ready();
+                if (Auth.isLoggedIn() && Auth.role === 'artist') {
+                    window.location.replace('artist-dashboard.html');
+                    return;
+                }
+            }
             const navRoot = document.getElementById('nav-root');
             if (navRoot && typeof renderNav === 'function') {
                 navRoot.innerHTML = renderNav('directory');

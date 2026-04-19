@@ -1075,6 +1075,8 @@
     document.addEventListener('DOMContentLoaded', async () => {
       await Auth.ready();
       if (!Auth.isLoggedIn()) { window.location.href = 'auth.html'; return; }
+      // Payments view is promoter-only; artists see earnings on artist-dashboard
+      if (Auth.role === 'artist') { window.location.replace('artist-dashboard.html'); return; }
 
       document.getElementById('nav-root').innerHTML = renderNav('payments');
 

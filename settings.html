@@ -64,7 +64,8 @@
             <input type="email" class="form-input" id="user-email" disabled style="opacity:0.6">
           </div>
         </div>
-        <div class="form-group" style="margin-bottom:var(--space-md)">
+        <!-- Promoter-only field -->
+        <div class="form-group role-promoter" style="margin-bottom:var(--space-md);display:none">
           <label class="form-label">Company / Organization</label>
           <input type="text" class="form-input" id="company" placeholder="e.g. Beyond Events">
         </div>
@@ -87,6 +88,13 @@
           </select>
         </div>
         <button class="btn btn-primary" style="margin-top:var(--space-lg)" onclick="saveProfile()">Save Profile</button>
+      </div>
+
+      <!-- Artist-only: link to the artist profile editor (rate card, genres, tech rider) -->
+      <div class="settings-section role-artist" style="display:none">
+        <div class="settings-header">Artist Profile</div>
+        <p class="text-secondary" style="font-size:0.9rem;margin-bottom:var(--space-md)">Your stage name, genres, base fee, social links and tech rider live in a dedicated editor.</p>
+        <a href="artist-profile-edit.html" class="btn btn-secondary btn-sm">Edit Artist Profile &rarr;</a>
       </div>
 
       <!-- Security Section -->
@@ -127,12 +135,19 @@
           </div>
           <div class="toggle active" id="toggle-messages" onclick="this.classList.toggle('active')"></div>
         </div>
-        <div class="settings-row">
+        <div class="settings-row role-promoter" style="display:none">
           <div>
             <div class="settings-label">Contract updates</div>
-            <div class="settings-desc">Get notified when a contract is signed or sent</div>
+            <div class="settings-desc">Get notified when an artist signs your contract</div>
           </div>
           <div class="toggle active" id="toggle-contracts" onclick="this.classList.toggle('active')"></div>
+        </div>
+        <div class="settings-row role-artist" style="display:none">
+          <div>
+            <div class="settings-label">Payout alerts</div>
+            <div class="settings-desc">Get notified when a payment is released to you</div>
+          </div>
+          <div class="toggle active" id="toggle-payouts" onclick="this.classList.toggle('active')"></div>
         </div>
       </div>
 
@@ -168,8 +183,11 @@
         display_name: document.getElementById('display-name').value.trim(),
         phone: document.getElementById('phone').value.trim(),
         city: document.getElementById('city').value,
-        company: document.getElementById('company').value.trim(),
       };
+      // Company is promoter-only
+      if (Auth.role === 'promoter') {
+        updates.company = document.getElementById('company').value.trim();
+      }
       if (_avatarUrl) updates.avatar_url = _avatarUrl;
 
       const result = await DB.updateProfile(updates);
@@ -209,6 +227,10 @@
       document.getElementById('nav-root').innerHTML = renderNav('settings');
       if (typeof hydrateIcons === 'function') hydrateIcons();
 
+      // Show only the sections that belong to the current role
+      const roleClass = Auth.role === 'artist' ? '.role-artist' : '.role-promoter';
+      document.querySelectorAll(roleClass).forEach(el => { el.style.display = ''; });
+
       // Populate form
       const user = Auth.user;
       if (user) {
@@ -222,12 +244,13 @@
         }
       }
 
-      // Load full profile for phone/city/company
+      // Load full profile for phone/city/(company if promoter)
       const profile = await DB.getProfile();
       if (profile.data) {
         document.getElementById('phone').value = profile.data.phone || '';
         document.getElementById('city').value = profile.data.city || '';
-        document.getElementById('company').value = profile.data.company || '';
+        const companyEl = document.getElementById('company');
+        if (companyEl) companyEl.value = profile.data.company || '';
       }
     });
   </script>

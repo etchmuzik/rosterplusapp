@@ -437,8 +437,7 @@ function renderNav(activePage = '') {
     <li><a href="/artist-dashboard.html" class="${ac('artist-dashboard')}">${UI.icon('home', 16)} Dashboard</a></li>
     <li><a href="/artist-profile-edit.html" class="${ac('profile-edit')}">${UI.icon('music', 16)} My Profile</a></li>
     <li><a href="/epk.html" class="${ac('epk')}">${UI.icon('fileText', 16)} My EPK</a></li>
-    <li><a href="/messages.html" class="${ac('messages')}">${UI.icon('inbox', 16)} Messages</a></li>
-    <li><a href="/directory.html" class="${ac('directory')}">${UI.icon('grid', 16)} Directory</a></li>`;
+    <li><a href="/messages.html" class="${ac('messages')}">${UI.icon('inbox', 16)} Messages</a></li>`;
 
   return `
     <nav class="nav">
@@ -470,7 +469,6 @@ function renderNav(activePage = '') {
               <div style="padding:8px 12px;font-size:0.82rem;color:var(--text-tertiary);border-bottom:1px solid var(--border-subtle);margin-bottom:4px" data-user-name>${Auth.user?.display_name || ''}</div>
               <a href="/invite.html" class="sidebar-item" style="font-size:0.85rem">${UI.icon('send', 14)} Invite</a>
               <a href="/settings.html" class="sidebar-item" style="font-size:0.85rem">${UI.icon('settings', 14)} Settings</a>
-              ${Auth.role === 'admin' ? `<a href="/admin.html" class="sidebar-item" style="font-size:0.85rem">${UI.icon('shield', 14)} Admin</a>` : ''}
               <button class="sidebar-item" style="font-size:0.85rem;color:var(--status-cancelled)" onclick="Auth.signOut()">${UI.icon('logout', 14)} Sign out</button>
             </div>
           </div>

@@ -727,6 +727,8 @@
     document.addEventListener('DOMContentLoaded', async () => {
       await Auth.ready();
       if (!Auth.isLoggedIn()) { window.location.href = 'auth.html'; return; }
+      // Contracts management view is promoter-only for now; artist signing flow lives on booking detail
+      if (Auth.role === 'artist') { window.location.replace('artist-dashboard.html'); return; }
 
       // Render navigation
       const navRoot = document.getElementById('nav-root');

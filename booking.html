@@ -550,6 +550,13 @@
       await Auth.ready();
       if (!Auth.isLoggedIn()) { window.location.href = 'auth.html'; return; }
 
+      // Booking creation is a promoter-only flow — artists don't book themselves
+      if (Auth.role === 'artist') {
+        UI.toast('Artists receive booking requests, not send them', 'info');
+        window.location.replace('artist-dashboard.html');
+        return;
+      }
+
       // Render navigation
       document.getElementById('nav-root').innerHTML = renderNav('bookings');
       if (typeof hydrateIcons === 'function') hydrateIcons();
