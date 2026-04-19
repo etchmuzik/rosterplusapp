@@ -11,6 +11,22 @@
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
   <title>EPK — ROSTR+ GCC</title>
+  <meta name="description" content="Electronic press kit — bio, tech rider, past performances, and booking info for a ROSTR+ GCC artist.">
+
+  <!-- Open Graph / Facebook / WhatsApp -->
+  <meta property="og:type" content="profile">
+  <meta property="og:site_name" content="ROSTR+ GCC">
+  <meta property="og:title" content="Artist EPK — ROSTR+ GCC">
+  <meta property="og:description" content="Electronic press kit — bio, tech rider, past performances, and booking info.">
+  <meta property="og:image" content="https://rosterplus.io/icons/og-default.png">
+  <meta property="og:url" content="https://rosterplus.io/epk.html">
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Artist EPK — ROSTR+ GCC">
+  <meta name="twitter:description" content="Electronic press kit — bio, tech rider, past performances, and booking info.">
+  <meta name="twitter:image" content="https://rosterplus.io/icons/og-default.png">
+
   <link rel="stylesheet" href="assets/css/system.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="assets/js/app.js" defer></script>
@@ -223,7 +239,24 @@
         </div>
       `;
 
-      document.title = `${data.stage_name || data.name || 'Artist'} — EPK | ROSTR+`;
+      const displayName = data.stage_name || data.name || 'Artist';
+      document.title = `${displayName} — EPK | ROSTR+`;
+
+      // Update OG / Twitter tags so WhatsApp, iMessage, Twitter, etc. unfurl nicely
+      const genres = Array.isArray(data.genre) ? data.genre.join(', ') : (data.genre || '');
+      const city = (data.cities_active && data.cities_active[0]) || data.city || '';
+      const desc = [genres, city].filter(Boolean).join(' — ') || 'ROSTR+ GCC artist — bookings open.';
+      const img = data.avatar_url || data.profiles?.avatar_url || 'https://rosterplus.io/icons/og-default.png';
+      const url = `https://rosterplus.io/epk.html?artist=${encodeURIComponent(_artistId || '')}`;
+      const setMeta = (sel, val) => { const el = document.querySelector(sel); if (el) el.setAttribute('content', val); };
+      setMeta('meta[property="og:title"]',       `${displayName} — EPK`);
+      setMeta('meta[property="og:description"]', desc);
+      setMeta('meta[property="og:image"]',       img);
+      setMeta('meta[property="og:url"]',         url);
+      setMeta('meta[name="twitter:title"]',      `${displayName} — EPK`);
+      setMeta('meta[name="twitter:description"]',desc);
+      setMeta('meta[name="twitter:image"]',      img);
+      setMeta('meta[name="description"]',        desc);
     }
 
     // Init

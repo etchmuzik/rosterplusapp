@@ -12,6 +12,21 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
   <title>Artist Profile — ROSTR+ GCC</title>
   <meta name="description" content="View detailed artist profile, bookings, and rates on ROSTR+ GCC">
+
+  <!-- Open Graph / Facebook / WhatsApp -->
+  <meta property="og:type" content="profile">
+  <meta property="og:site_name" content="ROSTR+ GCC">
+  <meta property="og:title" content="Artist Profile — ROSTR+ GCC">
+  <meta property="og:description" content="View detailed artist profile, bookings, and rates.">
+  <meta property="og:image" content="https://rosterplus.io/icons/og-default.png">
+  <meta property="og:url" content="https://rosterplus.io/profile.html">
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Artist Profile — ROSTR+ GCC">
+  <meta name="twitter:description" content="View detailed artist profile, bookings, and rates.">
+  <meta name="twitter:image" content="https://rosterplus.io/icons/og-default.png">
+
   <link rel="stylesheet" href="assets/css/system.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="assets/js/app.js" defer></script>
@@ -915,6 +930,20 @@
         if (typeof hydrateIcons === 'function') hydrateIcons(profileRoot);
         renderMiniCal(artist);
         document.title = `${esc(artist.name)} — ROSTR+ GCC`;
+
+        // Update OG/Twitter tags for link unfurlers
+        const meta = [artist.genre, artist.city].filter(Boolean).join(' — ') || 'Book this artist on ROSTR+ GCC.';
+        const img = artist.avatar_url || 'https://rosterplus.io/icons/og-default.png';
+        const url = `https://rosterplus.io/profile.html?id=${encodeURIComponent(artistId)}`;
+        const setMeta = (sel, val) => { const el = document.querySelector(sel); if (el) el.setAttribute('content', val); };
+        setMeta('meta[property="og:title"]',        `${artist.name} — ROSTR+ GCC`);
+        setMeta('meta[property="og:description"]',  meta);
+        setMeta('meta[property="og:image"]',        img);
+        setMeta('meta[property="og:url"]',          url);
+        setMeta('meta[name="twitter:title"]',       `${artist.name} — ROSTR+ GCC`);
+        setMeta('meta[name="twitter:description"]', meta);
+        setMeta('meta[name="twitter:image"]',       img);
+        setMeta('meta[name="description"]',         meta);
       } else {
         profileRoot.innerHTML = renderEmptyState();
         document.title = 'Artist Not Found — ROSTR+ GCC';

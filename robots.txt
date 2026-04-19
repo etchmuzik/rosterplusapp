@@ -1,0 +1,18 @@
+# ROSTR+ GCC — robots
+User-agent: *
+Allow: /
+Disallow: /dashboard.html
+Disallow: /artist-dashboard.html
+Disallow: /bookings.html
+Disallow: /booking.html
+Disallow: /contracts.html
+Disallow: /payments.html
+Disallow: /messages.html
+Disallow: /settings.html
+Disallow: /calendar.html
+Disallow: /analytics.html
+Disallow: /artist-profile-edit.html
+Disallow: /claim-profile.html
+Disallow: /invite.html
+
+Sitemap: https://rosterplus.io/sitemap.xml
