@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#c9a84c">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <title>Calendar — ROSTR+ GCC</title>
+  <link rel="stylesheet" href="assets/css/system.css">
+</head>
+<body>
+  <div class="page-shell">
+    <nav-root id="nav-root"></nav-root>
+
+    <main class="container" style="padding-top: var(--space-xl); padding-bottom: var(--space-2xl)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-lg);flex-wrap:wrap;gap:var(--space-md)">
+        <div>
+          <h1 id="cal-title" style="margin:0">April 2026</h1>
+          <p class="text-secondary" style="margin-top:4px">All your bookings at a glance</p>
+        </div>
+        <div style="display:flex;gap:var(--space-sm)">
+          <button class="btn btn-ghost btn-sm" onclick="changeCalMonth(-1)">&larr; Prev</button>
+          <button class="btn btn-ghost btn-sm" onclick="changeCalMonth(1)">Next &rarr;</button>
+        </div>
+      </div>
+
+      <div id="calendar-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;border:1px solid var(--border-subtle);border-radius:var(--radius-md);overflow:hidden"></div>
+      <div id="cal-day-panel" style="display:none;margin-top:var(--space-md);background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));border:1px solid var(--glass-border);border-radius:var(--radius-md);overflow:hidden"></div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/app.js"></script>
+  <script>
+    let _allBookings = [];
+    let _calM = new Date().getMonth();
+    let _calY = new Date().getFullYear();
+
+    document.addEventListener('DOMContentLoaded', async function() {
+      await Auth.ready();
+      if (!Auth.isLoggedIn()) { Auth.require(); return; }
+      if (Auth.role === 'artist') { window.location.replace('artist-dashboard.html'); return; }
+
+      document.getElementById('nav-root').innerHTML = renderNav('calendar');
+
+      const res = await DB.getMyBookings();
+      _allBookings = res.data || [];
+      renderCalendar();
+    });
+
+    function changeCalMonth(d) {
+      _calM += d;
+      if (_calM > 11) { _calM = 0; _calY++; }
+      if (_calM < 0) { _calM = 11; _calY--; }
+      renderCalendar();
+    }
+
+    function renderCalendar() {
+      const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      document.getElementById('cal-title').textContent = months[_calM] + ' ' + _calY;
+      const first = new Date(_calY, _calM, 1).getDay();
+      const days = new Date(_calY, _calM + 1, 0).getDate();
+      const today = new Date();
+      const bookDates = new Set(_allBookings.filter(b => { const d = new Date(b.event_date || b.date); return d.getMonth() === _calM && d.getFullYear() === _calY; }).map(b => new Date(b.event_date || b.date).getDate()));
+      let h = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => `<div style="padding:8px;text-align:center;font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);background:rgba(255,255,255,0.02)">${d}</div>`).join('');
+      const prev = new Date(_calY, _calM, 0).getDate();
+      for (let i = first - 1; i >= 0; i--) h += `<div style="padding:8px;min-height:70px;background:var(--bg-card);border:1px solid var(--border-subtle);opacity:0.3"><div style="font-family:var(--font-mono);font-size:0.82rem;color:var(--text-tertiary)">${prev-i}</div></div>`;
+      for (let d = 1; d <= days; d++) {
+        const isToday = d === today.getDate() && _calM === today.getMonth() && _calY === today.getFullYear();
+        const hasBk = bookDates.has(d);
+        const dateStr = `${_calY}-${String(_calM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        h += `<div onclick="showDayBookings('${dateStr}')" style="padding:8px;min-height:70px;background:var(--bg-card);border:1px solid ${isToday ? 'var(--gold)' : 'var(--border-subtle)'};cursor:pointer;transition:background 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='var(--bg-card)'"><div style="font-family:var(--font-mono);font-size:0.82rem;color:var(--text-secondary)">${d}</div>${hasBk ? '<div style="width:6px;height:6px;border-radius:50%;background:var(--gold);margin:4px auto 0"></div>' : ''}</div>`;
+      }
+      document.getElementById('calendar-grid').innerHTML = h;
+    }
+
+    function showDayBookings(dateStr) {
+      const dayBookings = _allBookings.filter(b => (b.event_date || b.date) === dateStr);
+      const panel = document.getElementById('cal-day-panel');
+      if (!panel) return;
+      if (dayBookings.length === 0) {
+        panel.innerHTML = `<div style="padding:var(--space-lg);text-align:center;color:var(--text-tertiary);font-size:0.85rem">${UI.formatDate(dateStr)} — No bookings</div>`;
+      } else {
+        panel.innerHTML = `<div style="padding:var(--space-md);border-bottom:1px solid var(--border-subtle);font-weight:600;font-size:0.9rem">${UI.formatDate(dateStr)} — ${dayBookings.length} booking${dayBookings.length > 1 ? 's' : ''}</div>` +
+          dayBookings.map(b => {
+            const name = esc(b.artist_name || b.artists?.stage_name || b.artists?.profiles?.display_name || 'Artist');
+            const venue = esc(b.venue || b.venue_name || '');
+            return `<div style="padding:var(--space-md);border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;gap:var(--space-md)">${UI.avatar(name, 32)}<div style="flex:1;min-width:0"><div style="font-weight:500;font-size:0.88rem">${name}</div><div style="font-size:0.78rem;color:var(--text-tertiary)">${venue} ${b.time || b.event_time || ''}</div></div><div>${UI.statusTag(b.status)}</div></div>`;
+          }).join('');
+      }
+      panel.style.display = 'block';
+    }
+  </script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
+</body>
+</html>

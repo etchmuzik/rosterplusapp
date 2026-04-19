@@ -17,164 +17,75 @@
   <div class="page-shell">
     <nav-root id="nav-root"></nav-root>
 
-    <div class="layout-sidebar">
-      <!-- Sidebar -->
-      <aside class="sidebar">
-        <div class="sidebar-section">
-          <div class="sidebar-label">Dashboard</div>
-          <button class="sidebar-item active" data-view="overview">
-            <span class="js-icon" data-icon="home" data-size="16"></span>
-            Overview
+    <main class="container" style="padding-top: var(--space-xl); padding-bottom: var(--space-2xl)">
+      <!-- Welcome Header -->
+      <div style="margin-bottom: var(--space-2xl); animation: fadeIn var(--duration-slow) var(--ease-out)">
+        <h1 style="margin-bottom: var(--space-sm)">Welcome back, <span id="welcome-name">Demo Promoter</span></h1>
+        <p class="text-secondary" id="welcome-subtitle">Your upcoming bookings and messages at a glance</p>
+      </div>
+
+      <!-- Stats Row -->
+      <div class="stats-grid" style="margin-bottom: var(--space-2xl)">
+        <div class="card stat-card animate-in stagger-1"><div class="card-inner"><div class="stat-label">Total Bookings</div><div class="stat-value">—</div></div></div>
+        <div class="card stat-card animate-in stagger-2"><div class="card-inner"><div class="stat-label">Confirmed</div><div class="stat-value">—</div></div></div>
+        <div class="card stat-card animate-in stagger-3"><div class="card-inner"><div class="stat-label">Pending</div><div class="stat-value">—</div></div></div>
+        <div class="card stat-card animate-in stagger-4"><div class="card-inner"><div class="stat-label">Total Spend</div><div class="stat-value">—</div></div></div>
+      </div>
+
+      <!-- Upcoming Events Section -->
+      <div style="margin-bottom: var(--space-2xl); animation: fadeIn var(--duration-slow) var(--ease-out); animation-delay: 200ms">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom: var(--space-lg)">
+          <h2 style="margin: 0">Upcoming Events</h2>
+          <a href="bookings.html" class="btn btn-ghost btn-sm">View all</a>
+        </div>
+        <div class="table-wrap">
+          <table id="upcoming-events-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Artist</th>
+                <th>Venue</th>
+                <th>Status</th>
+                <th style="text-align: right">Amount</th>
+              </tr>
+            </thead>
+            <tbody id="upcoming-events-body">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Recent Messages Section -->
+      <div style="margin-bottom: var(--space-2xl); animation: fadeIn var(--duration-slow) var(--ease-out); animation-delay: 300ms">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom: var(--space-lg)">
+          <h2 style="margin: 0">Recent Messages</h2>
+          <a href="messages.html" class="btn btn-ghost btn-sm">Open inbox</a>
+        </div>
+        <div id="recent-messages" style="display: flex; flex-direction: column; gap: var(--space-md)">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div style="animation: fadeIn var(--duration-slow) var(--ease-out); animation-delay: 400ms">
+        <h2 style="margin-bottom: var(--space-lg)">Quick Actions</h2>
+        <div style="display: flex; gap: var(--space-md); flex-wrap: wrap">
+          <button class="btn btn-primary" onclick="window.location.href='booking.html'">
+            <span class="js-icon" data-icon="plus" data-size="16"></span>
+            New Booking
           </button>
-          <button class="sidebar-item" data-view="bookings">
-            <span class="js-icon" data-icon="calendar" data-size="16"></span>
-            My Bookings
-          </button>
-          <button class="sidebar-item" data-view="calendar">
+          <button class="btn btn-secondary" onclick="window.location.href='directory.html'">
             <span class="js-icon" data-icon="grid" data-size="16"></span>
-            Calendar
+            Browse Artists
           </button>
-          <button class="sidebar-item" data-view="analytics">
-            <span class="js-icon" data-icon="barChart" data-size="16"></span>
-            Analytics
+          <button class="btn btn-secondary" onclick="window.location.href='contracts.html'">
+            <span class="js-icon" data-icon="fileText" data-size="16"></span>
+            View Contracts
           </button>
         </div>
-      </aside>
-
-      <!-- Main Content -->
-      <main class="main-content">
-        <!-- Overview Section -->
-        <section id="view-overview" class="view-section" style="display: block;">
-          <!-- Welcome Header -->
-          <div style="margin-bottom: var(--space-2xl); animation: fadeIn var(--duration-slow) var(--ease-out)">
-            <h1 style="margin-bottom: var(--space-sm)">Welcome back, <span id="welcome-name">Demo Promoter</span></h1>
-            <p class="text-secondary" id="welcome-subtitle">Your upcoming bookings and messages at a glance</p>
-          </div>
-
-          <!-- Stats Row -->
-          <div class="stats-grid" style="margin-bottom: var(--space-2xl)">
-            <div class="card stat-card animate-in stagger-1"><div class="card-inner"><div class="stat-label">Total Bookings</div><div class="stat-value">—</div></div></div>
-            <div class="card stat-card animate-in stagger-2"><div class="card-inner"><div class="stat-label">Confirmed</div><div class="stat-value">—</div></div></div>
-            <div class="card stat-card animate-in stagger-3"><div class="card-inner"><div class="stat-label">Pending</div><div class="stat-value">—</div></div></div>
-            <div class="card stat-card animate-in stagger-4"><div class="card-inner"><div class="stat-label">Total Spend</div><div class="stat-value">—</div></div></div>
-          </div>
-
-          <!-- Upcoming Events Section -->
-          <div style="margin-bottom: var(--space-2xl); animation: fadeIn var(--duration-slow) var(--ease-out); animation-delay: 200ms">
-            <h2 style="margin-bottom: var(--space-lg)">Upcoming Events</h2>
-            <div class="table-wrap">
-              <table id="upcoming-events-table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Artist</th>
-                    <th>Venue</th>
-                    <th>Status</th>
-                    <th style="text-align: right">Amount</th>
-                  </tr>
-                </thead>
-                <tbody id="upcoming-events-body">
-                  <!-- Populated by JS -->
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- Recent Messages Section -->
-          <div style="margin-bottom: var(--space-2xl); animation: fadeIn var(--duration-slow) var(--ease-out); animation-delay: 300ms">
-            <h2 style="margin-bottom: var(--space-lg)">Recent Messages</h2>
-            <div id="recent-messages" style="display: flex; flex-direction: column; gap: var(--space-md)">
-              <!-- Populated by JS -->
-            </div>
-          </div>
-
-          <!-- Quick Actions -->
-          <div style="animation: fadeIn var(--duration-slow) var(--ease-out); animation-delay: 400ms">
-            <h2 style="margin-bottom: var(--space-lg)">Quick Actions</h2>
-            <div style="display: flex; gap: var(--space-md); flex-wrap: wrap">
-              <button class="btn btn-primary" onclick="window.location.href='booking.html'">
-                <span class="js-icon" data-icon="plus" data-size="16"></span>
-                New Booking
-              </button>
-              <button class="btn btn-secondary" onclick="window.location.href='directory.html'">
-                <span class="js-icon" data-icon="grid" data-size="16"></span>
-                Browse Artists
-              </button>
-              <button class="btn btn-secondary" onclick="window.location.href='contracts.html'">
-                <span class="js-icon" data-icon="fileText" data-size="16"></span>
-                View Contracts
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <!-- My Bookings Section -->
-        <section id="view-bookings" class="view-section" style="display: none;">
-          <h1 style="margin-bottom: var(--space-lg)">My Bookings</h1>
-
-          <!-- Filter Tabs -->
-          <div style="display: flex; gap: var(--space-sm); margin-bottom: var(--space-lg); border-bottom: 1px solid var(--border-subtle); padding-bottom: var(--space-md)">
-            <button class="filter-tab active" data-filter="all">All</button>
-            <button class="filter-tab" data-filter="confirmed">Confirmed</button>
-            <button class="filter-tab" data-filter="pending">Pending</button>
-            <button class="filter-tab" data-filter="draft">Draft</button>
-            <button class="filter-tab" data-filter="cancelled">Cancelled</button>
-          </div>
-
-          <!-- Bookings Table -->
-          <div class="table-wrap">
-            <table id="bookings-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Artist</th>
-                  <th>Venue</th>
-                  <th>Status</th>
-                  <th style="text-align: right">Amount</th>
-                  <th style="text-align: center">Actions</th>
-                </tr>
-              </thead>
-              <tbody id="bookings-body">
-                <!-- Populated by JS -->
-              </tbody>
-            </table>
-          </div>
-
-          <div id="bookings-empty" class="empty-state" style="display: none">
-            <h3>No bookings found</h3>
-            <p>Get started by booking your first artist from the directory.</p>
-          </div>
-        </section>
-
-        <!-- Calendar Section -->
-        <section id="view-calendar" class="view-section" style="display: none;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-lg)">
-            <h1 id="cal-title">April 2026</h1>
-            <div style="display:flex;gap:var(--space-sm)">
-              <button class="btn btn-ghost btn-sm" onclick="changeCalMonth(-1)">&larr; Prev</button>
-              <button class="btn btn-ghost btn-sm" onclick="changeCalMonth(1)">Next &rarr;</button>
-            </div>
-          </div>
-          <div id="calendar-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;border:1px solid var(--border-subtle);border-radius:var(--radius-md);overflow:hidden"></div>
-          <div id="cal-day-panel" style="display:none;margin-top:var(--space-md);background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));border:1px solid var(--glass-border);border-radius:var(--radius-md);overflow:hidden"></div>
-        </section>
-
-        <!-- Analytics Section -->
-        <section id="view-analytics" class="view-section" style="display: none;">
-          <h1 style="margin-bottom:var(--space-lg)">Analytics</h1>
-          <div class="stats-grid" style="margin-bottom:var(--space-2xl)">
-            <div class="stat-card"><div class="card-inner"><div class="stat-label">Total Bookings</div><div class="stat-value" id="an-total">0</div></div></div>
-            <div class="stat-card"><div class="card-inner"><div class="stat-label">Total Spend</div><div class="stat-value" id="an-spend" style="color:var(--gold-text)">—</div></div></div>
-            <div class="stat-card"><div class="card-inner"><div class="stat-label">Avg. per Booking</div><div class="stat-value" id="an-avg">—</div></div></div>
-            <div class="stat-card"><div class="card-inner"><div class="stat-label">Completion Rate</div><div class="stat-value" id="an-rate">—</div></div></div>
-          </div>
-          <h3 style="margin-bottom:var(--space-md)">Bookings by Status</h3>
-          <div id="status-breakdown" style="display:flex;gap:var(--space-sm);margin-bottom:var(--space-2xl);flex-wrap:wrap"></div>
-          <h3 style="margin-bottom:var(--space-md)">Top Artists</h3>
-          <div id="top-artists" style="display:flex;flex-direction:column;gap:var(--space-sm)"></div>
-        </section>
-      </main>
-    </div>
+      </div>
+    </main>
   </div>
 
   <!-- Message Preview Card Modal -->
@@ -205,12 +116,12 @@
   <script src="assets/js/app.js"></script>
   <script>
     /* ═══════════════════════════════════════════════════════════
-       DASHBOARD — Promoter View
+       DASHBOARD — Promoter Overview (single-scroll)
        ═══════════════════════════════════════════════════════════ */
 
     let _allBookings = [];
+    let _allMessages = [];
 
-    // Initialize navigation
     document.addEventListener('DOMContentLoaded', async function() {
       await Auth.ready();
       if (!Auth.isLoggedIn()) { Auth.require(); return; }
@@ -234,7 +145,6 @@
       const userName = Auth.user?.display_name || Auth.user?.email?.split('@')[0] || 'Welcome';
       document.getElementById('welcome-name').textContent = userName;
 
-      // Load all data
       await loadDashboardData();
 
       // Subscribe to live booking updates
@@ -242,40 +152,13 @@
         const idx = _allBookings.findIndex(b => b.id === updated.id);
         if (idx !== -1) _allBookings[idx] = { ..._allBookings[idx], ...updated };
         renderUpcomingEvents();
-        renderBookingsTable(document.querySelector('.filter-tab.active')?.dataset.filter || 'all');
         UI.toast('Booking updated: ' + updated.status, 'info');
       });
 
       // Subscribe to new messages notification
-      Realtime.subscribeToMessages((msg) => {
+      Realtime.subscribeToMessages(() => {
         UI.toast('New message received', 'info');
         renderRecentMessages();
-      });
-
-      // Sidebar navigation
-      document.querySelectorAll('.sidebar-item').forEach(btn => {
-        btn.addEventListener('click', function() {
-          const view = this.getAttribute('data-view');
-          document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
-          this.classList.add('active');
-          document.querySelectorAll('.view-section').forEach(s => s.style.display = 'none');
-          const viewEl = document.getElementById('view-' + view);
-          viewEl.style.display = 'block';
-          viewEl.style.opacity = '0';
-          setTimeout(() => {
-            viewEl.style.transition = 'opacity var(--duration-base) var(--ease-out)';
-            viewEl.style.opacity = '1';
-          }, 10);
-          if (view === 'bookings') renderBookingsTable();
-        });
-      });
-
-      document.querySelectorAll('.filter-tab').forEach(tab => {
-        tab.addEventListener('click', function() {
-          document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-          this.classList.add('active');
-          renderBookingsTable(this.getAttribute('data-filter'));
-        });
       });
     });
 
@@ -301,19 +184,14 @@
 
       renderUpcomingEvents();
       renderRecentMessages();
-      renderBookingsTable();
-      if (typeof renderCalendar === 'function') renderCalendar();
-      if (typeof renderAnalytics === 'function') renderAnalytics();
     }
 
-    let _allMessages = [];
-
-    // ── Render Upcoming Events (next 3) ──
+    // ── Render Upcoming Events (next 5) ──
     function renderUpcomingEvents() {
       const upcoming = [..._allBookings]
         .filter(b => b.status !== 'cancelled')
         .sort((a, b) => new Date(a.event_date || a.date) - new Date(b.event_date || b.date))
-        .slice(0, 3);
+        .slice(0, 5);
 
       const tbody = document.getElementById('upcoming-events-body');
       if (!tbody) return;
@@ -353,7 +231,7 @@
         if (seen.has(partnerId)) return false;
         seen.add(partnerId);
         return true;
-      }).slice(0, 2);
+      }).slice(0, 3);
 
       if (convos.length === 0) {
         container.innerHTML = '<p class="text-tertiary" style="font-size:0.85rem">No messages yet</p>';
@@ -385,169 +263,12 @@
       }).join('');
     }
 
-    // ── Open Message Modal ──
-    function openMessageModal(from, preview, time) {
-      document.getElementById('message-modal-from').textContent = from;
-      document.getElementById('message-modal-time').textContent = time;
-      document.getElementById('message-modal-preview').textContent = preview;
-      document.getElementById('message-modal').classList.add('active');
-    }
-
-    // ── Render All Bookings with Filters ──
-    function renderBookingsTable(filter = 'all') {
-      const tbody = document.getElementById('bookings-body');
-      const emptyState = document.getElementById('bookings-empty');
-
-      let bookings = filter === 'all'
-        ? _allBookings
-        : _allBookings.filter(b => b.status === filter);
-
-      if (bookings.length === 0) {
-        tbody.innerHTML = '';
-        emptyState.style.display = 'block';
-        return;
-      }
-
-      emptyState.style.display = 'none';
-      tbody.innerHTML = bookings
-        .sort((a, b) => new Date(a.event_date || a.date) - new Date(b.event_date || b.date))
-        .map(b => {
-          const artistName = b.artist_name || b.artists?.stage_name || '—';
-          const venueName = b.venue || b.venues?.name || '—';
-          const date = b.event_date || b.date;
-          const amount = b.fee || b.amount || 0;
-          const currency = b.currency || 'AED';
-          return `
-            <tr>
-              <td><strong>${UI.formatDate(date)}</strong></td>
-              <td>${esc(artistName)}</td>
-              <td>${venueName}</td>
-              <td>${UI.statusTag(b.status)}</td>
-              <td style="text-align:right;font-family:var(--font-mono)"><strong>${UI.currency(amount, currency)}</strong></td>
-              <td style="text-align:center">
-                <button class="btn btn-ghost btn-sm" onclick="viewBookingDetails('${b.id}')">
-                  <span class="js-icon" data-icon="chevronRight" data-size="14"></span>
-                </button>
-              </td>
-            </tr>
-          `;
-        }).join('');
-    }
-
-    // ── View Booking Details ──
-    function viewBookingDetails(id) {
-      window.location.href = 'bookings.html?id=' + id;
-    }
-
-    // ── Style Filter Tabs ──
-    const style = document.createElement('style');
-    style.textContent = `
-      .filter-tab {
-        background: none;
-        border: none;
-        color: var(--text-secondary);
-        font-size: 0.88rem;
-        font-weight: 500;
-        padding: 8px 0;
-        margin-right: var(--space-lg);
-        cursor: pointer;
-        border-bottom: 2px solid transparent;
-        transition: all var(--duration-fast) var(--ease-out);
-      }
-      .filter-tab:hover {
-        color: var(--text-primary);
-      }
-      .filter-tab.active {
-        color: var(--gold-text);
-        border-bottom-color: var(--gold);
-      }
-
-      .view-section {
-        animation: fadeIn var(--duration-slow) var(--ease-out);
-      }
-    `;
-    document.head.appendChild(style);
-
     // Close modal on outside click
     document.getElementById('message-modal').addEventListener('click', function(e) {
       if (e.target === this) {
         this.classList.remove('active');
       }
     });
-
-    // ── Calendar ──
-    let _calM = new Date().getMonth(), _calY = new Date().getFullYear();
-    function changeCalMonth(d) { _calM += d; if (_calM > 11) { _calM = 0; _calY++; } if (_calM < 0) { _calM = 11; _calY--; } renderCalendar(); }
-    function renderCalendar() {
-      const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-      document.getElementById('cal-title').textContent = months[_calM] + ' ' + _calY;
-      const first = new Date(_calY, _calM, 1).getDay();
-      const days = new Date(_calY, _calM + 1, 0).getDate();
-      const today = new Date();
-      const bookDates = new Set(_allBookings.filter(b => { const d = new Date(b.event_date || b.date); return d.getMonth() === _calM && d.getFullYear() === _calY; }).map(b => new Date(b.event_date || b.date).getDate()));
-      let h = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => `<div style="padding:8px;text-align:center;font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);background:rgba(255,255,255,0.02)">${d}</div>`).join('');
-      const prev = new Date(_calY, _calM, 0).getDate();
-      for (let i = first - 1; i >= 0; i--) h += `<div style="padding:8px;min-height:70px;background:var(--bg-card);border:1px solid var(--border-subtle);opacity:0.3"><div style="font-family:var(--font-mono);font-size:0.82rem;color:var(--text-tertiary)">${prev-i}</div></div>`;
-      for (let d = 1; d <= days; d++) {
-        const isToday = d === today.getDate() && _calM === today.getMonth() && _calY === today.getFullYear();
-        const hasBk = bookDates.has(d);
-        const dateStr = `${_calY}-${String(_calM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-        h += `<div onclick="showDayBookings('${dateStr}')" style="padding:8px;min-height:70px;background:var(--bg-card);border:1px solid ${isToday ? 'var(--gold)' : 'var(--border-subtle)'};cursor:pointer;transition:background 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='var(--bg-card)'"><div style="font-family:var(--font-mono);font-size:0.82rem;color:var(--text-secondary)">${d}</div>${hasBk ? '<div style="width:6px;height:6px;border-radius:50%;background:var(--gold);margin:4px auto 0"></div>' : ''}</div>`;
-      }
-      document.getElementById('calendar-grid').innerHTML = h;
-    }
-
-    // ── Day detail panel ──
-    function showDayBookings(dateStr) {
-      const dayBookings = _allBookings.filter(b => (b.event_date || b.date) === dateStr);
-      const panel = document.getElementById('cal-day-panel');
-      if (!panel) return;
-      if (dayBookings.length === 0) {
-        panel.innerHTML = `<div style="padding:var(--space-lg);text-align:center;color:var(--text-tertiary);font-size:0.85rem">${UI.formatDate(dateStr)} — No bookings</div>`;
-      } else {
-        panel.innerHTML = `<div style="padding:var(--space-md);border-bottom:1px solid var(--border-subtle);font-weight:600;font-size:0.9rem">${UI.formatDate(dateStr)} — ${dayBookings.length} booking${dayBookings.length > 1 ? 's' : ''}</div>` +
-          dayBookings.map(b => {
-            const name = esc(b.artist_name || b.artists?.stage_name || b.artists?.profiles?.display_name || 'Artist');
-            const venue = esc(b.venue || b.venue_name || '');
-            return `<div style="padding:var(--space-md);border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;gap:var(--space-md)">${UI.avatar(name, 32)}<div style="flex:1;min-width:0"><div style="font-weight:500;font-size:0.88rem">${name}</div><div style="font-size:0.78rem;color:var(--text-tertiary)">${venue} ${b.time || b.event_time || ''}</div></div><div>${UI.statusTag(b.status)}</div></div>`;
-          }).join('');
-      }
-      panel.style.display = 'block';
-    }
-
-    // ── Analytics ──
-    function renderAnalytics() {
-      const b = _allBookings;
-      const total = b.length;
-      const spend = b.filter(x => x.status !== 'cancelled').reduce((s, x) => s + (x.fee || x.amount || 0), 0);
-      const avg = total > 0 ? Math.round(spend / total) : 0;
-      const confirmed = b.filter(x => x.status === 'confirmed' || x.status === 'completed').length;
-      const rate = total > 0 ? Math.round((confirmed / total) * 100) : 0;
-
-      const el = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
-      el('an-total', total);
-      el('an-spend', spend > 0 ? UI.currency(spend, 'AED') : '—');
-      el('an-avg', avg > 0 ? UI.currency(avg, 'AED') : '—');
-      el('an-rate', rate + '%');
-
-      // Status breakdown
-      const statuses = {};
-      b.forEach(x => { statuses[x.status] = (statuses[x.status] || 0) + 1; });
-      const colors = { confirmed: 'var(--status-confirmed)', pending: 'var(--status-pending)', cancelled: 'var(--status-cancelled)', draft: 'var(--text-tertiary)', completed: '#60a5fa' };
-      document.getElementById('status-breakdown').innerHTML = Object.entries(statuses).map(([s, c]) =>
-        `<div style="flex:1;min-width:120px;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:var(--space-md);text-align:center"><div style="font-size:1.6rem;font-weight:700;color:${colors[s] || 'var(--text-primary)'}">${c}</div><div style="font-size:0.78rem;color:var(--text-tertiary);text-transform:capitalize">${s}</div></div>`
-      ).join('');
-
-      // Top artists
-      const artists = {};
-      b.forEach(x => { const n = x.artist_name || x.artists?.stage_name || x.artists?.profiles?.display_name || 'Unknown'; artists[n] = (artists[n] || 0) + 1; });
-      const sorted = Object.entries(artists).sort((a, b) => b[1] - a[1]).slice(0, 5);
-      document.getElementById('top-artists').innerHTML = sorted.map(([name, count]) =>
-        `<div style="display:flex;align-items:center;gap:var(--space-md);padding:var(--space-md);background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm)">${UI.avatar(name, 36)}<div style="flex:1"><strong>${esc(name)}</strong></div><div style="font-family:var(--font-mono);font-size:0.85rem;color:var(--gold-text)">${count} booking${count > 1 ? 's' : ''}</div></div>`
-      ).join('') || '<div class="text-tertiary" style="padding:var(--space-lg)">No bookings yet</div>';
-    }
-
-    // Calendar + analytics render is triggered by loadDashboardData() after data loads
   </script>
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
 </body>

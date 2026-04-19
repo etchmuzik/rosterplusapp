@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#c9a84c">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <title>Analytics — ROSTR+ GCC</title>
+  <link rel="stylesheet" href="assets/css/system.css">
+</head>
+<body>
+  <div class="page-shell">
+    <nav-root id="nav-root"></nav-root>
+
+    <main class="container" style="padding-top: var(--space-xl); padding-bottom: var(--space-2xl)">
+      <div style="margin-bottom:var(--space-xl)">
+        <h1 style="margin:0">Analytics</h1>
+        <p class="text-secondary" style="margin-top:4px">Your booking performance and spend</p>
+      </div>
+
+      <div class="stats-grid" style="margin-bottom:var(--space-2xl)">
+        <div class="card stat-card"><div class="card-inner"><div class="stat-label">Total Bookings</div><div class="stat-value" id="an-total">0</div></div></div>
+        <div class="card stat-card"><div class="card-inner"><div class="stat-label">Total Spend</div><div class="stat-value" id="an-spend" style="color:var(--gold-text)">—</div></div></div>
+        <div class="card stat-card"><div class="card-inner"><div class="stat-label">Avg. per Booking</div><div class="stat-value" id="an-avg">—</div></div></div>
+        <div class="card stat-card"><div class="card-inner"><div class="stat-label">Completion Rate</div><div class="stat-value" id="an-rate">—</div></div></div>
+      </div>
+
+      <h3 style="margin-bottom:var(--space-md)">Bookings by Status</h3>
+      <div id="status-breakdown" style="display:flex;gap:var(--space-sm);margin-bottom:var(--space-2xl);flex-wrap:wrap"></div>
+
+      <h3 style="margin-bottom:var(--space-md)">Top Artists</h3>
+      <div id="top-artists" style="display:flex;flex-direction:column;gap:var(--space-sm)"></div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/app.js"></script>
+  <script>
+    let _allBookings = [];
+
+    document.addEventListener('DOMContentLoaded', async function() {
+      await Auth.ready();
+      if (!Auth.isLoggedIn()) { Auth.require(); return; }
+      if (Auth.role === 'artist') { window.location.replace('artist-dashboard.html'); return; }
+
+      document.getElementById('nav-root').innerHTML = renderNav('analytics');
+
+      const res = await DB.getMyBookings();
+      _allBookings = res.data || [];
+      renderAnalytics();
+    });
+
+    function renderAnalytics() {
+      const b = _allBookings;
+      const total = b.length;
+      const spend = b.filter(x => x.status !== 'cancelled').reduce((s, x) => s + (x.fee || x.amount || 0), 0);
+      const avg = total > 0 ? Math.round(spend / total) : 0;
+      const confirmed = b.filter(x => x.status === 'confirmed' || x.status === 'completed').length;
+      const rate = total > 0 ? Math.round((confirmed / total) * 100) : 0;
+
+      const el = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+      el('an-total', total);
+      el('an-spend', spend > 0 ? UI.currency(spend, 'AED') : '—');
+      el('an-avg', avg > 0 ? UI.currency(avg, 'AED') : '—');
+      el('an-rate', rate + '%');
+
+      // Status breakdown
+      const statuses = {};
+      b.forEach(x => { statuses[x.status] = (statuses[x.status] || 0) + 1; });
+      const colors = { confirmed: 'var(--status-confirmed)', pending: 'var(--status-pending)', cancelled: 'var(--status-cancelled)', draft: 'var(--text-tertiary)', completed: '#60a5fa' };
+      const breakdownEl = document.getElementById('status-breakdown');
+      const entries = Object.entries(statuses);
+      breakdownEl.innerHTML = entries.length === 0
+        ? '<div class="text-tertiary" style="padding:var(--space-lg)">No bookings yet</div>'
+        : entries.map(([s, c]) =>
+            `<div style="flex:1;min-width:120px;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:var(--space-md);text-align:center"><div style="font-size:1.6rem;font-weight:700;color:${colors[s] || 'var(--text-primary)'}">${c}</div><div style="font-size:0.78rem;color:var(--text-tertiary);text-transform:capitalize">${s}</div></div>`
+          ).join('');
+
+      // Top artists
+      const artists = {};
+      b.forEach(x => { const n = x.artist_name || x.artists?.stage_name || x.artists?.profiles?.display_name || 'Unknown'; artists[n] = (artists[n] || 0) + 1; });
+      const sorted = Object.entries(artists).sort((a, b) => b[1] - a[1]).slice(0, 5);
+      document.getElementById('top-artists').innerHTML = sorted.map(([name, count]) =>
+        `<div style="display:flex;align-items:center;gap:var(--space-md);padding:var(--space-md);background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm)">${UI.avatar(name, 36)}<div style="flex:1"><strong>${esc(name)}</strong></div><div style="font-family:var(--font-mono);font-size:0.85rem;color:var(--gold-text)">${count} booking${count > 1 ? 's' : ''}</div></div>`
+      ).join('') || '<div class="text-tertiary" style="padding:var(--space-lg)">No bookings yet</div>';
+    }
+  </script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
+</body>
+</html>

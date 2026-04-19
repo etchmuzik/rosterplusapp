@@ -424,9 +424,11 @@ function renderNav(activePage = '') {
   const ac = (pg) => activePage === pg ? 'active' : '';
 
   const promoterLinks = `
-    <li><a href="/directory.html" class="${ac('directory')}">${UI.icon('grid', 16)} Directory</a></li>
     <li><a href="/dashboard.html" class="${ac('dashboard')}">${UI.icon('home', 16)} Dashboard</a></li>
+    <li><a href="/directory.html" class="${ac('directory')}">${UI.icon('grid', 16)} Directory</a></li>
     <li><a href="/bookings.html" class="${ac('bookings')}">${UI.icon('calendar', 16)} Bookings</a></li>
+    <li><a href="/calendar.html" class="${ac('calendar')}">${UI.icon('grid', 16)} Calendar</a></li>
+    <li><a href="/analytics.html" class="${ac('analytics')}">${UI.icon('barChart', 16)} Analytics</a></li>
     <li><a href="/contracts.html" class="${ac('contracts')}">${UI.icon('fileText', 16)} Contracts</a></li>
     <li><a href="/payments.html" class="${ac('payments')}">${UI.icon('dollar', 16)} Payments</a></li>
     <li><a href="/messages.html" class="${ac('messages')}">${UI.icon('inbox', 16)} Messages</a></li>`;
