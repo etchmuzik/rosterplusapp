@@ -67,8 +67,14 @@
           <button class="sidebar-item" data-view="calendar" onclick="switchView('calendar')">
             <span class="js-icon" data-icon="grid" data-size="16"></span> Calendar
           </button>
+          <button class="sidebar-item" data-view="contracts" onclick="switchView('contracts')">
+            <span class="js-icon" data-icon="fileText" data-size="16"></span> Contracts
+          </button>
           <button class="sidebar-item" data-view="earnings" onclick="switchView('earnings')">
             <span class="js-icon" data-icon="dollar" data-size="16"></span> Earnings
+          </button>
+          <button class="sidebar-item" data-view="payouts" onclick="switchView('payouts')">
+            <span class="js-icon" data-icon="activity" data-size="16"></span> Payouts
           </button>
         </div>
       </aside>
@@ -135,6 +141,13 @@
           <div id="artist-cal-panel" style="display:none;margin-top:var(--space-md);background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));border:1px solid var(--glass-border);border-radius:var(--radius-md);overflow:hidden"></div>
         </section>
 
+        <!-- CONTRACTS -->
+        <section id="view-contracts" class="view-section">
+          <h2 style="margin-bottom:var(--space-md)">Contracts</h2>
+          <p class="text-secondary" style="margin-bottom:var(--space-lg);font-size:0.9rem">Contracts sent by promoters for gigs you've agreed to. Review and sign to lock in the booking.</p>
+          <div id="artist-contracts-list" style="display:flex;flex-direction:column;gap:var(--space-md)"></div>
+        </section>
+
         <!-- EARNINGS -->
         <section id="view-earnings" class="view-section">
           <h2 style="margin-bottom:var(--space-lg)">Earnings</h2>
@@ -145,6 +158,18 @@
             <div class="stat-card"><div class="card-inner"><div class="stat-label">Total Gigs</div><div class="stat-value" id="earn-count">0</div></div></div>
           </div>
           <div id="earnings-table" class="table-wrap"></div>
+        </section>
+
+        <!-- PAYOUTS -->
+        <section id="view-payouts" class="view-section">
+          <h2 style="margin-bottom:var(--space-md)">Payouts</h2>
+          <p class="text-secondary" style="margin-bottom:var(--space-lg);font-size:0.9rem">Money received for completed gigs. A payout appears here once the promoter releases it.</p>
+          <div class="stats-grid" style="margin-bottom:var(--space-2xl)">
+            <div class="stat-card"><div class="card-inner"><div class="stat-label">Paid out</div><div class="stat-value" id="payout-paid" style="color:var(--status-confirmed)">—</div></div></div>
+            <div class="stat-card"><div class="card-inner"><div class="stat-label">In escrow</div><div class="stat-value" id="payout-escrow" style="color:var(--status-pending)">—</div></div></div>
+            <div class="stat-card"><div class="card-inner"><div class="stat-label">Next expected</div><div class="stat-value" id="payout-next">—</div></div></div>
+          </div>
+          <div id="payouts-table" class="table-wrap"></div>
         </section>
       </main>
     </div>
@@ -387,6 +412,94 @@
       }
     }
 
+    // ── Contracts (artist view) ──
+    let _contracts = [];
+
+    function renderContracts() {
+      const list = document.getElementById('artist-contracts-list');
+      if (!list) return;
+      if (_contracts.length === 0) {
+        list.innerHTML = '<div class="text-tertiary" style="padding:var(--space-xl);text-align:center;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md)">No contracts yet. Accept a booking request to receive a contract.</div>';
+        return;
+      }
+      list.innerHTML = _contracts.map(c => {
+        const booking = c.bookings || {};
+        const eventName = esc(booking.event_name || c.title || 'Performance');
+        const eventDate = booking.event_date ? UI.formatDate(booking.event_date) : '—';
+        const promoter = esc(booking.artists?.profiles?.display_name || '');
+        const fee = UI.currency(booking.fee || 0, booking.currency || 'AED');
+        const artistSigned = c.artist_signed;
+        const promoterSigned = c.promoter_signed;
+        let statusBadge;
+        if (c.status === 'signed') statusBadge = '<span style="color:var(--status-confirmed);font-size:0.8rem">✓ Fully signed</span>';
+        else if (artistSigned) statusBadge = '<span style="color:var(--gold-text);font-size:0.8rem">Waiting on promoter</span>';
+        else if (promoterSigned) statusBadge = '<span style="color:var(--status-pending);font-size:0.8rem">Awaiting your signature</span>';
+        else statusBadge = `<span class="text-tertiary" style="font-size:0.8rem">${esc(c.status)}</span>`;
+        const signBtn = !artistSigned
+          ? `<button class="btn btn-primary btn-sm" onclick="artistSignContract('${c.id}')">Sign Contract</button>`
+          : '<button class="btn btn-secondary btn-sm" disabled>Signed ✓</button>';
+        return `
+          <div class="card">
+            <div class="card-inner" style="display:flex;justify-content:space-between;align-items:center;gap:var(--space-md);flex-wrap:wrap">
+              <div style="flex:1;min-width:200px">
+                <div style="font-weight:600;margin-bottom:4px">${eventName}</div>
+                <div class="text-tertiary" style="font-size:0.82rem">${eventDate} · ${fee}</div>
+                <div style="margin-top:6px">${statusBadge}</div>
+              </div>
+              <div style="display:flex;gap:var(--space-sm)">
+                ${c.pdf_url ? `<a href="${esc(c.pdf_url)}" target="_blank" class="btn btn-ghost btn-sm">View PDF</a>` : ''}
+                ${signBtn}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function artistSignContract(contractId) {
+      if (!confirm('Sign this contract? This is legally binding.')) return;
+      const { error } = await DB.signContract(contractId, 'artist');
+      if (error) { UI.toast('Failed to sign: ' + (error.message || error), 'error'); return; }
+      UI.toast('Contract signed ✓', 'success');
+      const res = await DB.getMyContracts();
+      _contracts = res.success ? res.data : [];
+      renderContracts();
+    }
+
+    // ── Payouts (artist view) ──
+    let _payouts = [];
+
+    function renderPayouts() {
+      const sumPaid = _payouts.filter(p => p.status === 'completed').reduce((s, p) => s + (p.amount || 0), 0);
+      const sumEscrow = _payouts.filter(p => p.status === 'pending' || p.status === 'processing').reduce((s, p) => s + (p.amount || 0), 0);
+      const nextPayout = _payouts.find(p => p.status === 'pending' || p.status === 'processing');
+      const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+      setText('payout-paid', sumPaid > 0 ? UI.currency(sumPaid, 'AED') : '—');
+      setText('payout-escrow', sumEscrow > 0 ? UI.currency(sumEscrow, 'AED') : '—');
+      setText('payout-next', nextPayout ? UI.currency(nextPayout.amount || 0, nextPayout.currency || 'AED') : '—');
+
+      const tbl = document.getElementById('payouts-table');
+      if (!tbl) return;
+      if (_payouts.length === 0) {
+        tbl.innerHTML = '<div class="text-tertiary" style="padding:var(--space-xl);text-align:center">No payouts yet. Complete a gig to earn your first payout.</div>';
+        return;
+      }
+      tbl.innerHTML = `<table><thead><tr><th>Date</th><th>Event</th><th>From</th><th>Type</th><th>Status</th><th style="text-align:right">Amount</th></tr></thead><tbody>` +
+        _payouts.map(p => {
+          const b = p.bookings || {};
+          const promoter = esc(b.promoter?.display_name || '—');
+          const date = p.paid_at ? UI.formatDate(p.paid_at) : (b.event_date ? UI.formatDate(b.event_date) : '—');
+          return `<tr>
+            <td>${date}</td>
+            <td>${esc(b.event_name || '—')}</td>
+            <td>${promoter}</td>
+            <td style="text-transform:capitalize">${esc(p.type || '—')}</td>
+            <td>${UI.statusTag(p.status)}</td>
+            <td style="text-align:right;font-variant-numeric:tabular-nums">${UI.currency(p.amount || 0, p.currency || 'AED')}</td>
+          </tr>`;
+        }).join('') + '</tbody></table>';
+    }
+
     // Init
     document.addEventListener('DOMContentLoaded', async function() {
       await Auth.ready();
@@ -405,18 +518,24 @@
       document.getElementById('welcome-name').textContent = Auth.user?.display_name || 'Artist';
       if (typeof hydrateIcons === 'function') hydrateIcons();
 
-      // Load data
-      const [bookingsRes, messagesRes, earningsRes] = await Promise.all([
+      // Load data (contracts + payouts in parallel with the rest)
+      const [bookingsRes, messagesRes, earningsRes, contractsRes, payoutsRes] = await Promise.all([
         DB.getIncomingBookings(),
         DB.getConversations(),
         DB.getArtistEarnings(),
+        DB.getMyContracts(),
+        DB.getArtistPayouts(),
       ]);
 
       _bookings = bookingsRes.success ? bookingsRes.data : [];
       _messages = messagesRes.success ? messagesRes.data : [];
       _earnings = earningsRes.success ? earningsRes.data : {};
+      _contracts = contractsRes.success ? contractsRes.data : [];
+      _payouts = payoutsRes.success ? payoutsRes.data : [];
 
       renderMessages(_messages);
+      renderContracts();
+      renderPayouts();
       refreshUI();
 
       // Realtime

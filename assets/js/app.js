@@ -765,6 +765,21 @@ const DB = {
     return error ? { success: false, error: error.message } : { success: true, data: data || [] };
   },
 
+  // Artist-facing: payouts owed to / paid to this artist.
+  // Scoped via the bookings.artist_id → artists.profile_id chain (backed by RLS).
+  async getArtistPayouts() {
+    if (DEMO_MODE) return { success: true, data: [] };
+    if (!Auth.user) return { success: false, error: 'Not authenticated' };
+    const artistId = await this._getMyArtistId();
+    if (!artistId) return { success: true, data: [] };
+    const { data, error } = await _sb
+      .from('payments')
+      .select(`*, bookings!inner(event_name, event_date, venue_name, artist_id, promoter:profiles!promoter_id(display_name))`)
+      .eq('bookings.artist_id', artistId)
+      .order('created_at', { ascending: false });
+    return error ? { success: false, error: error.message } : { success: true, data: data || [] };
+  },
+
   // ── Messages ──
   async getConversations() {
     if (DEMO_MODE) return { success: true, data: [] };
