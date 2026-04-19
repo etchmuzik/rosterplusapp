@@ -506,7 +506,13 @@
       if (!Auth.isLoggedIn()) { Auth.require(); return; }
       if (Auth.role !== 'artist') { window.location.replace('dashboard.html'); return; }
 
-      // Onboarding — redirect new artists to profile setup
+      // Onboarding — if no artist row is linked yet, send to claim flow first.
+      // If claim page turns up no match, it links to artist-profile-edit.html?setup=1.
+      const myArtistId = await DB._getMyArtistId();
+      if (!myArtistId) {
+        window.location.replace('claim-profile.html');
+        return;
+      }
       const onboarding = await DB.checkOnboarding();
       if (!onboarding.complete) {
         UI.toast('Complete your artist profile to get started', 'info');

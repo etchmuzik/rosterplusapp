@@ -454,7 +454,7 @@
           // Accept invite if present
           const invToken = sessionStorage.getItem('rostr_invite_token');
           if (invToken) { DB.acceptInvitation(invToken); sessionStorage.removeItem('rostr_invite_token'); }
-          window.location.href = role === 'artist' ? 'artist-profile-edit.html?setup=1' : 'dashboard.html';
+          window.location.href = role === 'artist' ? 'claim-profile.html' : 'dashboard.html';
         } else {
           showError(result.error || 'Sign up failed');
           btn.disabled = false;

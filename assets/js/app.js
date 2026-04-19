@@ -830,6 +830,36 @@ const DB = {
     } catch(e) { return { success: false, error: String(e) }; }
   },
 
+  // Search unclaimed artist rows by partial stage_name match.
+  // Used by the claim-profile flow right after an artist signs up.
+  async searchUnclaimedArtists(query) {
+    if (DEMO_MODE) return { success: true, data: [] };
+    if (!query || !query.trim()) return { success: true, data: [] };
+    try {
+      const { data, error } = await _sb.from('artists')
+        .select('id, stage_name, genre, cities_active, verified')
+        .is('profile_id', null)
+        .ilike('stage_name', `%${query.trim()}%`)
+        .limit(10);
+      if (error) return { success: false, data: [], error: error.message };
+      return { success: true, data: data || [] };
+    } catch(e) { return { success: false, data: [], error: String(e) }; }
+  },
+
+  // Claim an unclaimed artist row. Runs the SECURITY DEFINER RPC that
+  // enforces: caller is an artist, row is unclaimed, caller has no prior row.
+  async claimArtistProfile(artistId) {
+    if (DEMO_MODE) return { success: true, data: { id: artistId } };
+    if (!Auth.user) return { success: false, error: 'Not authenticated' };
+    try {
+      const { data, error } = await _sb.rpc('claim_artist_profile', { target_artist_id: artistId });
+      if (error) return { success: false, error: error.message };
+      // Invalidate cached artist id so subsequent loads pick up the new claim
+      this._cachedArtistId = null;
+      return { success: true, data };
+    } catch(e) { return { success: false, error: String(e) }; }
+  },
+
   async createArtistProfile(data) {
     if (DEMO_MODE) return { success: true, data: { id: 'demo-artist-1', ...data } };
     if (!Auth.user) return { success: false, error: 'Not authenticated' };

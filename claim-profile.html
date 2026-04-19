@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#c9a84c">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <title>Claim your artist profile — ROSTR+</title>
+  <link rel="stylesheet" href="assets/css/system.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/app.js" defer></script>
+  <style>
+    .claim-container { max-width: 640px; margin: 80px auto 0; padding: var(--space-2xl) var(--space-lg); }
+    .claim-card { background: var(--glass-bg); backdrop-filter: blur(var(--glass-blur)); border: 1px solid var(--glass-border); border-radius: var(--radius-lg); padding: var(--space-xl); margin-bottom: var(--space-md); }
+    .match-card { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); padding: var(--space-md); background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); transition: border-color var(--duration-fast); }
+    .match-card:hover { border-color: var(--gold); }
+    .match-meta { font-size: 0.82rem; color: var(--text-tertiary); margin-top: 2px; }
+    .divider { text-align: center; color: var(--text-tertiary); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.1em; margin: var(--space-xl) 0 var(--space-md); }
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+    <div id="nav-root"></div>
+
+    <main class="claim-container">
+      <h1 style="margin-bottom: var(--space-sm)">Claim your artist profile</h1>
+      <p class="text-secondary" style="margin-bottom: var(--space-xl)">
+        If you were added to ROSTR+ by a promoter before you signed up, find your name below and claim it.
+        Your existing bookings, contracts, and history will be linked to your new account.
+      </p>
+
+      <div class="claim-card">
+        <div class="form-group" style="margin-bottom: var(--space-md)">
+          <label class="form-label">Search your stage name</label>
+          <input type="text" class="form-input" id="search-input"
+                 placeholder="e.g. ENAI, Goomgum, Etch EG..."
+                 autocomplete="off" autofocus>
+        </div>
+        <div id="search-results" style="display: flex; flex-direction: column; gap: var(--space-sm)"></div>
+        <div id="search-empty" class="text-tertiary" style="padding: var(--space-md) 0; font-size: 0.9rem; text-align: center; display: none">
+          No unclaimed profiles match "<span id="search-term"></span>".
+        </div>
+      </div>
+
+      <div class="divider">— or —</div>
+
+      <div class="claim-card" style="text-align: center">
+        <p class="text-secondary" style="margin-bottom: var(--space-md); font-size: 0.9rem">
+          Don't see your name? That's fine. Create a fresh profile from scratch.
+        </p>
+        <a href="artist-profile-edit.html?setup=1" class="btn btn-secondary">Create new profile &rarr;</a>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    let _searchTimer = null;
+
+    async function runSearch(query) {
+      const resultsEl = document.getElementById('search-results');
+      const emptyEl = document.getElementById('search-empty');
+      if (!query || query.length < 2) {
+        resultsEl.innerHTML = '';
+        emptyEl.style.display = 'none';
+        return;
+      }
+
+      const res = await DB.searchUnclaimedArtists(query);
+      if (!res.success) {
+        resultsEl.innerHTML = '';
+        UI.toast(res.error || 'Search failed', 'error');
+        return;
+      }
+
+      if (res.data.length === 0) {
+        resultsEl.innerHTML = '';
+        document.getElementById('search-term').textContent = query;
+        emptyEl.style.display = 'block';
+        return;
+      }
+
+      emptyEl.style.display = 'none';
+      resultsEl.innerHTML = res.data.map(a => {
+        const genre = Array.isArray(a.genre) ? a.genre.join(', ') : (a.genre || '');
+        const cities = Array.isArray(a.cities_active) ? a.cities_active.join(' · ') : '';
+        const meta = [genre, cities].filter(Boolean).join(' — ');
+        return `
+          <div class="match-card">
+            <div style="flex:1; min-width: 0">
+              <div style="font-weight: 600">${esc(a.stage_name)}${a.verified ? ' <span style="color:var(--gold-text)">✓</span>' : ''}</div>
+              ${meta ? `<div class="match-meta">${esc(meta)}</div>` : ''}
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="claim('${a.id}', '${esc(a.stage_name).replace(/'/g, "\\'")}')">
+              This is me
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function claim(artistId, stageName) {
+      if (!confirm(`Claim "${stageName}" as your artist profile? This cannot be undone.`)) return;
+      const res = await DB.claimArtistProfile(artistId);
+      if (!res.success) {
+        const msg = {
+          'already_has_artist_profile': 'You already have an artist profile.',
+          'artist_not_found_or_already_claimed': 'That profile was just claimed by someone else.',
+          'only_artists_can_claim': 'Only artist accounts can claim profiles.',
+          'not_authenticated': 'Please log in first.',
+        }[res.error] || res.error || 'Claim failed';
+        UI.toast(msg, 'error');
+        return;
+      }
+      UI.toast('Profile claimed ✓ Welcome to ROSTR+', 'success');
+      // Mark onboarding complete so dashboard doesn't send them to setup again
+      await DB.completeOnboarding();
+      setTimeout(() => window.location.href = 'artist-dashboard.html', 900);
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await Auth.ready();
+      if (!Auth.isLoggedIn()) { Auth.require(); return; }
+      if (Auth.role !== 'artist') { window.location.replace('dashboard.html'); return; }
+
+      // If already claimed, skip straight to dashboard
+      const artistId = await DB._getMyArtistId();
+      if (artistId) {
+        window.location.replace('artist-dashboard.html');
+        return;
+      }
+
+      document.getElementById('nav-root').innerHTML = renderNav('');
+      if (typeof hydrateIcons === 'function') hydrateIcons();
+
+      // Pre-fill with the signup display name if present
+      const name = Auth.user?.display_name;
+      const input = document.getElementById('search-input');
+      if (name) {
+        input.value = name;
+        runSearch(name);
+      }
+
+      // Debounced search
+      input.addEventListener('input', e => {
+        clearTimeout(_searchTimer);
+        _searchTimer = setTimeout(() => runSearch(e.target.value.trim()), 250);
+      });
+    });
+  </script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
+</body>
+</html>
