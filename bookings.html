@@ -422,7 +422,7 @@
       const sorted = [...bookings].sort((a, b) => new Date(b.date) - new Date(a.date));
 
       list.innerHTML = sorted.map((b, i) => {
-        const artist = (typeof MockData !== 'undefined' && MockData.artists) ? MockData.artists.find(a => a.id === b.artist_id) : null;
+        const artist = null;
         const isPast = new Date(b.date) < new Date();
 
         return `

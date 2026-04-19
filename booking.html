@@ -563,7 +563,7 @@
 
       // Load artists
       const artistResult = await DB.getArtists({});
-      const _allArtists = (artistResult.success && artistResult.data.length > 0) ? artistResult.data : (typeof MockData !== 'undefined' ? MockData.artists : []);
+      const _allArtists = artistResult.success ? artistResult.data : [];
       renderArtistGrid(_allArtists);
 
       // Pre-select artist from URL

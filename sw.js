@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rostr-v1';
+const CACHE_NAME = 'rostr-v2-golive';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

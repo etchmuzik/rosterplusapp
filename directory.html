@@ -722,15 +722,13 @@
         async function initializeDirectory() {
             document.getElementById('resultsInfo').textContent = 'Loading artists...';
             const result = await DB.getArtists();
-            if (result.success && result.data.length > 0) {
-                allArtists = result.data;
-            } else {
-                // Fallback to mock data if DB fails or returns empty
-                allArtists = window.MockData ? [...window.MockData.artists] : [];
-            }
+            allArtists = (result.success && result.data) ? result.data : [];
             filteredArtists = [...allArtists];
             renderArtists();
             updateResultsInfo();
+            if (!result.success) {
+                document.getElementById('resultsInfo').textContent = 'Couldn\u2019t load artists — please refresh.';
+            }
         }
 
         function setupEventListeners() {

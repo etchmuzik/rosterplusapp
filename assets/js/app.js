@@ -218,76 +218,6 @@ const Auth = {
   }
 };
 
-// ── Mock Data ──
-const MockData = window.MockData = {
-  artists: [
-    { id: 'a1', name: 'DJ NOVAK', genre: 'Tech House', subgenre: 'Melodic Techno', city: 'Dubai', country: 'UAE', rate_min: 5000, rate_max: 15000, currency: 'AED', rating: 4.9, bookings: 142, image: null, available: true, verified: true, bio: 'Resident DJ at leading Dubai venues. Known for deep, melodic sets that build energy through the night.', social: { instagram: '12.4K', soundcloud: '8.2K' } },
-    { id: 'a2', name: 'AMARA', genre: 'Afro House', subgenre: 'Afro Tech', city: 'Riyadh', country: 'KSA', rate_min: 8000, rate_max: 25000, currency: 'SAR', rating: 4.8, bookings: 89, image: null, available: true, verified: true, bio: 'Saudi Arabia\'s rising Afro House queen. Festival headliner across the GCC.', social: { instagram: '28K', soundcloud: '15K' } },
-    { id: 'a3', name: 'KHAOS', genre: 'Hip Hop', subgenre: 'Trap / Open Format', city: 'Abu Dhabi', country: 'UAE', rate_min: 3000, rate_max: 10000, currency: 'AED', rating: 4.7, bookings: 215, image: null, available: true, verified: false, bio: 'Abu Dhabi\'s most booked open-format DJ. 6 years of weekly residencies.', social: { instagram: '9.1K', soundcloud: '3.4K' } },
-    { id: 'a4', name: 'ZAINA B', genre: 'Deep House', subgenre: 'Organic House', city: 'Dubai', country: 'UAE', rate_min: 4000, rate_max: 12000, currency: 'AED', rating: 5.0, bookings: 67, image: null, available: false, verified: true, bio: 'Organic house specialist. Creates immersive sonic journeys blending Eastern and Western sounds.', social: { instagram: '18.7K', soundcloud: '11K' } },
-    { id: 'a5', name: 'MC FLUX', genre: 'Electronic', subgenre: 'Drum & Bass', city: 'Doha', country: 'Qatar', rate_min: 6000, rate_max: 20000, currency: 'QAR', rating: 4.6, bookings: 53, image: null, available: true, verified: true, bio: 'Qatar\'s premier MC and DnB artist. High-energy performances for festival and club settings.', social: { instagram: '7.3K', soundcloud: '5.8K' } },
-    { id: 'a6', name: 'SAHARA SOUND', genre: 'World / Electronic', subgenre: 'Desert Techno', city: 'Dubai', country: 'UAE', rate_min: 10000, rate_max: 35000, currency: 'AED', rating: 4.9, bookings: 34, image: null, available: true, verified: true, bio: 'Pioneering desert techno — blending traditional Arabic instruments with modern electronic production.', social: { instagram: '45K', soundcloud: '22K' } },
-    { id: 'a7', name: 'NOOR', genre: 'R&B / Soul', subgenre: 'Neo Soul', city: 'Jeddah', country: 'KSA', rate_min: 12000, rate_max: 40000, currency: 'SAR', rating: 4.8, bookings: 41, image: null, available: true, verified: true, bio: 'Vocalist and songwriter. Smooth neo-soul performances for luxury events and private gatherings.', social: { instagram: '33K', soundcloud: '9K' } },
-    { id: 'a8', name: 'BASS THEORY', genre: 'EDM', subgenre: 'Future Bass', city: 'Kuwait City', country: 'Kuwait', rate_min: 5000, rate_max: 18000, currency: 'KWD', rating: 4.5, bookings: 78, image: null, available: true, verified: false, bio: 'Kuwait-based producer and DJ. High-energy future bass sets with live production elements.', social: { instagram: '6.2K', soundcloud: '4.1K' } },
-  ],
-
-  venues: [
-    { id: 'v1', name: 'WHITE Dubai', city: 'Dubai', type: 'Nightclub', capacity: 3000 },
-    { id: 'v2', name: 'Soho Garden', city: 'Dubai', type: 'Beach Club / Nightclub', capacity: 5000 },
-    { id: 'v3', name: 'MDLBEAST', city: 'Riyadh', type: 'Festival Grounds', capacity: 200000 },
-    { id: 'v4', name: 'Billionaire Dubai', city: 'Dubai', type: 'Nightclub / Restaurant', capacity: 800 },
-    { id: 'v5', name: 'MAD Riyadh', city: 'Riyadh', type: 'Nightclub', capacity: 2000 },
-    { id: 'v6', name: 'Boa Lounge', city: 'Abu Dhabi', type: 'Lounge', capacity: 400 },
-    { id: 'v7', name: 'The Warehouse', city: 'Doha', type: 'Club', capacity: 1500 },
-    { id: 'v8', name: 'Sky 2.0', city: 'Dubai', type: 'Nightclub', capacity: 1200 },
-  ],
-
-  bookings: [
-    { id: 'b1', artist_id: 'a1', artist_name: 'DJ NOVAK', venue: 'WHITE Dubai', date: '2026-04-18', time: '23:00', status: 'confirmed', amount: 12000, currency: 'AED', promoter: 'Beyond Events' },
-    { id: 'b2', artist_id: 'a2', artist_name: 'AMARA', venue: 'MDLBEAST', date: '2026-05-02', time: '22:00', status: 'pending', amount: 20000, currency: 'SAR', promoter: 'Beyond Events' },
-    { id: 'b3', artist_id: 'a6', artist_name: 'SAHARA SOUND', venue: 'Soho Garden', date: '2026-04-25', time: '21:00', status: 'confirmed', amount: 28000, currency: 'AED', promoter: 'Beyond Events' },
-    { id: 'b4', artist_id: 'a3', artist_name: 'KHAOS', venue: 'Boa Lounge', date: '2026-04-12', time: '22:00', status: 'cancelled', amount: 8000, currency: 'AED', promoter: 'Beyond Events' },
-    { id: 'b5', artist_id: 'a7', artist_name: 'NOOR', venue: 'Billionaire Dubai', date: '2026-05-10', time: '20:00', status: 'pending', amount: 35000, currency: 'SAR', promoter: 'Beyond Events' },
-    { id: 'b6', artist_id: 'a5', artist_name: 'MC FLUX', venue: 'The Warehouse', date: '2026-04-30', time: '23:30', status: 'draft', amount: 15000, currency: 'QAR', promoter: 'Beyond Events' },
-  ],
-
-  messages: [
-    { id: 'm1', from: 'DJ NOVAK', preview: 'Confirmed for the 18th. Will need backline specs by...', time: '2h ago', unread: true },
-    { id: 'm2', from: 'AMARA', preview: 'Can we move the set time to 23:00 instead?', time: '5h ago', unread: true },
-    { id: 'm3', from: 'SAHARA SOUND', preview: 'Technical rider attached. Let me know if the venue...', time: '1d ago', unread: false },
-    { id: 'm4', from: 'NOOR', preview: 'Looking forward to it. Quick question about the...', time: '2d ago', unread: false },
-  ],
-
-  contracts: [
-    { id: 'c1', artist: 'DJ NOVAK', event: 'WHITE Dubai — Apr 18', status: 'signed', created: '2026-04-01' },
-    { id: 'c2', artist: 'AMARA', event: 'MDLBEAST — May 2', status: 'sent', created: '2026-04-03' },
-    { id: 'c3', artist: 'SAHARA SOUND', event: 'Soho Garden — Apr 25', status: 'signed', created: '2026-03-28' },
-    { id: 'c4', artist: 'NOOR', event: 'Billionaire — May 10', status: 'draft', created: '2026-04-05' },
-  ],
-
-  epk: {
-    press_quotes: [
-      { source: 'TimeOut Dubai', quote: 'One of the most exciting acts in the GCC nightlife scene.', date: '2025-11' },
-      { source: 'Mixmag Middle East', quote: 'A set that builds energy like no other — pure crowd control.', date: '2025-09' },
-      { source: 'GQ Arabia', quote: 'The future sound of the Gulf, distilled into one artist.', date: '2025-07' },
-    ],
-    past_performances: [
-      { venue: 'WHITE Dubai', event: 'NYE Afterparty', date: '2026-01-15' },
-      { venue: 'Soho Garden', event: 'Winter Festival', date: '2025-12-20' },
-      { venue: 'MDLBEAST Soundstorm', event: 'Main Stage', date: '2025-12-01' },
-      { venue: 'Billionaire Dubai', event: 'Saturday Sessions', date: '2025-11-15' },
-      { venue: 'Boa Lounge Abu Dhabi', event: 'Friday Night', date: '2025-10-24' },
-    ],
-    tech_rider: [
-      { category: 'DJ Equipment', item: '2x CDJ-3000 + DJM-V10' },
-      { category: 'Monitoring', item: '1x JBL SRX812 wedge (left side)' },
-      { category: 'Connectivity', item: 'Stereo DI + XLR to FOH' },
-      { category: 'Visual', item: 'LED wall content input (HDMI)' },
-      { category: 'Hospitality', item: 'Private greenroom + 2 guests' },
-    ],
-  }
-};
-
 // ── UI Helpers ──
 // ── XSS Protection ──
 function esc(str) {
@@ -508,26 +438,18 @@ function renderDemoBanner() {
 const DB = {
   // ── Artists ──
   async getArtists({ search = '', genre = '', city = '', availableOnly = false } = {}) {
-    if (DEMO_MODE) {
-      let results = [...MockData.artists];
-      if (search) results = results.filter(a =>
-        a.name.toLowerCase().includes(search.toLowerCase()) ||
-        a.genre.toLowerCase().includes(search.toLowerCase())
-      );
-      if (genre) results = results.filter(a => a.genre === genre);
-      if (city) results = results.filter(a => a.city === city);
-      if (availableOnly) results = results.filter(a => a.available);
-      return { success: true, data: results };
-    }
+    if (DEMO_MODE) return { success: false, data: [], error: 'Offline: Supabase unavailable' };
 
     try {
+    // LEFT join on profiles so unclaimed artists (profile_id = NULL) still appear.
+    // Unclaimed artists are seeded before the artist signs up; profile is linked later.
     let query = _sb
       .from('artists')
       .select(`
         id, stage_name, genre, subgenres, base_fee, currency,
         rating, total_bookings, cities_active, social_links,
         epk_url, verified, status,
-        profiles!inner(display_name, avatar_url, city)
+        profiles(display_name, avatar_url, city)
       `)
       .eq('status', 'active');
 
@@ -570,15 +492,13 @@ const DB = {
   },
 
   async getArtistById(id) {
-    if (DEMO_MODE) {
-      const artist = MockData.artists.find(a => a.id === id);
-      return artist ? { success: true, data: artist } : { success: false, error: 'Not found' };
-    }
+    if (DEMO_MODE) return { success: false, error: 'Offline: Supabase unavailable' };
 
     try {
+    // LEFT join (no !inner) so unclaimed artists still resolve.
     const { data, error } = await _sb
       .from('artists')
-      .select(`*, profiles!inner(display_name, avatar_url, city, bio, phone)`)
+      .select(`*, profiles(display_name, avatar_url, city, bio, phone)`)
       .eq('id', id)
       .single();
 
@@ -614,11 +534,7 @@ const DB = {
 
   // ── Bookings ──
   async getMyBookings() {
-    const mockFallback = () => {
-      if (typeof MockData !== 'undefined' && MockData.bookings) return { success: true, data: MockData.bookings };
-      return { success: true, data: [] };
-    };
-    if (DEMO_MODE) return mockFallback();
+    if (DEMO_MODE) return { success: true, data: [] };
     const user = Auth.user;
     if (!user) return { success: false, error: 'Not authenticated' };
     try {
@@ -626,9 +542,9 @@ const DB = {
         .select(`*, artists(stage_name, genre, cities_active, profiles(display_name))`)
         .eq('promoter_id', user.id)
         .order('event_date', { ascending: true });
-      if (error || !data || data.length === 0) return mockFallback();
-      return { success: true, data };
-    } catch(e) { return mockFallback(); }
+      if (error) return { success: false, data: [], error: error.message };
+      return { success: true, data: data || [] };
+    } catch(e) { return { success: false, data: [], error: String(e) }; }
   },
 
   async createBooking(bookingData) {
@@ -655,22 +571,16 @@ const DB = {
 
   // ── Contracts ──
   async getMyContracts() {
-    const mockFallback = () => {
-      if (typeof MockData !== 'undefined' && MockData.contracts) {
-        return { success: true, data: MockData.contracts.map(c => ({ ...c, promoter_signed: c.status === 'signed', artist_signed: c.status === 'signed', bookings: null })) };
-      }
-      return { success: true, data: [] };
-    };
-    if (DEMO_MODE) return mockFallback();
+    if (DEMO_MODE) return { success: true, data: [] };
     const user = Auth.user;
     if (!user) return { success: false, error: 'Not authenticated' };
     try {
       const { data, error } = await _sb.from('contracts')
         .select(`*, bookings(event_name, event_date, venue_name, fee, currency, promoter_id, artist_id, artists(stage_name, profiles(display_name)))`)
         .order('created_at', { ascending: false });
-      if (error || !data || data.length === 0) return mockFallback();
-      return { success: true, data };
-    } catch(e) { return mockFallback(); }
+      if (error) return { success: false, data: [], error: error.message };
+      return { success: true, data: data || [] };
+    } catch(e) { return { success: false, data: [], error: String(e) }; }
   },
 
   async createContract({ booking_id, fee, title, content }) {
@@ -908,22 +818,16 @@ const DB = {
   },
 
   async getMyArtistProfile() {
-    const mockFallback = () => {
-      if (typeof MockData !== 'undefined' && MockData.artists) {
-        const a = MockData.artists[0];
-        return { success: true, data: { ...a, profile_id: Auth.user?.id || 'demo-1', press_quotes: MockData.epk.press_quotes, past_performances: MockData.epk.past_performances, tech_rider: MockData.epk.tech_rider, epk_gallery: [] } };
-      }
-      return { success: false, error: 'No profile' };
-    };
-    if (DEMO_MODE) return mockFallback();
+    if (DEMO_MODE) return { success: false, error: 'Offline: Supabase unavailable' };
     if (!Auth.user) return { success: false, error: 'Not authenticated' };
     try {
       const { data, error } = await _sb.from('artists')
         .select('*, profiles!inner(display_name, avatar_url, city, bio, phone)')
         .eq('profile_id', Auth.user.id).single();
-      if (error || !data) return mockFallback();
+      if (error) return { success: false, error: error.message };
+      if (!data) return { success: false, error: 'No artist profile' };
       return { success: true, data: { ...data, name: data.stage_name || data.profiles?.display_name || 'Unknown', genre: Array.isArray(data.genre) ? data.genre[0] : data.genre, subgenre: Array.isArray(data.subgenres) ? data.subgenres.join(', ') : '', city: data.cities_active?.[0] || data.profiles?.city || '', bio: data.profiles?.bio || '', avatar_url: data.profiles?.avatar_url, social: data.social_links || {} } };
-    } catch(e) { return mockFallback(); }
+    } catch(e) { return { success: false, error: String(e) }; }
   },
 
   async createArtistProfile(data) {
@@ -975,23 +879,17 @@ const DB = {
   },
 
   async getIncomingBookings() {
-    const mockFallback = () => {
-      if (typeof MockData !== 'undefined' && MockData.bookings) {
-        return { success: true, data: MockData.bookings.map(b => ({ ...b, promoter_name: 'Beyond Events', promoter_email: 'events@beyond.ae' })) };
-      }
-      return { success: true, data: [] };
-    };
-    if (DEMO_MODE) return mockFallback();
+    if (DEMO_MODE) return { success: true, data: [] };
     if (!Auth.user) return { success: false, error: 'Not authenticated' };
     try {
       const artistId = await this._getMyArtistId();
-      if (!artistId) return mockFallback();
+      if (!artistId) return { success: true, data: [] };
       const { data, error } = await _sb.from('bookings')
         .select('*, promoter:profiles!promoter_id(display_name, avatar_url, email)')
         .eq('artist_id', artistId)
         .order('event_date', { ascending: true });
-      if (error || !data || data.length === 0) return mockFallback();
-      return { success: true, data: data.map(b => ({ ...b, promoter_name: b.promoter?.display_name || 'Unknown', promoter_email: b.promoter?.email || '' })) };
+      if (error) return { success: false, data: [], error: error.message };
+      return { success: true, data: (data || []).map(b => ({ ...b, promoter_name: b.promoter?.display_name || 'Unknown', promoter_email: b.promoter?.email || '' })) };
     } catch(e) { return mockFallback(); }
   },
 
@@ -1024,18 +922,12 @@ const DB = {
   },
 
   async getArtistEarnings() {
-    const mockCalc = () => {
-      if (typeof MockData === 'undefined') return { success: true, data: { total: 0, pending: 0, thisMonth: 0, count: 0 } };
-      const bookings = MockData.bookings;
-      const total = bookings.filter(b => b.status === 'confirmed' || b.status === 'completed').reduce((s, b) => s + (b.amount || 0), 0);
-      const thisMonth = bookings.filter(b => { const d = new Date(b.date); const now = new Date(); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() && (b.status === 'confirmed' || b.status === 'completed'); }).reduce((s, b) => s + (b.amount || 0), 0);
-      return { success: true, data: { total, pending: total * 0.3, thisMonth, count: bookings.length } };
-    };
-    if (DEMO_MODE) return mockCalc();
+    const empty = { success: true, data: { total: 0, pending: 0, thisMonth: 0, count: 0 } };
+    if (DEMO_MODE) return empty;
     if (!Auth.user) return { success: false, error: 'Not authenticated' };
     try {
       const artistId = await this._getMyArtistId();
-      if (!artistId) return mockCalc();
+      if (!artistId) return empty;
       const { data, error } = await _sb.from('bookings')
         .select('fee, currency, status, event_date')
         .eq('artist_id', artistId)
@@ -1050,21 +942,16 @@ const DB = {
   },
 
   async getArtistEPK(artistId) {
-    const mockFallback = () => {
-      if (typeof MockData !== 'undefined' && MockData.artists) {
-        const a = MockData.artists.find(x => x.id === artistId) || MockData.artists[0];
-        return { success: true, data: { ...a, press_quotes: MockData.epk.press_quotes, past_performances: MockData.epk.past_performances, tech_rider: MockData.epk.tech_rider } };
-      }
-      return { success: false, error: 'Not found' };
-    };
-    if (DEMO_MODE) return mockFallback();
+    if (DEMO_MODE) return { success: false, error: 'Offline: Supabase unavailable' };
     try {
+      // LEFT join on profiles so unclaimed artists still return an EPK
       const { data, error } = await _sb.from('artists')
-        .select('*, profiles!inner(display_name, avatar_url, city, bio)')
+        .select('*, profiles(display_name, avatar_url, city, bio)')
         .eq('id', artistId).single();
-      if (error || !data) return mockFallback();
+      if (error) return { success: false, error: error.message };
+      if (!data) return { success: false, error: 'Not found' };
       return { success: true, data: { ...data, name: data.stage_name || data.profiles?.display_name || 'Unknown', bio: data.profiles?.bio || '', avatar_url: data.profiles?.avatar_url, city: data.cities_active?.[0] || data.profiles?.city || '' } };
-    } catch(e) { return mockFallback(); }
+    } catch(e) { return { success: false, error: String(e) }; }
   },
   // ── Availability ──
 

@@ -612,28 +612,15 @@
       return params.get('id');
     }
 
-    // Find artist from DB with MockData fallback
     async function findArtist(id) {
       const result = await DB.getArtistById(id);
-      if (result.success && result.data) return result.data;
-      // Fallback to MockData for demo
-      if (typeof MockData !== 'undefined' && MockData.artists) {
-        return MockData.artists.find(a => a.id === id) || null;
-      }
-      return null;
+      return (result.success && result.data) ? result.data : null;
     }
 
-    // Get similar artists from DB with MockData fallback
     async function getSimilarArtistsDB(artist) {
       const result = await DB.getArtists({ genre: artist.genre });
-      if (result.success && result.data.length > 0) {
-        return result.data.filter(a => a.id !== artist.id).slice(0, 5);
-      }
-      // Fallback
-      if (typeof MockData !== 'undefined' && MockData.artists) {
-        return MockData.artists.filter(a => a.id !== artist.id && a.genre === artist.genre).slice(0, 5);
-      }
-      return [];
+      if (!result.success) return [];
+      return (result.data || []).filter(a => a.id !== artist.id).slice(0, 5);
     }
 
     // Format currency
