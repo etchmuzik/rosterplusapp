@@ -106,13 +106,19 @@ trap "rm -f $LFTP_SCRIPT" EXIT
   if [[ "$FTP_REMOTE_DIR" != "/" ]]; then
     echo "mkdir -p $FTP_REMOTE_DIR"
   fi
+  # Hostinger quirk: the FTP user logs into /public_html as its home,
+  # but absolute paths (/assets/css/) resolve to the filesystem root —
+  # which is not served by the webserver. Using relative paths (without
+  # leading slash) keeps uploads inside public_html where they belong.
+  # That's why FTP_REMOTE_DIR should be kept as "/" (= home directory)
+  # and all put -O paths should be relative.
   while IFS= read -r f; do
     [[ -z "$f" ]] && continue
     remote_dir=$(dirname "$f")
     if [[ "$remote_dir" == "." ]]; then
-      remote_path="${FTP_REMOTE_DIR%/}/"
+      remote_path="./"
     else
-      remote_path="${FTP_REMOTE_DIR%/}/$remote_dir/"
+      remote_path="$remote_dir/"
     fi
     # Echo + put so we see per-file progress in the transcript.
     # ! prefix runs the command locally. We use it to print a status line.
