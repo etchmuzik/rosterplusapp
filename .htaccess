@@ -11,7 +11,13 @@ RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
   Header set Permissions-Policy "camera=(), microphone=(), geolocation=()"
   Header set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
   Header set X-XSS-Protection "1; mode=block"
-  Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; frame-ancestors 'none'"
+  # CSP rationale — only widened to what the app actually needs:
+  #   script-src: jsDelivr for Supabase SDK, Plausible for privacy-friendly analytics.
+  #   style-src:  Fontshare + Google Fonts stylesheets for Chillax / Satoshi / JetBrains Mono.
+  #   font-src:   The actual .woff2 payloads the above stylesheets reference.
+  #   connect-src: Supabase API + realtime WebSocket, plus Plausible event endpoint.
+  #   img-src:    data: (SVG avatars) + https: (user uploads, Supabase storage public URLs).
+  Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://plausible.io; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://plausible.io; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://api.fontshare.com https://fonts.googleapis.com; font-src 'self' data: https://api.fontshare.com https://cdn.fontshare.com https://fonts.gstatic.com; frame-ancestors 'none'"
 </IfModule>
 
 # Disable LiteSpeed server-side cache for all content. Without this,
