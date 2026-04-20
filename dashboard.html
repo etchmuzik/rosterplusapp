@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-accent="mono">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#c9a84c">
+  <meta name="theme-color" content="#08090b">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="ROSTR+">
@@ -17,78 +17,115 @@
   <div class="page-shell">
     <nav-root id="nav-root"></nav-root>
 
-    <main class="container" style="padding-top: var(--space-xl); padding-bottom: var(--space-2xl)">
-      <!-- Welcome Header -->
-      <div style="margin-bottom: var(--space-2xl); animation: fadeIn var(--duration-slow) var(--ease-out)">
-        <h1 style="margin-bottom: var(--space-sm)">Welcome back, <span id="welcome-name">Demo Promoter</span></h1>
-        <p class="text-secondary" id="welcome-subtitle">Your upcoming bookings and messages at a glance</p>
-      </div>
-
-      <!-- Stats Row -->
-      <div class="stats-grid" style="margin-bottom: var(--space-2xl)">
-        <div class="card stat-card animate-in stagger-1"><div class="card-inner"><div class="stat-label">Total Bookings</div><div class="stat-value">—</div></div></div>
-        <div class="card stat-card animate-in stagger-2"><div class="card-inner"><div class="stat-label">Confirmed</div><div class="stat-value">—</div></div></div>
-        <div class="card stat-card animate-in stagger-3"><div class="card-inner"><div class="stat-label">Pending</div><div class="stat-value">—</div></div></div>
-        <div class="card stat-card animate-in stagger-4"><div class="card-inner"><div class="stat-label">Total Spend</div><div class="stat-value">—</div></div></div>
-      </div>
-
-      <!-- Upcoming Events Section -->
-      <div style="margin-bottom: var(--space-2xl); animation: fadeIn var(--duration-slow) var(--ease-out); animation-delay: 200ms">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom: var(--space-lg)">
-          <h2 style="margin: 0">Upcoming Events</h2>
-          <a href="bookings.html" class="btn btn-ghost btn-sm">View all</a>
+    <main class="container" style="padding-top: var(--space-xl); padding-bottom: var(--space-3xl)">
+      <!-- ═══ Welcome ═══ -->
+      <div class="dash-welcome lp-anim">
+        <div>
+          <div class="eyebrow" style="font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-tertiary)">
+            <span id="welcome-date">—</span>
+          </div>
+          <h1>Good evening, <em id="welcome-name">there</em>.</h1>
+          <p id="welcome-sub">Here's what's coming up.</p>
         </div>
-        <div class="table-wrap">
-          <table id="upcoming-events-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Artist</th>
-                <th>Venue</th>
-                <th>Status</th>
-                <th style="text-align: right">Amount</th>
-              </tr>
-            </thead>
-            <tbody id="upcoming-events-body">
-              <!-- Populated by JS -->
-            </tbody>
-          </table>
+        <div style="display: flex; gap: 8px">
+          <a class="btn btn-secondary" href="directory.html">
+            <span class="js-icon" data-icon="search" data-size="14"></span>
+            Find artist
+          </a>
+          <a class="btn btn-primary" href="booking.html">
+            <span class="js-icon" data-icon="plus" data-size="14"></span>
+            New booking
+          </a>
         </div>
       </div>
 
-      <!-- Recent Messages Section -->
-      <div style="margin-bottom: var(--space-2xl); animation: fadeIn var(--duration-slow) var(--ease-out); animation-delay: 300ms">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom: var(--space-lg)">
-          <h2 style="margin: 0">Recent Messages</h2>
-          <a href="messages.html" class="btn btn-ghost btn-sm">Open inbox</a>
+      <!-- ═══ Big stats ═══ -->
+      <div class="dash-stats">
+        <div class="dash-stat lp-anim lp-d-1">
+          <div class="label">Total bookings</div>
+          <div class="value" id="stat-total">—</div>
+          <div class="sub" id="stat-total-sub">—</div>
         </div>
-        <div id="recent-messages" style="display: flex; flex-direction: column; gap: var(--space-md)">
-          <!-- Populated by JS -->
+        <div class="dash-stat lp-anim lp-d-2">
+          <div class="label">Confirmed</div>
+          <div class="value" style="color: var(--status-confirmed)" id="stat-confirmed">—</div>
+          <div class="sub" id="stat-confirmed-sub">—</div>
+        </div>
+        <div class="dash-stat lp-anim lp-d-3">
+          <div class="label">Pending</div>
+          <div class="value" style="color: var(--status-pending)" id="stat-pending">—</div>
+          <div class="sub" id="stat-pending-sub">—</div>
+        </div>
+        <div class="dash-stat lp-anim lp-d-4">
+          <div class="label">Total spend</div>
+          <div class="value" id="stat-spend">—</div>
+          <div class="sub" id="stat-spend-sub">All time</div>
         </div>
       </div>
 
-      <!-- Quick Actions -->
-      <div style="animation: fadeIn var(--duration-slow) var(--ease-out); animation-delay: 400ms">
-        <h2 style="margin-bottom: var(--space-lg)">Quick Actions</h2>
-        <div style="display: flex; gap: var(--space-md); flex-wrap: wrap">
-          <button class="btn btn-primary" onclick="window.location.href='booking.html'">
-            <span class="js-icon" data-icon="plus" data-size="16"></span>
-            New Booking
-          </button>
-          <button class="btn btn-secondary" onclick="window.location.href='directory.html'">
-            <span class="js-icon" data-icon="grid" data-size="16"></span>
-            Browse Artists
-          </button>
-          <button class="btn btn-secondary" onclick="window.location.href='contracts.html'">
-            <span class="js-icon" data-icon="fileText" data-size="16"></span>
-            View Contracts
-          </button>
+      <!-- ═══ Body: timeline + side column ═══ -->
+      <div class="dash-body">
+        <!-- Timeline -->
+        <div class="lp-anim lp-d-5">
+          <div class="lp-section-head" style="align-items: end">
+            <div>
+              <span class="eyebrow">Upcoming</span>
+              <h2 style="margin-top: 4px; font-family: var(--font-display); font-size: 1.5rem; letter-spacing: -0.03em">Next shows</h2>
+            </div>
+            <div class="dash-filter" role="tablist">
+              <button data-filter="week" class="active">Week</button>
+              <button data-filter="month">Month</button>
+              <button data-filter="all">All</button>
+            </div>
+          </div>
+          <div id="timeline-root"></div>
+        </div>
+
+        <!-- Side column -->
+        <div class="dash-side lp-anim lp-d-5">
+          <!-- Pipeline -->
+          <div class="dash-card">
+            <div class="head">
+              <div>
+                <span class="eyebrow">Pipeline</span>
+                <h3>Booking funnel</h3>
+              </div>
+              <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-tertiary)" id="pipeline-total">—</span>
+            </div>
+            <div id="pipeline-root"></div>
+          </div>
+
+          <!-- Inbox -->
+          <div class="dash-card">
+            <div class="head">
+              <div>
+                <span class="eyebrow">Inbox</span>
+                <h3>Recent messages</h3>
+              </div>
+              <a href="messages.html" style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-soft)">Open &rarr;</a>
+            </div>
+            <div id="inbox-root" class="dash-inbox"></div>
+          </div>
+
+          <!-- Suggestion -->
+          <div class="dash-suggest" id="suggestion-root" style="display: none">
+            <span class="eyebrow" style="font-family: var(--font-mono); font-size: 0.7rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-tertiary)">Suggested for you</span>
+            <div class="who">
+              <div class="tile" id="sug-initials">—</div>
+              <div style="flex: 1; min-width: 0">
+                <div class="stage" id="sug-name">—</div>
+                <div class="meta" id="sug-meta">—</div>
+              </div>
+            </div>
+            <p id="sug-desc">—</p>
+            <a id="sug-link" class="btn btn-secondary btn-sm" style="margin-top: 12px; width: 100%; justify-content: center">View profile</a>
+          </div>
         </div>
       </div>
     </main>
   </div>
 
-  <!-- Message Preview Card Modal -->
+  <!-- Message modal (kept from the v2 dashboard for realtime toasts) -->
   <div id="message-modal" class="modal-overlay">
     <div class="modal">
       <div class="modal-header">
@@ -102,12 +139,8 @@
       </div>
       <div id="message-modal-preview" style="color: var(--text-secondary); line-height: 1.6; margin-bottom: var(--space-lg)"></div>
       <div style="display: flex; gap: var(--space-sm)">
-        <button class="btn btn-primary flex-1" onclick="window.location.href='messages.html'">
-          View Full Message
-        </button>
-        <button class="btn btn-secondary flex-1" onclick="document.getElementById('message-modal').classList.remove('active')">
-          Close
-        </button>
+        <a class="btn btn-primary flex-1" href="messages.html" style="text-align: center">View Full Message</a>
+        <button class="btn btn-secondary flex-1" onclick="document.getElementById('message-modal').classList.remove('active')">Close</button>
       </div>
     </div>
   </div>
@@ -115,19 +148,257 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="assets/js/app.js"></script>
   <script>
-    /* ═══════════════════════════════════════════════════════════
-       DASHBOARD — Promoter Overview (single-scroll)
-       ═══════════════════════════════════════════════════════════ */
-
+    /* ═══ DASHBOARD — Promoter cockpit (v3 port) ═══ */
     let _allBookings = [];
     let _allMessages = [];
+    let _currentFilter = 'week';
 
+    function initials(name) {
+      return (name || '?').split(/\s+/).map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
+    }
+
+    function avatarHueStyle(name) {
+      const hash = (name || '').split('').reduce((h, c) => h + c.charCodeAt(0), 0);
+      const hue = hash % 360;
+      return `background: radial-gradient(ellipse at 30% 30%, hsla(${hue}, 22%, 45%, 0.55), transparent 70%), var(--bg-2);`;
+    }
+
+    /* ── Welcome text: greeting + date line ── */
+    function renderWelcome() {
+      const now = new Date();
+      const h = now.getHours();
+      const greeting = h < 6 ? 'Good night' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+      const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+      const city = Auth.user?.city || '';
+      document.getElementById('welcome-date').textContent = dateStr + (city ? ' · ' + city : '');
+
+      const firstName = (Auth.user?.display_name || Auth.user?.email?.split('@')[0] || 'there').split(/\s+/)[0];
+      document.getElementById('welcome-name').textContent = firstName;
+
+      const h1 = document.querySelector('.dash-welcome h1');
+      if (h1) h1.firstChild.textContent = greeting + ', ';
+    }
+
+    /* ── Stats ── */
+    function renderStats() {
+      const total     = _allBookings.length;
+      const confirmed = _allBookings.filter(b => ['confirmed','contracted','completed'].includes(b.status)).length;
+      const pending   = _allBookings.filter(b => ['inquiry','pending'].includes(b.status)).length;
+      const spend     = _allBookings.reduce((s, b) => s + (b.fee || b.amount || 0), 0);
+      const spendK    = spend > 0 ? Math.round(spend / 1000) + 'K' : '0';
+
+      document.getElementById('stat-total').textContent = total;
+      document.getElementById('stat-confirmed').textContent = confirmed;
+      document.getElementById('stat-pending').textContent = pending;
+      document.getElementById('stat-spend').textContent = 'AED ' + spendK;
+
+      document.getElementById('stat-total-sub').textContent = total === 0 ? 'No bookings yet' : total + ' all-time';
+      document.getElementById('stat-confirmed-sub').textContent = confirmed === 0 ? 'None confirmed' : confirmed + ' locked in';
+      document.getElementById('stat-pending-sub').textContent = pending === 0 ? 'Nothing pending' : pending + ' need action';
+      document.getElementById('stat-spend-sub').textContent = total > 0 ? 'Across ' + total + ' bookings' : 'All time';
+
+      // Welcome subline based on counts
+      const sub = pending > 0
+        ? `${pending} booking${pending === 1 ? '' : 's'} need your attention.`
+        : confirmed > 0
+          ? `${confirmed} show${confirmed === 1 ? '' : 's'} locked in. Keep building the roster.`
+          : 'Pick your first artist to get things moving.';
+      document.getElementById('welcome-sub').textContent = sub;
+    }
+
+    /* ── Timeline (grouped by day) ── */
+    function filterBookings(filter) {
+      const now = new Date(); now.setHours(0,0,0,0);
+      const weekOut  = new Date(now); weekOut.setDate(weekOut.getDate() + 7);
+      const monthOut = new Date(now); monthOut.setMonth(monthOut.getMonth() + 1);
+
+      return [..._allBookings]
+        .filter(b => b.status !== 'cancelled')
+        .filter(b => {
+          const d = new Date(b.event_date || b.date);
+          if (filter === 'week')  return d >= now && d <= weekOut;
+          if (filter === 'month') return d >= now && d <= monthOut;
+          return true;
+        })
+        .sort((a, b) => new Date(a.event_date || a.date) - new Date(b.event_date || b.date));
+    }
+
+    function groupByDate(list) {
+      const groups = {};
+      list.forEach(b => {
+        const d = b.event_date || b.date;
+        if (!d) return;
+        groups[d] = groups[d] || [];
+        groups[d].push(b);
+      });
+      return groups;
+    }
+
+    function renderTimeline() {
+      const list = filterBookings(_currentFilter);
+      const root = document.getElementById('timeline-root');
+      if (list.length === 0) {
+        root.innerHTML = `
+          <div class="dir-empty" style="margin-top: 8px">
+            <h3 style="margin-bottom: 8px">Nothing on the calendar</h3>
+            <p style="color: var(--text-tertiary); font-size: 0.9rem; margin-bottom: 16px">
+              No upcoming bookings in this range. Pick an artist to get started.
+            </p>
+            <a href="directory.html" class="btn btn-primary btn-sm">Browse roster</a>
+          </div>
+        `;
+        return;
+      }
+
+      const today = new Date().toISOString().slice(0, 10);
+      const groups = groupByDate(list);
+
+      root.innerHTML = Object.keys(groups).map((date, di) => {
+        const dt = new Date(date + 'T00:00:00');
+        const dd = dt.getDate();
+        const mm = dt.toLocaleString('en', { month: 'short', weekday: 'short' });
+        const isToday = date === today;
+        return `
+          <div class="timeline-day">
+            <div class="timeline-date ${isToday ? 'today' : ''}">
+              <div class="dd">${dd}</div>
+              <div class="mm">${esc(mm)}</div>
+            </div>
+            <div class="timeline-events">
+              ${groups[date].map(b => {
+                const artistName = b.artist_name || b.artists?.stage_name || b.artists?.profiles?.display_name || '—';
+                const venueName  = b.venue || b.venue_name || b.venues?.name || '—';
+                const city       = b.city || b.venues?.city || '';
+                const time       = b.event_time ? b.event_time.slice(0, 5) : (b.time || '—');
+                const amount     = b.fee || b.amount || 0;
+                const currency   = b.currency || 'AED';
+                const feeK       = amount >= 1000 ? (amount / 1000).toFixed(amount % 1000 === 0 ? 0 : 1) + 'K' : String(amount);
+                return `
+                  <div class="event-row" onclick="viewBooking('${esc(b.id)}')">
+                    <div class="time">${esc(time)}</div>
+                    <div class="avatar" style="${avatarHueStyle(artistName)}">${esc(initials(artistName))}</div>
+                    <div>
+                      <div class="meta-name">${esc(artistName)}</div>
+                      <div class="meta-venue">
+                        <span>${esc(venueName)}</span>
+                        ${city ? `<span style="width:2px;height:2px;border-radius:50%;background:var(--text-quaternary)"></span><span style="display:inline-flex;align-items:center;gap:4px">${UI.icon('mapPin', 10)} ${esc(city)}</span>` : ''}
+                      </div>
+                    </div>
+                    ${UI.statusTag(b.status)}
+                    <div class="fee"><small>${esc(currency)}</small>${esc(feeK)}</div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (typeof hydrateIcons === 'function') hydrateIcons(root);
+    }
+
+    function viewBooking(id) {
+      window.location.href = 'bookings.html?id=' + encodeURIComponent(id);
+    }
+
+    /* ── Pipeline ── */
+    function renderPipeline() {
+      const buckets = [
+        { label: 'Inquiries',  keys: ['inquiry'],   color: 'var(--text-secondary)' },
+        { label: 'Pending',    keys: ['pending'],   color: 'var(--status-pending)' },
+        { label: 'Contracted', keys: ['contracted'],color: 'var(--status-info)'    },
+        { label: 'Confirmed',  keys: ['confirmed'], color: 'var(--status-confirmed)' },
+        { label: 'Completed',  keys: ['completed'], color: 'var(--accent)'         },
+      ];
+      const counts = buckets.map(b => ({ ...b, count: _allBookings.filter(x => b.keys.includes(x.status)).length }));
+      const active = counts.reduce((s, b) => s + b.count, 0);
+      const max    = Math.max(1, ...counts.map(b => b.count));
+
+      document.getElementById('pipeline-total').textContent = active + ' active';
+      document.getElementById('pipeline-root').innerHTML = counts.map(b => `
+        <div class="dash-pipeline-row">
+          <div class="label-line">
+            <span style="color: var(--text-secondary)">${esc(b.label)}</span>
+            <span class="count">${b.count}</span>
+          </div>
+          <div class="track">
+            <div class="fill" style="width: ${Math.round((b.count / max) * 100)}%; background: ${b.color}"></div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    /* ── Inbox ── */
+    function renderInbox() {
+      const seen = new Set();
+      const convos = _allMessages.filter(msg => {
+        const partnerId = msg.sender_id === Auth.user?.id ? msg.receiver_id : msg.sender_id;
+        if (seen.has(partnerId)) return false;
+        seen.add(partnerId);
+        return true;
+      }).slice(0, 3);
+
+      const root = document.getElementById('inbox-root');
+      if (convos.length === 0) {
+        root.innerHTML = '<div style="padding: 12px 0; color: var(--text-tertiary); font-size: 0.85rem">No messages yet.</div>';
+        return;
+      }
+
+      root.innerHTML = convos.map(msg => {
+        const isMe = msg.sender_id === Auth.user?.id;
+        const partner = isMe ? msg.receiver : msg.sender;
+        const name = partner?.display_name || 'Unknown';
+        const preview = msg.content || '';
+        const time = UI.timeAgo(msg.created_at);
+        const unread = !msg.read && !isMe;
+        return `
+          <div class="row" onclick="window.location.href='messages.html'">
+            ${UI.avatar(name, 32)}
+            <div class="bubble">
+              <div class="head-line">
+                <span class="name">${esc(name)}${unread ? '<span class="unread-dot"></span>' : ''}</span>
+                <span class="time">${esc(time)}</span>
+              </div>
+              <div class="preview">${esc(preview)}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    /* ── Suggestion card ── */
+    async function renderSuggestion() {
+      // Only show if the promoter hasn't booked many artists yet
+      if (_allBookings.length >= 3) return;
+
+      const res = await DB.getArtists({});
+      const artists = (res.success && res.data) ? res.data : [];
+      if (artists.length === 0) return;
+
+      // Pick the first verified active artist not yet booked by this promoter
+      const booked = new Set(_allBookings.map(b => b.artist_id));
+      const candidate = artists.find(a => a.verified && !booked.has(a.id)) || artists[0];
+      if (!candidate) return;
+
+      const root = document.getElementById('suggestion-root');
+      document.getElementById('sug-initials').textContent = initials(candidate.name);
+      document.getElementById('sug-initials').style.cssText += avatarHueStyle(candidate.name);
+      document.getElementById('sug-name').textContent = candidate.name;
+      document.getElementById('sug-meta').textContent =
+        [candidate.genre, candidate.city].filter(Boolean).join(' · ') + ' · On request';
+      document.getElementById('sug-desc').textContent =
+        `${candidate.verified ? 'Verified' : 'Active'} on ROSTR+. ${candidate.city ? 'Based in ' + candidate.city + '.' : ''} Tap to view full profile.`;
+      document.getElementById('sug-link').href = 'profile.html?id=' + encodeURIComponent(candidate.id);
+      root.style.display = '';
+    }
+
+    /* ── Init ── */
     document.addEventListener('DOMContentLoaded', async function() {
       await Auth.ready();
       if (!Auth.isLoggedIn()) { Auth.require(); return; }
       if (Auth.role === 'artist') { window.location.replace('artist-dashboard.html'); return; }
 
-      // Onboarding check — redirect new promoters to settings to complete profile
+      // Onboarding check
       const onboarding = await DB.checkOnboarding();
       if (!onboarding.complete) {
         const hasName = Auth.user?.display_name && Auth.user.display_name !== Auth.user.email?.split('@')[0];
@@ -141,28 +412,10 @@
       }
 
       document.getElementById('nav-root').innerHTML = renderNav('dashboard');
+      if (typeof hydrateIcons === 'function') hydrateIcons();
+      renderWelcome();
 
-      const userName = Auth.user?.display_name || Auth.user?.email?.split('@')[0] || 'Welcome';
-      document.getElementById('welcome-name').textContent = userName;
-
-      await loadDashboardData();
-
-      // Subscribe to live booking updates
-      Realtime.subscribeToBookings((updated) => {
-        const idx = _allBookings.findIndex(b => b.id === updated.id);
-        if (idx !== -1) _allBookings[idx] = { ..._allBookings[idx], ...updated };
-        renderUpcomingEvents();
-        UI.toast('Booking updated: ' + updated.status, 'info');
-      });
-
-      // Subscribe to new messages notification
-      Realtime.subscribeToMessages(() => {
-        UI.toast('New message received', 'info');
-        renderRecentMessages();
-      });
-    });
-
-    async function loadDashboardData() {
+      // Load data
       const [bookingsRes, messagesRes] = await Promise.all([
         DB.getMyBookings(),
         DB.getConversations(),
@@ -170,104 +423,41 @@
       _allBookings = bookingsRes.data || [];
       _allMessages = messagesRes.data || [];
 
-      // Update stats
-      const total = _allBookings.length;
-      const confirmed = _allBookings.filter(b => b.status === 'confirmed' || b.status === 'contracted' || b.status === 'completed').length;
-      const pending = _allBookings.filter(b => b.status === 'pending' || b.status === 'inquiry').length;
-      const spend = _allBookings.reduce((sum, b) => sum + (b.fee || b.amount || 0), 0);
+      renderStats();
+      renderTimeline();
+      renderPipeline();
+      renderInbox();
+      renderSuggestion();
 
-      const statCards = document.querySelectorAll('.stat-card .stat-value');
-      if (statCards[0]) statCards[0].textContent = total;
-      if (statCards[1]) statCards[1].textContent = confirmed;
-      if (statCards[2]) statCards[2].textContent = pending;
-      if (statCards[3]) statCards[3].textContent = spend > 0 ? Math.round(spend / 1000) + 'K' : '0';
+      // Filter pill listeners
+      document.querySelectorAll('.dash-filter button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.dash-filter button').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          _currentFilter = btn.dataset.filter;
+          renderTimeline();
+        });
+      });
 
-      renderUpcomingEvents();
-      renderRecentMessages();
-    }
+      // Realtime subscriptions
+      Realtime.subscribeToBookings((updated) => {
+        const idx = _allBookings.findIndex(b => b.id === updated.id);
+        if (idx !== -1) _allBookings[idx] = { ..._allBookings[idx], ...updated };
+        else _allBookings.unshift(updated);
+        renderStats();
+        renderTimeline();
+        renderPipeline();
+        UI.toast('Booking updated: ' + updated.status, 'info');
+      });
+      Realtime.subscribeToMessages(() => {
+        UI.toast('New message received', 'info');
+        renderInbox();
+      });
+    });
 
-    // ── Render Upcoming Events (next 5) ──
-    function renderUpcomingEvents() {
-      const upcoming = [..._allBookings]
-        .filter(b => b.status !== 'cancelled')
-        .sort((a, b) => new Date(a.event_date || a.date) - new Date(b.event_date || b.date))
-        .slice(0, 5);
-
-      const tbody = document.getElementById('upcoming-events-body');
-      if (!tbody) return;
-
-      if (upcoming.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-tertiary);padding:24px">No upcoming events</td></tr>';
-        return;
-      }
-
-      tbody.innerHTML = upcoming.map(b => {
-        const artistName = b.artist_name || b.artists?.stage_name || '—';
-        const venueName = b.venue || b.venues?.name || '—';
-        const date = b.event_date || b.date;
-        const amount = b.fee || b.amount || 0;
-        const currency = b.currency || 'AED';
-        return `
-          <tr>
-            <td><strong>${UI.formatDate(date)}</strong></td>
-            <td>${esc(artistName)}</td>
-            <td>${venueName}</td>
-            <td>${UI.statusTag(b.status)}</td>
-            <td style="text-align:right;font-family:var(--font-mono)"><strong>${UI.currency(amount, currency)}</strong></td>
-          </tr>
-        `;
-      }).join('');
-    }
-
-    // ── Render Recent Messages ──
-    function renderRecentMessages() {
-      const container = document.getElementById('recent-messages');
-      if (!container) return;
-
-      // Deduplicate conversations by partner
-      const seen = new Set();
-      const convos = _allMessages.filter(msg => {
-        const partnerId = msg.sender_id === (Auth.user?.id) ? msg.receiver_id : msg.sender_id;
-        if (seen.has(partnerId)) return false;
-        seen.add(partnerId);
-        return true;
-      }).slice(0, 3);
-
-      if (convos.length === 0) {
-        container.innerHTML = '<p class="text-tertiary" style="font-size:0.85rem">No messages yet</p>';
-        return;
-      }
-
-      container.innerHTML = convos.map(msg => {
-        const isMe = msg.sender_id === Auth.user?.id;
-        const partner = isMe ? msg.receiver : msg.sender;
-        const name = partner?.display_name || 'Unknown';
-        const preview = msg.content || '';
-        const time = UI.timeAgo(msg.created_at);
-        const unread = !msg.read && !isMe;
-        return `
-          <div class="card card--interactive" onclick="window.location.href='messages.html'">
-            <div class="card-inner" style="display:flex;align-items:center;gap:var(--space-md)">
-              ${UI.avatar(name, 40)}
-              <div style="flex:1;min-width:0">
-                <div style="display:flex;align-items:center;gap:var(--space-sm);margin-bottom:4px">
-                  <strong style="font-size:0.95rem">${esc(name)}</strong>
-                  ${unread ? '<span style="width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0"></span>' : ''}
-                </div>
-                <p class="text-tertiary" style="font-size:0.85rem;margin:0;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(preview)}</p>
-                <div class="text-tertiary" style="font-size:0.75rem;margin-top:4px">${time}</div>
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    // Close modal on outside click
+    // Close modal on outside click (kept for realtime toasts)
     document.getElementById('message-modal').addEventListener('click', function(e) {
-      if (e.target === this) {
-        this.classList.remove('active');
-      }
+      if (e.target === this) this.classList.remove('active');
     });
   </script>
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
