@@ -175,23 +175,153 @@
       </div>
     </section>
 
-    <!-- ═══ CITIES ═══ -->
+    <!-- ═══ REACH MAP ═══ -->
     <section class="container" style="padding: var(--space-3xl) 0">
       <div class="lp-section-head">
         <div>
-          <span class="eyebrow">Live across the Gulf</span>
-          <h2>Eight cities. One roster.</h2>
+          <span class="eyebrow">Where we book</span>
+          <h2>From the Gulf, worldwide.</h2>
+        </div>
+        <div class="lp-map-legend">
+          <span><span class="sw home"></span> Home base</span>
+          <span><span class="sw dest"></span> Destination</span>
         </div>
       </div>
-      <div class="lp-city-list">
-        <span class="lp-city-chip"><span class="js-icon" data-icon="mapPin" data-size="12"></span> Dubai</span>
-        <span class="lp-city-chip"><span class="js-icon" data-icon="mapPin" data-size="12"></span> Abu Dhabi</span>
-        <span class="lp-city-chip"><span class="js-icon" data-icon="mapPin" data-size="12"></span> Riyadh</span>
-        <span class="lp-city-chip"><span class="js-icon" data-icon="mapPin" data-size="12"></span> Jeddah</span>
-        <span class="lp-city-chip"><span class="js-icon" data-icon="mapPin" data-size="12"></span> Doha</span>
-        <span class="lp-city-chip"><span class="js-icon" data-icon="mapPin" data-size="12"></span> Kuwait City</span>
-        <span class="lp-city-chip"><span class="js-icon" data-icon="mapPin" data-size="12"></span> Bahrain</span>
-        <span class="lp-city-chip"><span class="js-icon" data-icon="mapPin" data-size="12"></span> Muscat</span>
+
+      <div class="lp-map-wrap" id="lp-map-wrap">
+        <!-- Viewport crops out the Americas since we have no Western Hemisphere cities.
+             Range x: 440-880 covers Europe → SE Asia; y: 60-320 trims antarctic + arctic. -->
+        <svg class="lp-map" viewBox="440 60 440 260" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+          <!-- Dot grid texture — implies the world without needing landmass geometry.
+               Grid spacing 16px, offset-stippled for visual calm. -->
+          <defs>
+            <pattern id="lp-map-grid" x="0" y="0" width="16" height="16" patternUnits="userSpaceOnUse">
+              <circle cx="8" cy="8" r="0.9" fill="rgba(255,255,255,0.08)"/>
+            </pattern>
+            <radialGradient id="lp-map-fade" cx="50%" cy="50%" r="65%">
+              <stop offset="0%" stop-color="rgba(255,255,255,1)"/>
+              <stop offset="85%" stop-color="rgba(255,255,255,0.6)"/>
+              <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+            </radialGradient>
+            <mask id="lp-map-mask">
+              <rect x="440" y="60" width="440" height="260" fill="url(#lp-map-fade)"/>
+            </mask>
+          </defs>
+          <rect x="440" y="60" width="440" height="260" fill="url(#lp-map-grid)" mask="url(#lp-map-mask)"/>
+
+          <!-- Arcs: Dubai (653.5, 180) → each destination. Drawn as quadratic Bezier
+               curves that bow upward (lower y = higher on screen). Each path animated
+               via stroke-dasharray on intersection. -->
+          <g class="lp-map-arcs" stroke="var(--accent)" stroke-width="1" fill="none" stroke-linecap="round" opacity="0.7">
+            <!-- Europe -->
+            <path d="M 653.5 180 Q 577 30 499.6 106.9" data-arc></path>
+            <path d="M 653.5 180 Q 629 80 604.5 95.1" data-arc></path>
+            <path d="M 653.5 180 Q 620 75 584.3 83.5" data-arc></path>
+            <!-- MENA -->
+            <path d="M 653.5 180 Q 625 140 598.6 155.9" data-arc></path>
+            <path d="M 653.5 180 Q 620 140 586.8 166.6" data-arc></path>
+            <path d="M 653.5 180 Q 623 150 595.4 172.5" data-arc></path>
+            <path d="M 653.5 180 Q 623 155 593.9 174.3" data-arc></path>
+            <path d="M 653.5 180 Q 623 155 593.6 173.9" data-arc></path>
+            <path d="M 653.5 180 Q 617 135 580.4 164.2" data-arc></path>
+            <!-- GCC (shorter, gentler arcs) -->
+            <path d="M 653.5 180 Q 652 175 651.0 182.0" data-arc></path>
+            <path d="M 653.5 180 Q 642 165 629.7 181.4" data-arc></path>
+            <path d="M 653.5 180 Q 632 170 608.8 190.3" data-arc></path>
+            <path d="M 653.5 180 Q 648 170 643.1 179.8" data-arc></path>
+            <!-- Asia -->
+            <path d="M 653.5 180 Q 740 140 819.7 273.2" data-arc></path>
+          </g>
+
+          <!-- Cities: plotted as dots. Home base (Dubai) is larger + gets a ring.
+               Other cities tiered: GCC/MENA are closer = mid-size; Europe/Asia are smaller. -->
+          <g class="lp-map-cities">
+            <!-- GCC -->
+            <g class="lp-city-node tier-gcc home" data-name="Dubai" transform="translate(653.5, 180)">
+              <circle class="ring" r="10"></circle>
+              <circle class="dot" r="4"></circle>
+              <text y="-14" class="label">Dubai</text>
+            </g>
+            <g class="lp-city-node tier-gcc" data-name="Abu Dhabi" transform="translate(651.0, 182.0)">
+              <circle class="dot" r="2.5"></circle>
+              <text y="14" class="label">Abu Dhabi</text>
+            </g>
+            <g class="lp-city-node tier-gcc" data-name="Riyadh" transform="translate(629.7, 181.4)">
+              <circle class="dot" r="2.5"></circle>
+              <text y="-9" class="label">Riyadh</text>
+            </g>
+            <g class="lp-city-node tier-gcc" data-name="Jeddah" transform="translate(608.8, 190.3)">
+              <circle class="dot" r="2.5"></circle>
+              <text y="14" class="label">Jeddah</text>
+            </g>
+            <g class="lp-city-node tier-gcc" data-name="Doha" transform="translate(643.1, 179.8)">
+              <circle class="dot" r="2.5"></circle>
+              <text y="-9" class="label">Doha</text>
+            </g>
+
+            <!-- MENA -->
+            <g class="lp-city-node tier-mena" data-name="Beirut" transform="translate(598.6, 155.9)">
+              <circle class="dot" r="2.5"></circle>
+              <text y="-9" class="label">Beirut</text>
+            </g>
+            <g class="lp-city-node tier-mena" data-name="Cairo" transform="translate(586.8, 166.6)">
+              <circle class="dot" r="2.5"></circle>
+              <text y="-9" class="label">Cairo</text>
+            </g>
+            <g class="lp-city-node tier-mena" data-name="Sharm El Sheikh" transform="translate(595.4, 172.5)">
+              <circle class="dot" r="2"></circle>
+              <text y="14" class="label small">Sharm</text>
+            </g>
+            <g class="lp-city-node tier-mena" data-name="Hurghada + El Gouna" transform="translate(593.75, 174.1)">
+              <circle class="dot" r="2"></circle>
+              <text y="22" class="label small">Hurghada</text>
+            </g>
+            <g class="lp-city-node tier-mena" data-name="North Coast" transform="translate(580.4, 164.2)">
+              <circle class="dot" r="2"></circle>
+              <text y="-9" class="label small">N. Coast</text>
+            </g>
+
+            <!-- Europe -->
+            <g class="lp-city-node tier-europe" data-name="Moscow" transform="translate(604.5, 95.1)">
+              <circle class="dot" r="2.5"></circle>
+              <text y="-9" class="label">Moscow</text>
+            </g>
+            <g class="lp-city-node tier-europe" data-name="Saint Petersburg" transform="translate(584.3, 83.5)">
+              <circle class="dot" r="2"></circle>
+              <text y="-9" class="label small">St. Petersburg</text>
+            </g>
+            <g class="lp-city-node tier-europe" data-name="London" transform="translate(499.6, 106.9)">
+              <circle class="dot" r="2.5"></circle>
+              <text y="-9" class="label">London</text>
+            </g>
+
+            <!-- Asia -->
+            <g class="lp-city-node tier-asia" data-name="Bali" transform="translate(819.7, 273.2)">
+              <circle class="dot" r="2.5"></circle>
+              <text y="-9" class="label">Bali</text>
+            </g>
+          </g>
+        </svg>
+
+        <!-- Compact list for small screens where the map would be too cramped -->
+        <div class="lp-map-list" aria-hidden="false">
+          <div class="group">
+            <div class="group-label">GCC</div>
+            <span>Dubai</span> · <span>Abu Dhabi</span> · <span>Riyadh</span> · <span>Jeddah</span> · <span>Doha</span>
+          </div>
+          <div class="group">
+            <div class="group-label">Egypt + Levant</div>
+            <span>Cairo</span> · <span>Sharm</span> · <span>Hurghada</span> · <span>El Gouna</span> · <span>North Coast</span> · <span>Beirut</span>
+          </div>
+          <div class="group">
+            <div class="group-label">Europe</div>
+            <span>London</span> · <span>Moscow</span> · <span>St. Petersburg</span>
+          </div>
+          <div class="group">
+            <div class="group-label">Asia</div>
+            <span>Bali</span>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -215,6 +345,25 @@
         document.getElementById('nav-root').innerHTML = renderNav('home');
       }
       if (typeof hydrateIcons === 'function') hydrateIcons();
+
+      // Scroll-triggered arc draw on the reach map.
+      // Fires once when the map enters the viewport; respects
+      // prefers-reduced-motion via the CSS-side guard.
+      const mapWrap = document.getElementById('lp-map-wrap');
+      if (mapWrap && 'IntersectionObserver' in window) {
+        const io = new IntersectionObserver((entries) => {
+          entries.forEach(e => {
+            if (e.isIntersecting) {
+              mapWrap.classList.add('is-visible');
+              io.unobserve(e.target);
+            }
+          });
+        }, { threshold: 0.25 });
+        io.observe(mapWrap);
+      } else if (mapWrap) {
+        // No IO support → just draw immediately so nothing stays hidden.
+        mapWrap.classList.add('is-visible');
+      }
 
       // Load live roster from Supabase (public query — no auth needed)
       try {

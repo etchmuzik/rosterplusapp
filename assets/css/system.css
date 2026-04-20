@@ -1278,7 +1278,7 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   font-size: 0.88rem;
 }
 
-/* City chip list */
+/* City chip list (legacy, kept for callers that still need chips) */
 .lp-city-list { display: flex; gap: 12px; flex-wrap: wrap; }
 .lp-city-chip {
   padding: 10px 18px;
@@ -1296,6 +1296,174 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   background: var(--bg-card-hover);
   border-color: var(--border-medium);
   color: var(--text-primary);
+}
+
+/* ═══ Reach map ═══
+   Interactive SVG world with scroll-triggered arcs fanning out from
+   Dubai. Equirectangular projection, dot-grid texture, no library. */
+.lp-map-wrap {
+  position: relative;
+  width: 100%;
+  margin-top: var(--space-md);
+}
+.lp-map {
+  width: 100%;
+  height: auto;
+  display: block;
+  max-height: 520px;
+}
+
+/* Map legend (right of the section head) */
+.lp-map-legend {
+  display: flex;
+  gap: var(--space-md);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.lp-map-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.lp-map-legend .sw {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+}
+.lp-map-legend .sw.home {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim-20);
+}
+
+/* ── Cities ── */
+.lp-city-node { cursor: default; }
+.lp-city-node .dot {
+  fill: var(--text-secondary);
+  transition: fill var(--duration-fast) var(--ease-out), r var(--duration-fast) var(--ease-out);
+}
+.lp-city-node .label {
+  font-family: var(--font-mono);
+  font-size: 7px;
+  fill: var(--text-tertiary);
+  text-anchor: middle;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  pointer-events: none;
+  transition: fill var(--duration-fast) var(--ease-out);
+}
+.lp-city-node .label.small { font-size: 6px; opacity: 0.75; }
+.lp-city-node:hover .dot { fill: var(--accent-soft); }
+.lp-city-node:hover .label { fill: var(--text-primary); }
+
+/* Home base (Dubai) */
+.lp-city-node.home .dot {
+  fill: var(--accent);
+  filter: drop-shadow(0 0 8px var(--accent-dim-30));
+}
+.lp-city-node.home .ring {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1;
+  opacity: 0.35;
+  animation: lp-map-pulse 3s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+.lp-city-node.home .label {
+  fill: var(--accent-soft);
+  font-size: 8px;
+  font-weight: 600;
+}
+@keyframes lp-map-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.35; }
+  50% { transform: scale(1.6); opacity: 0; }
+}
+
+/* Tier styling — GCC brighter than far-away cities */
+.lp-city-node.tier-gcc .dot { fill: var(--text-primary); }
+.lp-city-node.tier-mena .dot { fill: var(--text-secondary); }
+.lp-city-node.tier-europe .dot,
+.lp-city-node.tier-asia .dot {
+  fill: var(--text-secondary);
+  opacity: 0.85;
+}
+
+/* ── Arcs ──
+   Each path uses pathLength="1" so we can set a uniform stroke-dasharray
+   regardless of the real geometric length. Starts drawn out of view
+   (dashoffset 1) and animates to 0 on intersection. */
+.lp-map-arcs path {
+  pathLength: 1;
+  stroke-dasharray: 1 1;
+  stroke-dashoffset: 1;
+  opacity: 0.85;
+  transition: stroke-dashoffset 1.6s var(--ease-out);
+}
+.lp-map-wrap.is-visible .lp-map-arcs path {
+  stroke-dashoffset: 0;
+}
+/* Stagger each arc so they don't all draw at once — 80ms apart. */
+.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(1)  { transition-delay: 0ms; }
+.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(2)  { transition-delay: 80ms; }
+.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(3)  { transition-delay: 160ms; }
+.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(4)  { transition-delay: 240ms; }
+.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(5)  { transition-delay: 320ms; }
+.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(6)  { transition-delay: 400ms; }
+.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(7)  { transition-delay: 480ms; }
+.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(8)  { transition-delay: 560ms; }
+.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(9)  { transition-delay: 640ms; }
+.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(10) { transition-delay: 720ms; }
+.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(11) { transition-delay: 800ms; }
+.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(12) { transition-delay: 880ms; }
+.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(13) { transition-delay: 960ms; }
+.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(14) { transition-delay: 1040ms; }
+.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(15) { transition-delay: 1120ms; }
+
+/* ── Fallback list below the map ──
+   On small screens the SVG labels become unreadable; this list is the
+   honest backup. On desktop, it's a secondary directory beneath the map. */
+.lp-map-list {
+  margin-top: var(--space-xl);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-lg);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--border-subtle);
+}
+.lp-map-list .group-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-tertiary);
+  margin-bottom: 6px;
+}
+.lp-map-list .group {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.8;
+}
+.lp-map-list .group span { color: var(--text-primary); font-weight: 500; }
+@media (max-width: 720px) {
+  .lp-map { display: none; }
+  .lp-map-legend { display: none; }
+}
+@media (min-width: 721px) {
+  .lp-map-list { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-map-arcs path {
+    transition: none;
+    stroke-dashoffset: 0;
+  }
+  .lp-city-node.home .ring { animation: none; }
 }
 
 /* Closing CTA panel */
