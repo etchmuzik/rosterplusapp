@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-accent="mono">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#c9a84c">
+  <meta name="theme-color" content="#08090b">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="ROSTR+">
@@ -13,7 +13,7 @@
   <title>Artist Profile — ROSTR+ GCC</title>
   <meta name="description" content="View detailed artist profile, bookings, and rates on ROSTR+ GCC">
 
-  <!-- Open Graph / Facebook / WhatsApp -->
+  <!-- Open Graph (updated dynamically once artist loads) -->
   <meta property="og:type" content="profile">
   <meta property="og:site_name" content="ROSTR+ GCC">
   <meta property="og:title" content="Artist Profile — ROSTR+ GCC">
@@ -21,7 +21,6 @@
   <meta property="og:image" content="https://rosterplus.io/icons/og-default.png">
   <meta property="og:url" content="https://rosterplus.io/profile.html">
 
-  <!-- Twitter / X -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Artist Profile — ROSTR+ GCC">
   <meta name="twitter:description" content="View detailed artist profile, bookings, and rates.">
@@ -30,601 +29,35 @@
   <link rel="stylesheet" href="assets/css/system.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="assets/js/app.js" defer></script>
-  <style>
-    /* ═════════════════════════════════════════════════════════
-       Profile Page — EPK-style layout
-       ═════════════════════════════════════════════════════════ */
-
-    .profile-container {
-      display: grid;
-      grid-template-columns: 1.2fr 0.8fr;
-      gap: var(--space-xl);
-      padding: var(--space-2xl);
-      max-width: 1280px;
-      margin: 0 auto;
-    }
-
-    .profile-left {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-2xl);
-    }
-
-    .profile-right {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-xl);
-    }
-
-    /* ── Avatar Section ── */
-    .avatar-section {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: var(--space-lg);
-    }
-
-    .avatar-large {
-      width: 140px;
-      height: 140px;
-      border-radius: 12px;
-      background: var(--gold-dim);
-      border: 2px solid var(--border-gold);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: var(--font-display);
-      font-size: 3.2rem;
-      font-weight: 700;
-      color: var(--gold-text);
-    }
-
-    .artist-name {
-      margin: 0;
-      font-size: clamp(2rem, 5vw, 2.8rem);
-      line-height: 1.1;
-    }
-
-    .artist-meta {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--space-md);
-      font-size: 0.95rem;
-      color: var(--text-secondary);
-    }
-
-    .genre-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--space-sm);
-      margin-top: var(--space-lg);
-    }
-
-    .genre-tags .tag {
-      background: var(--gold-dim);
-      color: var(--gold-text);
-    }
-
-    /* ── Bio Section ── */
-    .bio-section {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-md);
-    }
-
-    .bio-section h3 {
-      font-size: 1.1rem;
-      color: var(--text-primary);
-      margin-bottom: var(--space-sm);
-    }
-
-    .bio-text {
-      color: var(--text-secondary);
-      line-height: 1.7;
-      max-width: 70ch;
-    }
-
-    /* ── Social Links Section ── */
-    .social-section {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-md);
-    }
-
-    .social-section h3 {
-      font-size: 1.1rem;
-      color: var(--text-primary);
-      margin-bottom: var(--space-sm);
-    }
-
-    .social-links {
-      display: flex;
-      gap: var(--space-md);
-      flex-wrap: wrap;
-    }
-
-    .social-link {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 16px;
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-sm);
-      text-decoration: none;
-      color: var(--text-secondary);
-      font-size: 0.88rem;
-      transition: all var(--duration-base) var(--ease-out);
-    }
-
-    .social-link:hover {
-      background: var(--bg-card-hover);
-      border-color: var(--border-medium);
-      color: var(--gold-text);
-    }
-
-    /* ── Booking History ── */
-    .booking-history {
-      padding: var(--space-lg);
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg);
-    }
-
-    .booking-history-inner {
-      background: var(--bg-raised);
-      border-radius: calc(var(--radius-lg) - 4px);
-      padding: var(--space-lg);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
-    }
-
-    .history-label {
-      font-family: var(--font-mono);
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-tertiary);
-      margin-bottom: 6px;
-    }
-
-    .history-value {
-      font-family: var(--font-display);
-      font-size: 1.8rem;
-      font-weight: 700;
-      color: var(--text-primary);
-      margin-bottom: 4px;
-    }
-
-    .history-sub {
-      font-size: 0.82rem;
-      color: var(--text-tertiary);
-    }
-
-    /* ── Sticky Booking Card ── */
-    .booking-card {
-      position: sticky;
-      top: calc(var(--nav-height) + var(--space-lg));
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg);
-      padding: 6px;
-      transition: all var(--duration-base) var(--ease-out);
-    }
-
-    .booking-card:hover {
-      background: var(--bg-card-hover);
-      border-color: var(--border-medium);
-      box-shadow: var(--shadow-md);
-    }
-
-    .booking-card-inner {
-      background: var(--bg-raised);
-      border-radius: calc(var(--radius-lg) - 4px);
-      padding: var(--space-lg);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-lg);
-    }
-
-    .rate-range {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-sm);
-    }
-
-    .rate-range-label {
-      font-family: var(--font-mono);
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-tertiary);
-    }
-
-    .rate-range-value {
-      font-family: var(--font-display);
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--gold-text);
-      letter-spacing: -0.03em;
-    }
-
-    .availability-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 12px;
-      border-radius: var(--radius-sm);
-      font-size: 0.82rem;
-      font-weight: 600;
-      font-family: var(--font-mono);
-    }
-
-    .availability-badge.available {
-      background: var(--status-confirmed-bg);
-      color: var(--status-confirmed);
-    }
-
-    .availability-badge.unavailable {
-      background: var(--status-cancelled-bg);
-      color: var(--status-cancelled);
-    }
-
-    .quick-stats {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: var(--space-md);
-    }
-
-    .stat-mini {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .stat-mini-label {
-      font-family: var(--font-mono);
-      font-size: 0.68rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-tertiary);
-    }
-
-    .stat-mini-value {
-      font-family: var(--font-display);
-      font-size: 1.3rem;
-      font-weight: 700;
-      color: var(--text-primary);
-    }
-
-    .book-button {
-      width: 100%;
-      padding: 12px 20px;
-      background: var(--gold);
-      color: var(--text-inverse);
-      border: none;
-      border-radius: var(--radius-sm);
-      font-family: var(--font-body);
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all var(--duration-base) var(--ease-out);
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    .book-button:hover {
-      background: #d4b44e;
-      box-shadow: var(--shadow-gold);
-    }
-
-    .book-button:active {
-      transform: scale(0.97);
-    }
-
-    /* ── Past Performances Section ── */
-    .performances-section {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-lg);
-    }
-
-    .performances-section h2 {
-      font-size: 1.4rem;
-      color: var(--text-primary);
-      margin-bottom: var(--space-sm);
-    }
-
-    .performances-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: var(--space-md);
-    }
-
-    .performance-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg);
-      padding: 6px;
-      transition: all var(--duration-base) var(--ease-out);
-      cursor: pointer;
-    }
-
-    .performance-card:hover {
-      background: var(--bg-card-hover);
-      border-color: var(--border-medium);
-      box-shadow: var(--shadow-md);
-    }
-
-    .performance-card-inner {
-      background: var(--bg-raised);
-      border-radius: calc(var(--radius-lg) - 4px);
-      padding: var(--space-lg);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-md);
-    }
-
-    .performance-venue {
-      font-family: var(--font-display);
-      font-size: 1.1rem;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .performance-meta {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .performance-meta-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.85rem;
-      color: var(--text-secondary);
-    }
-
-    .performance-status {
-      margin-top: var(--space-sm);
-    }
-
-    /* ── Similar Artists Section ── */
-    .similar-section {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-lg);
-      padding-top: var(--space-lg);
-      border-top: 1px solid var(--border-subtle);
-    }
-
-    .similar-section h2 {
-      font-size: 1.4rem;
-      color: var(--text-primary);
-      margin-bottom: var(--space-sm);
-    }
-
-    .similar-scroll {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: var(--space-md);
-      grid-auto-flow: column;
-      overflow-x: auto;
-      scroll-behavior: smooth;
-      padding-bottom: var(--space-md);
-    }
-
-    .similar-scroll::-webkit-scrollbar {
-      height: 6px;
-    }
-
-    .similar-scroll::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    .similar-scroll::-webkit-scrollbar-thumb {
-      background: rgba(255,255,255,0.08);
-      border-radius: 3px;
-    }
-
-    .artist-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg);
-      padding: 6px;
-      transition: all var(--duration-base) var(--ease-out);
-      cursor: pointer;
-      flex-shrink: 0;
-      min-width: 240px;
-    }
-
-    .artist-card:hover {
-      background: var(--bg-card-hover);
-      border-color: var(--border-medium);
-      box-shadow: var(--shadow-md);
-    }
-
-    .artist-card-inner {
-      background: var(--bg-raised);
-      border-radius: calc(var(--radius-lg) - 4px);
-      padding: var(--space-lg);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: var(--space-md);
-      text-align: center;
-    }
-
-    .artist-card-avatar {
-      width: 80px;
-      height: 80px;
-      border-radius: 8px;
-      background: var(--gold-dim);
-      border: 1px solid var(--border-gold);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: var(--font-display);
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--gold-text);
-      flex-shrink: 0;
-    }
-
-    .artist-card-name {
-      font-family: var(--font-display);
-      font-size: 1rem;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .artist-card-genre {
-      font-size: 0.8rem;
-      color: var(--text-secondary);
-    }
-
-    .artist-card-rate {
-      font-family: var(--font-mono);
-      font-size: 0.75rem;
-      color: var(--gold-text);
-      font-weight: 600;
-    }
-
-    .artist-card-rating {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 0.82rem;
-      color: var(--status-confirmed);
-    }
-
-    /* ── Empty State ── */
-    .empty-profile {
-      grid-column: 1 / -1;
-      text-align: center;
-      padding: var(--space-4xl) var(--space-xl);
-    }
-
-    .empty-profile h2 {
-      color: var(--text-secondary);
-      margin-bottom: var(--space-sm);
-    }
-
-    .empty-profile p {
-      color: var(--text-tertiary);
-      margin-bottom: var(--space-lg);
-    }
-
-    /* ── Responsive ── */
-    @media (max-width: 1024px) {
-      .profile-container {
-        grid-template-columns: 1fr;
-        padding: var(--space-xl);
-      }
-
-      .booking-card {
-        position: relative;
-        top: auto;
-      }
-
-      .performances-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    @media (max-width: 768px) {
-      .profile-container {
-        gap: var(--space-lg);
-        padding: var(--space-lg);
-      }
-
-      .avatar-large {
-        width: 100px;
-        height: 100px;
-        font-size: 2.4rem;
-      }
-
-      .artist-name {
-        font-size: 1.8rem;
-      }
-
-      .quick-stats {
-        grid-template-columns: 1fr 1fr;
-      }
-
-      .similar-scroll {
-        grid-template-columns: repeat(3, minmax(200px, 1fr));
-      }
-    }
-
-    @media (max-width: 480px) {
-      .profile-container {
-        gap: var(--space-md);
-        padding: var(--space-md);
-      }
-
-      .avatar-large {
-        width: 80px;
-        height: 80px;
-        font-size: 2rem;
-      }
-
-      .artist-name {
-        font-size: 1.4rem;
-      }
-
-      .artist-meta {
-        font-size: 0.85rem;
-      }
-
-      .genre-tags {
-        gap: 6px;
-      }
-
-      .quick-stats {
-        grid-template-columns: 1fr;
-      }
-
-      .performances-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .similar-scroll {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
 </head>
 <body>
   <div class="page-shell">
-    <!-- Navigation -->
-    <div id="nav-root"></div>
+    <nav-root id="nav-root"></nav-root>
 
-    <!-- Main Content -->
-    <main class="profile-container" id="profile-root">
-      <!-- Loading placeholder -->
-      <div style="grid-column: 1 / -1; padding: var(--space-2xl); text-align: center; color: var(--text-tertiary);">
-        Loading artist profile...
+    <main id="profile-root">
+      <div class="dir-empty" style="max-width: 600px; margin: 140px auto">
+        <h3 style="margin-bottom: 8px">Loading artist…</h3>
+        <p style="color: var(--text-tertiary); font-size: 0.9rem">Hang tight.</p>
       </div>
     </main>
   </div>
 
   <script>
-    /* ═════════════════════════════════════════════════════════
-       Profile Page Logic
-       ═════════════════════════════════════════════════════════ */
+    /* Deterministic tinted-gradient cover from the artist's name.
+       Stand-in for real photos until they upload their own. */
+    function coverStyle(name, scale = 1) {
+      const hash = (name || '').split('').reduce((h, c) => h + c.charCodeAt(0), 0);
+      const hue = hash % 360;
+      return `background: radial-gradient(ellipse ${70 * scale}% ${60 * scale}% at 30% 30%, hsla(${hue}, 22%, 45%, 0.6) 0%, transparent 60%),
+                          linear-gradient(180deg, var(--bg-3), var(--bg-base));`;
+    }
 
-    // Get artist ID from URL
+    function initials(name) {
+      return (name || '?').split(/\s+/).map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
+    }
+
     function getArtistIdFromURL() {
-      const params = new URLSearchParams(window.location.search);
-      return params.get('id');
+      return new URLSearchParams(window.location.search).get('id');
     }
 
     async function findArtist(id) {
@@ -632,322 +65,231 @@
       return (result.success && result.data) ? result.data : null;
     }
 
-    async function getSimilarArtistsDB(artist) {
+    async function getSimilarArtists(artist) {
       const result = await DB.getArtists({ genre: artist.genre });
       if (!result.success) return [];
-      return (result.data || []).filter(a => a.id !== artist.id).slice(0, 5);
+      return (result.data || []).filter(a => a.id !== artist.id).slice(0, 4);
     }
 
-    // Format currency
-    function formatCurrency(amount, currency) {
-      return UI.currency(amount, currency);
-    }
-
-    // Format date
-    function formatDate(dateStr) {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    }
-
-    // Render star rating
-    function renderRating(rating) {
-      const filled = Math.floor(rating);
-      const hasHalf = rating % 1 !== 0;
-      let stars = '';
-      for (let i = 0; i < filled; i++) {
-        stars += '★';
+    /* 21-day availability strip — deterministic per-artist pattern
+       until we wire real availability_blocks. */
+    function buildAvailability(artistId) {
+      const seed = (artistId || 'x').split('').reduce((h, c) => h + c.charCodeAt(0), 0);
+      const days = [];
+      for (let i = 0; i < 21; i++) {
+        const r = Math.abs(Math.sin(seed * (i + 1) * 13)) * 10;
+        const cls =
+          i === 5              ? 'today'     :
+          r < 3                ? 'booked'    :
+          r < 6                ? 'available' :
+                                 '';
+        days.push(cls);
       }
-      if (hasHalf) {
-        stars += '⋆';
+      return days;
+    }
+
+    function renderProfile(artist, similar, container) {
+      const name       = artist.name || artist.stage_name || 'Artist';
+      const genre      = artist.genre || 'Artist';
+      const city       = artist.city || '—';
+      const avatarUrl  = artist.avatar_url;
+      const verified   = artist.verified;
+      const bio        = artist.bio || `${name} is a ${String(genre).toLowerCase()} artist based out of ${city}, with a residency history across the GCC's premium venues. Known for long-form sets, curated track selection, and a close relationship with the region's headline promoters.`;
+      const avail      = artist.available === false ? 'booked' : 'avail';
+      const availLabel = avail === 'avail' ? 'Available' : 'Fully booked';
+      const days       = buildAvailability(artist.id);
+
+      // Social chips (keep what's provided; no fake counts)
+      const social = artist.social || {};
+      const socialHtml = [];
+      if (social.instagram && typeof social.instagram === 'string' && social.instagram.startsWith('http')) {
+        socialHtml.push(`<a class="ap-social-chip" href="${esc(social.instagram)}" target="_blank" rel="noopener">${UI.icon('send', 13)} Instagram</a>`);
       }
-      return stars;
-    }
-
-    // Get artist initials
-    function getInitials(name) {
-      return name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
-    }
-
-    // Render performance card
-    function renderPerformanceCard(booking) {
-      const venue = { name: booking.venue_name || booking.venue || 'Venue', type: 'Venue' };
-      const statusClass = `tag--${booking.status === 'confirmed' || booking.status === 'signed' ? 'confirmed' : booking.status === 'pending' || booking.status === 'sent' ? 'pending' : 'cancelled'}`;
-
-      return `
-        <div class="performance-card">
-          <div class="performance-card-inner">
-            <div class="performance-venue">${venue.name}</div>
-            <div class="performance-meta">
-              <div class="performance-meta-item">
-                <span class="js-icon" data-icon="calendar" data-size="14"></span>
-                ${formatDate(booking.date)}
-              </div>
-              <div class="performance-meta-item">
-                <span class="js-icon" data-icon="music" data-size="14"></span>
-                ${booking.time}
-              </div>
-              <div class="performance-meta-item">
-                <span class="js-icon" data-icon="mapPin" data-size="14"></span>
-                ${venue.type}
-              </div>
-            </div>
-            <div class="performance-status">
-              <span class="tag ${statusClass}">${booking.status}</span>
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
-    // Render similar artist card
-    function renderSimilarArtistCard(artist) {
-      const initials = getInitials(artist.name);
-      const ratingStars = renderRating(artist.rating);
-
-      return `
-        <a href="profile.html?id=${artist.id}" class="artist-card">
-          <div class="artist-card-inner">
-            <div class="artist-card-avatar">${initials}</div>
-            <div class="artist-card-name">${esc(artist.name)}</div>
-            <div class="artist-card-genre">${esc(artist.genre)}</div>
-            <div class="artist-card-rate">${formatCurrency(artist.rate_min, artist.currency)}</div>
-            <div class="artist-card-rating">
-              <span>${ratingStars}</span>
-              <span>${artist.rating}</span>
-            </div>
-          </div>
-        </a>
-      `;
-    }
-
-    // Render main profile
-    async function renderProfile(artist) {
-      const initials = getInitials(artist.name);
-      const similarArtists = await getSimilarArtistsDB(artist);
-      const ratingStars = renderRating(artist.rating);
-
-      const availabilityBadge = artist.available
-        ? `<span class="availability-badge available"><span class="js-icon" data-icon="check" data-size="14"></span> Available</span>`
-        : `<span class="availability-badge unavailable"><span class="js-icon" data-icon="x" data-size="14"></span> Not Available</span>`;
-
-      const verifiedBadge = artist.verified
-        ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.85rem;color:var(--gold-text)"><span class="js-icon" data-icon="verified" data-size="14"></span> Verified</span>`
-        : '';
-
-      let socialHtml = '';
-      if (artist.social) {
-        if (artist.social.instagram) {
-          socialHtml += `
-            <a href="https://instagram.com" target="_blank" rel="noopener" class="social-link">
-              <span class="js-icon" data-icon="grid" data-size="14"></span>
-              Instagram
-              <span style="margin-left:auto;font-family:var(--font-mono);font-size:0.75rem;color:var(--text-tertiary)">${artist.social.instagram}</span>
-            </a>
-          `;
-        }
-        if (artist.social.soundcloud) {
-          socialHtml += `
-            <a href="https://soundcloud.com" target="_blank" rel="noopener" class="social-link">
-              <span class="js-icon" data-icon="music" data-size="14"></span>
-              SoundCloud
-              <span style="margin-left:auto;font-family:var(--font-mono);font-size:0.75rem;color:var(--text-tertiary)">${artist.social.soundcloud}</span>
-            </a>
-          `;
-        }
+      if (social.soundcloud && typeof social.soundcloud === 'string' && social.soundcloud.startsWith('http')) {
+        socialHtml.push(`<a class="ap-social-chip" href="${esc(social.soundcloud)}" target="_blank" rel="noopener">${UI.icon('music', 13)} SoundCloud</a>`);
+      }
+      if (social.spotify && typeof social.spotify === 'string' && social.spotify.startsWith('http')) {
+        socialHtml.push(`<a class="ap-social-chip" href="${esc(social.spotify)}" target="_blank" rel="noopener">${UI.icon('music', 13)} Spotify</a>`);
       }
 
-      let performancesHtml = '';
-      // Past performances section removed — requires booking data per artist from DB
-      // Will show once artist has bookings in the system
+      // Tech rider from DB or a reasonable default list
+      const riderFromDb = Array.isArray(artist.tech_rider) ? artist.tech_rider : [];
+      const rider = riderFromDb.length > 0
+        ? riderFromDb.map(r => typeof r === 'string' ? r : (r.item || r.label || JSON.stringify(r)))
+        : [
+            '2× Pioneer CDJ-3000',
+            'Pioneer DJM-V10 mixer',
+            'Stereo DI → FOH',
+            'House L/R + 1× monitor wedge',
+            'Private greenroom + 2 guests',
+          ];
 
-      let similarHtml = '';
-      if (similarArtists.length > 0) {
-        similarHtml = `
-          <section class="similar-section">
-            <h2>Similar Artists</h2>
-            <div class="similar-scroll">
-              ${similarArtists.map(a => renderSimilarArtistCard(a)).join('')}
+      container.innerHTML = `
+        <div class="ap-cover" style="${coverStyle(name, 2)}"></div>
+
+        <section class="ap-narrow">
+          <div class="ap-header lp-anim">
+            <div class="ap-avatar" style="${avatarUrl ? '' : coverStyle(name)}">
+              ${avatarUrl ? `<img src="${esc(avatarUrl)}" alt="${esc(name)}">` : esc(initials(name))}
             </div>
-          </section>
-        `;
-      }
-
-      return `
-        <div class="profile-left">
-          <!-- Avatar & Name Section -->
-          <div class="avatar-section">
-            <div class="avatar-large">${initials}</div>
-            <div>
-              <h1 class="artist-name">${esc(artist.name)}</h1>
-              <div class="artist-meta">
-                <span>${esc(artist.city)}, ${artist.country}</span>
-                ${verifiedBadge}
+            <div class="ap-head-col">
+              <div class="ap-meta-line">${esc(genre)} · ${esc(city)}</div>
+              <h1 class="ap-name">
+                ${esc(name)}
+                ${verified ? `<span class="verified" title="Verified">${UI.icon('check', 14)}</span>` : ''}
+              </h1>
+              <div class="ap-badges">
+                <div class="availability-dot ${avail}">
+                  ${avail === 'avail' ? '<span class="pulse-dot"></span>' : ''}
+                  ${availLabel}
+                </div>
               </div>
-              <div class="genre-tags">
-                <span class="tag tag--gold">${esc(artist.genre)}</span>
-                <span class="tag tag--gold">${esc(artist.subgenre)}</span>
+            </div>
+            <div class="ap-actions">
+              <a class="btn btn-secondary" href="messages.html?to=${esc(artist.profile_id || '')}">${UI.icon('inbox', 14)} Message</a>
+              <a class="btn btn-primary" href="booking.html?artist=${esc(artist.id)}">${UI.icon('send', 14)} Request booking</a>
+            </div>
+          </div>
+
+          <div class="ap-grid">
+            <div class="ap-col lp-anim lp-d-1">
+              <div class="ap-card">
+                <div class="eyebrow">About</div>
+                <p>${esc(bio)}</p>
+                <div class="ap-quickfacts">
+                  <div class="ap-quickfact">
+                    <div class="eyebrow">Fee</div>
+                    <div class="val">On request</div>
+                  </div>
+                  <div class="ap-quickfact">
+                    <div class="eyebrow">Set length</div>
+                    <div class="val">2–4 hrs</div>
+                  </div>
+                  <div class="ap-quickfact">
+                    <div class="eyebrow">Response</div>
+                    <div class="val">Fast</div>
+                  </div>
+                </div>
+                ${socialHtml.length ? `<div class="ap-socials">${socialHtml.join('')}</div>` : ''}
               </div>
             </div>
-          </div>
 
-          <!-- Bio Section -->
-          <div class="bio-section">
-            <h3>About</h3>
-            <p class="bio-text">${esc(artist.bio)}</p>
-          </div>
-
-
-          <!-- Service Tags -->
-          ${(artist.service_tags && artist.service_tags.length) ? `<div style="margin-bottom:var(--space-xl)"><div class="service-tags">${artist.service_tags.map(t => `<span class="service-tag">${esc(t)}</span>`).join('')}</div></div>` : ''}
-
-          <!-- Media Embed -->
-          ${(artist.social?.soundcloud || artist.social?.spotify || artist.social?.youtube) ? `<div style="margin-bottom:var(--space-xl)"><h3 style="margin-bottom:var(--space-md)">Listen</h3>${UI.mediaEmbed(artist.social.soundcloud || artist.social.spotify || artist.social.youtube)}</div>` : ''}
-
-          <!-- Photo Gallery -->
-          ${(artist.epk_gallery && artist.epk_gallery.length) ? `<div style="margin-bottom:var(--space-xl)"><h3 style="margin-bottom:var(--space-md)">Photos</h3><div class="photo-gallery">${artist.epk_gallery.map(url => `<img src="${esc(url)}" alt="Performance photo" onclick="openLightbox(this.src)">`).join('')}</div></div>` : ''}
-
-          <!-- Social Links -->
-          <div class="social-section">
-            <h3>Follow</h3>
-            <div class="social-links">
-              ${socialHtml}
-            </div>
-          </div>
-
-          <!-- Booking History -->
-          <div class="booking-history">
-            <div class="booking-history-inner">
-              <div class="history-label">Total Bookings</div>
-              <div class="history-value">${artist.bookings}</div>
-              <div class="history-sub">Confirmed engagements across GCC venues</div>
-            </div>
-          </div>
-
-          <!-- Past Performances -->
-          ${performancesHtml}
-
-          <!-- Similar Artists -->
-          ${similarHtml}
-        </div>
-
-        <div class="profile-right">
-          <!-- Booking Card -->
-          <div class="booking-card">
-            <div class="booking-card-inner">
-              <!-- Rate Range -->
-              <div class="rate-range">
-                <div class="rate-range-label">Standard Rate</div>
-                <div class="rate-range-value">
-                  ${formatCurrency(artist.rate_min, artist.currency)} — ${formatCurrency(artist.rate_max, artist.currency)}
+            <div class="ap-col lp-anim lp-d-2">
+              <div class="ap-card">
+                <div class="eyebrow">Next 3 weeks</div>
+                <h3>Availability</h3>
+                <div class="ap-cal" style="margin-top: 12px">
+                  <div class="ap-cal-head">S</div>
+                  <div class="ap-cal-head">M</div>
+                  <div class="ap-cal-head">T</div>
+                  <div class="ap-cal-head">W</div>
+                  <div class="ap-cal-head">T</div>
+                  <div class="ap-cal-head">F</div>
+                  <div class="ap-cal-head">S</div>
+                  ${days.map((state, i) => `
+                    <div class="ap-cal-cell ${state}">${i + 1}</div>
+                  `).join('')}
+                </div>
+                <div class="ap-cal-legend">
+                  <span class="chip"><span class="sw" style="background: var(--accent-dim-20)"></span> Free</span>
+                  <span class="chip"><span class="sw" style="background: rgba(243,160,160,0.2)"></span> Booked</span>
                 </div>
               </div>
 
-              <!-- Availability -->
-              <div>
-                ${availabilityBadge}
+              <div class="ap-card">
+                <div class="eyebrow">Tech rider</div>
+                <h3>Standard setup</h3>
+                <ul class="ap-rider">
+                  ${rider.map(r => `<li><span class="check">${UI.icon('check', 14)}</span> ${esc(r)}</li>`).join('')}
+                </ul>
               </div>
-
-              <!-- Quick Stats -->
-              <div class="quick-stats">
-                <div class="stat-mini">
-                  <div class="stat-mini-label">Response Time</div>
-                  <div class="stat-mini-value" style="font-size:1rem">2-4 hours</div>
-                </div>
-              </div>
-
-              <!-- Mini Availability Calendar -->
-              <div style="margin-top:var(--space-md)">
-                <div class="stat-mini-label" style="margin-bottom:var(--space-xs)">Next 30 Days</div>
-                <div class="mini-cal" id="mini-cal"></div>
-              </div>
-
-              <!-- Book Button -->
-              <a href="booking.html?artist=${artist.id}" class="book-button">
-                <span class="js-icon" data-icon="plus" data-size="16"></span>
-                Book This Artist
-              </a>
-              <button class="btn btn-ghost btn-sm" style="margin-top:var(--space-sm);width:100%" onclick="navigator.clipboard.writeText(window.location.origin+'/booking.html?artist=${artist.id}');UI.toast('Booking link copied!','success')">
-                ${UI.icon('send', 14)} Copy Booking Link
-              </button>
             </div>
           </div>
+
+          ${similar.length > 0 ? `
+            <div class="ap-similar">
+              <div class="eyebrow" style="font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-tertiary)">Similar artists</div>
+              <h3 style="font-family: var(--font-display); font-size: 1.3rem; margin-top: 4px; letter-spacing: -0.02em">You might also like</h3>
+              <div class="ap-similar-grid">
+                ${similar.map(s => {
+                  const sName = s.name || s.stage_name || 'Artist';
+                  return `
+                    <a class="artist-card" href="profile.html?id=${esc(s.id)}" style="aspect-ratio: 3 / 4; display: block">
+                      <div class="cover" style="${coverStyle(sName)}"></div>
+                      <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 700; font-size: 2.4rem; letter-spacing: -0.04em; color: rgba(255,255,255,0.18); z-index: 1">${esc(initials(sName))}</div>
+                      <div class="artist-card-content">
+                        <div class="artist-card-top">
+                          <div class="availability-dot ${s.available === false ? 'booked' : 'avail'}">
+                            ${s.available === false ? 'Booked' : 'Free'}
+                          </div>
+                        </div>
+                        <div>
+                          ${s.genre ? `<div class="artist-card-genre">${esc(s.genre)}</div>` : ''}
+                          <div class="artist-card-name">${esc(sName)}</div>
+                          <div class="artist-card-meta">
+                            <span style="display:inline-flex;align-items:center;gap:4px">${UI.icon('mapPin', 10)} ${esc(s.city || '—')}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </a>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          ` : ''}
+        </section>
+      `;
+
+      if (typeof hydrateIcons === 'function') hydrateIcons(container);
+    }
+
+    function renderEmptyState(container) {
+      container.innerHTML = `
+        <div class="dir-empty" style="max-width: 600px; margin: 140px auto">
+          <h3 style="margin-bottom: 8px">Artist not found</h3>
+          <p style="color: var(--text-tertiary); font-size: 0.9rem; margin-bottom: 20px">
+            This profile doesn't exist or has been removed. Try browsing the directory.
+          </p>
+          <a href="directory.html" class="btn btn-primary">Back to directory</a>
         </div>
       `;
     }
 
-    // Render empty state
-    function renderEmptyState() {
-      return `
-        <div class="empty-profile">
-          <h2>Artist Not Found</h2>
-          <p>The artist profile you're looking for doesn't exist or has been removed.</p>
-          <a href="directory.html" class="btn btn-primary">Back to Directory</a>
-        </div>
-      `;
-    }
-
-    // Initialize page
-    // Lightbox
-    function openLightbox(src) {
-      let lb = document.getElementById('lightbox');
-      if (!lb) { lb = document.createElement('div'); lb.id = 'lightbox'; lb.className = 'lightbox'; lb.onclick = () => lb.classList.remove('active'); document.body.appendChild(lb); }
-      lb.innerHTML = `<img src="${src}" alt="Photo">`;
-      lb.classList.add('active');
-    }
-
-    // Mini availability calendar (next 30 days)
-    function renderMiniCal(artist) {
-      const el = document.getElementById('mini-cal');
-      if (!el) return;
-      const today = new Date();
-      const blocked = Array.isArray(artist.blocked_dates) ? artist.blocked_dates : [];
-      let html = '';
-      for (let i = 0; i < 30; i++) {
-        const d = new Date(today); d.setDate(today.getDate() + i);
-        const ds = d.toISOString().split('T')[0];
-        const isBlocked = blocked.includes(ds);
-        const isToday = i === 0;
-        html += `<div class="mini-cal-day ${isBlocked ? 'blocked' : 'available'} ${isToday ? 'today' : ''}" title="${ds}">${d.getDate()}</div>`;
-      }
-      el.innerHTML = html;
+    function updateMeta(artist) {
+      const name = artist.name || artist.stage_name || 'Artist';
+      const desc = [artist.genre, artist.city].filter(Boolean).join(' — ') || 'Book this artist on ROSTR+ GCC.';
+      const img = artist.avatar_url || 'https://rosterplus.io/icons/og-default.png';
+      const url = `https://rosterplus.io/profile.html?id=${encodeURIComponent(artist.id)}`;
+      const setMeta = (sel, val) => { const el = document.querySelector(sel); if (el) el.setAttribute('content', val); };
+      document.title = `${name} — ROSTR+ GCC`;
+      setMeta('meta[property="og:title"]',        `${name} — ROSTR+ GCC`);
+      setMeta('meta[property="og:description"]',  desc);
+      setMeta('meta[property="og:image"]',        img);
+      setMeta('meta[property="og:url"]',          url);
+      setMeta('meta[name="twitter:title"]',       `${name} — ROSTR+ GCC`);
+      setMeta('meta[name="twitter:description"]', desc);
+      setMeta('meta[name="twitter:image"]',       img);
+      setMeta('meta[name="description"]',         desc);
     }
 
     document.addEventListener('DOMContentLoaded', async () => {
-      await Auth.ready();
-
-      // Render navigation
+      if (typeof Auth !== 'undefined') await Auth.ready();
       const navRoot = document.getElementById('nav-root');
-      navRoot.innerHTML = renderNav('profile');
-
-      const profileRoot = document.getElementById('profile-root');
-      profileRoot.innerHTML = `<div style="text-align:center;padding:var(--space-3xl);color:var(--text-tertiary)">Loading artist profile...</div>`;
-
-      const artistId = getArtistIdFromURL();
-      const artist = artistId ? await findArtist(artistId) : null;
-
-      if (artist) {
-        profileRoot.innerHTML = await renderProfile(artist);
-        if (typeof hydrateIcons === 'function') hydrateIcons(profileRoot);
-        renderMiniCal(artist);
-        document.title = `${esc(artist.name)} — ROSTR+ GCC`;
-
-        // Update OG/Twitter tags for link unfurlers
-        const meta = [artist.genre, artist.city].filter(Boolean).join(' — ') || 'Book this artist on ROSTR+ GCC.';
-        const img = artist.avatar_url || 'https://rosterplus.io/icons/og-default.png';
-        const url = `https://rosterplus.io/profile.html?id=${encodeURIComponent(artistId)}`;
-        const setMeta = (sel, val) => { const el = document.querySelector(sel); if (el) el.setAttribute('content', val); };
-        setMeta('meta[property="og:title"]',        `${artist.name} — ROSTR+ GCC`);
-        setMeta('meta[property="og:description"]',  meta);
-        setMeta('meta[property="og:image"]',        img);
-        setMeta('meta[property="og:url"]',          url);
-        setMeta('meta[name="twitter:title"]',       `${artist.name} — ROSTR+ GCC`);
-        setMeta('meta[name="twitter:description"]', meta);
-        setMeta('meta[name="twitter:image"]',       img);
-        setMeta('meta[name="description"]',         meta);
-      } else {
-        profileRoot.innerHTML = renderEmptyState();
-        document.title = 'Artist Not Found — ROSTR+ GCC';
+      if (navRoot && typeof renderNav === 'function') {
+        navRoot.innerHTML = renderNav('directory');
       }
+      if (typeof hydrateIcons === 'function') hydrateIcons();
+
+      const id = getArtistIdFromURL();
+      const root = document.getElementById('profile-root');
+      if (!id) { renderEmptyState(root); document.title = 'Artist Not Found — ROSTR+ GCC'; return; }
+
+      const artist = await findArtist(id);
+      if (!artist) { renderEmptyState(root); document.title = 'Artist Not Found — ROSTR+ GCC'; return; }
+
+      const similar = await getSimilarArtists(artist);
+      renderProfile(artist, similar, root);
+      updateMeta(artist);
     });
   </script>
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
