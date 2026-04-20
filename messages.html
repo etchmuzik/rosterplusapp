@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-accent="mono">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#c9a84c">
+  <meta name="theme-color" content="#08090b">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="ROSTR+">
@@ -95,7 +95,7 @@
 
     .conv-item.active {
       background: var(--gold-dim);
-      border: 1px solid rgba(201,168,76,0.15);
+      border: 1px solid var(--accent-dim-20);
     }
 
     .conv-item:not(.active) { border: 1px solid transparent; }
@@ -234,7 +234,7 @@
     .msg.sent {
       align-self: flex-end;
       background: var(--gold-dim);
-      border: 1px solid rgba(201,168,76,0.15);
+      border: 1px solid var(--accent-dim-20);
       border-bottom-right-radius: 4px;
       color: var(--text-primary);
     }

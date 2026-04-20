@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-accent="mono">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#c9a84c">
+  <meta name="theme-color" content="#08090b">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="ROSTR+">
@@ -27,7 +27,7 @@
     .toggle::after { content: ''; position: absolute; width: 20px; height: 20px; border-radius: 50%; background: var(--text-primary); top: 2px; left: 2px; transition: transform var(--duration-fast); }
     .toggle.active::after { transform: translateX(22px); }
     .tag-input-wrap { display: flex; flex-wrap: wrap; gap: var(--space-xs); padding: 8px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); min-height: 44px; cursor: text; }
-    .tag-input-wrap:focus-within { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,0.15); }
+    .tag-input-wrap:focus-within { border-color: var(--accent-dim-30); box-shadow: 0 0 0 3px var(--accent-dim-10); }
     .tag-input-wrap .tag { display: flex; align-items: center; gap: 4px; padding: 2px 8px; background: var(--gold-dim); border-radius: var(--radius-sm); font-size: 0.82rem; color: var(--gold-text); }
     .tag-input-wrap .tag-remove { cursor: pointer; opacity: 0.6; font-size: 1rem; line-height: 1; }
     .tag-input-wrap .tag-remove:hover { opacity: 1; }

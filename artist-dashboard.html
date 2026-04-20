@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-accent="mono">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#c9a84c">
+  <meta name="theme-color" content="#08090b">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="ROSTR+">
@@ -15,35 +15,48 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="assets/js/app.js" defer></script>
   <style>
-    .layout-sidebar { display: grid; grid-template-columns: 240px 1fr; min-height: calc(100vh - 64px); margin-top: 64px; }
-    .sidebar { background: var(--bg-raised); border-right: 1px solid var(--border-subtle); padding: var(--space-lg); position: sticky; top: 64px; height: calc(100vh - 64px); overflow-y: auto; }
-    .sidebar-label { font-family: var(--font-mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-tertiary); margin-bottom: var(--space-sm); padding: 0 var(--space-sm); }
+    /* Artist-dashboard-local layout: sidebar + main.
+       Tokens (colors/radii/spacing) come from system.css. */
+    .layout-sidebar { display: grid; grid-template-columns: 240px 1fr; min-height: calc(100vh - var(--nav-height)); margin-top: var(--nav-height); }
+    .sidebar { background: var(--bg-raised); border-right: 1px solid var(--border-subtle); padding: var(--space-lg); position: sticky; top: var(--nav-height); height: calc(100vh - var(--nav-height)); overflow-y: auto; }
+    .sidebar-label { font-family: var(--font-mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-tertiary); margin-bottom: var(--space-sm); padding: 0 var(--space-sm); }
     .sidebar-item { display: flex; align-items: center; gap: var(--space-sm); padding: 10px var(--space-sm); border-radius: var(--radius-sm); font-size: 0.88rem; color: var(--text-secondary); cursor: pointer; transition: all var(--duration-fast) var(--ease-out); width: 100%; text-align: left; background: none; border: none; font-family: var(--font-body); }
-    .sidebar-item:hover { background: rgba(255,255,255,0.04); color: var(--text-primary); }
-    .sidebar-item.active { background: var(--gold-dim); color: var(--gold-text); font-weight: 500; }
-    .main-content { padding: var(--space-2xl); overflow-x: hidden; }
-    .view-section { display: none; animation: fadeIn var(--duration-slow) var(--ease-out); }
+    .sidebar-item:hover { background: var(--bg-card); color: var(--text-primary); }
+    .sidebar-item.active { background: var(--accent-dim-10); color: var(--accent-soft); font-weight: 500; }
+    .main-content { padding: var(--space-2xl); overflow-x: hidden; max-width: 1200px; }
+    .view-section { display: none; animation: lp-fadeInUp var(--duration-slow) var(--ease-out); }
     .view-section.active { display: block; }
+
+    /* Four-up stats, reuses the .dash-stat visual from the promoter dashboard */
     .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-md); margin-bottom: var(--space-2xl); }
-    .stat-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 6px; }
-    .stat-card .card-inner { background: var(--bg-raised); border-radius: calc(var(--radius-lg) - 4px); padding: var(--space-lg); }
-    .stat-label { font-family: var(--font-mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-tertiary); margin-bottom: var(--space-sm); }
-    .stat-value { font-family: var(--font-display); font-size: 2rem; font-weight: 700; letter-spacing: -0.04em; }
+    .stat-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-lg); backdrop-filter: blur(14px) saturate(1.1); }
+    .stat-card .card-inner { padding: 0; background: transparent; }
+    .stat-label { font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-tertiary); margin-bottom: 6px; }
+    .stat-value { font-family: var(--font-display); font-size: 2rem; font-weight: 700; letter-spacing: -0.04em; line-height: 1; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+
+    /* Accept/Reject action pair */
     .action-group { display: flex; gap: var(--space-xs); }
-    .btn-accept { background: rgba(52,211,153,0.15); color: var(--status-confirmed); border: 1px solid rgba(52,211,153,0.2); }
-    .btn-accept:hover { background: rgba(52,211,153,0.25); }
-    .btn-reject { background: rgba(248,113,113,0.15); color: var(--status-cancelled); border: 1px solid rgba(248,113,113,0.2); }
-    .btn-reject:hover { background: rgba(248,113,113,0.25); }
+    .btn-accept { background: rgba(142,230,181,0.15); color: var(--status-confirmed); border: 1px solid rgba(142,230,181,0.25); }
+    .btn-accept:hover { background: rgba(142,230,181,0.25); }
+    .btn-reject { background: rgba(243,160,160,0.15); color: var(--status-cancelled); border: 1px solid rgba(243,160,160,0.25); }
+    .btn-reject:hover { background: rgba(243,160,160,0.25); }
+
     .quick-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-md); margin-top: var(--space-xl); }
+    .quick-actions a { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); transition: all var(--duration-base) var(--ease-out); }
+    .quick-actions a:hover { border-color: var(--accent-dim-30); background: var(--bg-card-hover); transform: translateY(-2px); }
+
+    /* Calendar grid — cool graphite tokens replace the old gold accents */
     .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); overflow: hidden; }
-    .calendar-header-cell { padding: 8px; text-align: center; font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-tertiary); background: rgba(255,255,255,0.02); }
+    .calendar-header-cell { padding: 8px; text-align: center; font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-tertiary); background: rgba(255,255,255,0.02); }
     .calendar-cell { padding: 8px; min-height: 70px; background: var(--bg-card); border: 1px solid var(--border-subtle); cursor: pointer; transition: background var(--duration-fast); }
-    .calendar-cell:hover { background: var(--bg-card-hover, rgba(255,255,255,0.04)); }
-    .calendar-cell.today { border-color: var(--gold); }
-    .calendar-cell.has-booking::after { content: ''; display: block; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); margin: 4px auto 0; }
+    .calendar-cell:hover { background: var(--bg-card-hover); }
+    .calendar-cell.today { border-color: var(--accent); }
+    .calendar-cell.has-booking::after { content: ''; display: block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); margin: 4px auto 0; }
     .calendar-cell .day-num { font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-secondary); }
     .calendar-cell.other-month .day-num { opacity: 0.3; }
-    .earnings-total { font-family: var(--font-display); font-size: 2.4rem; font-weight: 700; color: var(--gold-text); letter-spacing: -0.04em; }
+
+    .earnings-total { font-family: var(--font-display); font-size: 2.4rem; font-weight: 700; color: var(--accent-soft); letter-spacing: -0.04em; }
+
     @media (max-width: 1024px) { .layout-sidebar { grid-template-columns: 1fr; } .sidebar { display: none; } .stats-grid { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 768px) { .stats-grid { grid-template-columns: 1fr; } .quick-actions { grid-template-columns: 1fr; } }
   </style>
@@ -83,8 +96,13 @@
         <!-- OVERVIEW -->
         <section id="view-overview" class="view-section active">
           <div style="margin-bottom:var(--space-2xl)">
-            <h1 style="margin-bottom:var(--space-sm)">Welcome back, <span id="welcome-name">Artist</span></h1>
-            <p class="text-tertiary">Here's your booking activity</p>
+            <div class="eyebrow" style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-tertiary);margin-bottom:8px">
+              <span id="welcome-date">—</span>
+            </div>
+            <h1 style="font-family:var(--font-display);font-size:clamp(2rem,4vw,2.8rem);letter-spacing:-0.04em;line-height:1.05">
+              Welcome back, <span id="welcome-name" style="color:var(--accent-soft)">Artist</span>.
+            </h1>
+            <p style="margin-top:6px;color:var(--text-secondary);max-width:60ch" id="welcome-sub">Here's your booking activity.</p>
           </div>
 
           <div class="stats-grid">
@@ -384,6 +402,16 @@
       document.getElementById('stat-requests').textContent = pending.length;
       document.getElementById('stat-confirmed').textContent = confirmed.length;
 
+      // Welcome sub adapts to the counts (mirrors promoter dashboard)
+      const subEl = document.getElementById('welcome-sub');
+      if (subEl) {
+        subEl.textContent = pending.length > 0
+          ? `${pending.length} booking request${pending.length === 1 ? '' : 's'} need your response.`
+          : upcoming.length > 0
+            ? `${upcoming.length} gig${upcoming.length === 1 ? '' : 's'} locked in. Keep the momentum.`
+            : 'No activity yet. Share your EPK to start getting booked.';
+      }
+
       renderTable(pending.slice(0, 5), 'pending-requests', true, 'No pending requests — enjoy the downtime!');
       renderTable(upcoming.slice(0, 5), 'upcoming-gigs', false, 'No upcoming gigs yet — <a href="directory.html" style="color:var(--gold-text)">get discovered</a>');
       // Apply active filter to requests tab
@@ -521,7 +549,14 @@
       }
 
       document.getElementById('nav-root').innerHTML = renderNav('artist-dashboard');
-      document.getElementById('welcome-name').textContent = Auth.user?.display_name || 'Artist';
+      // Editorial welcome: date line + first-name + contextual sub
+      const now = new Date();
+      const city = Auth.user?.city || '';
+      const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+      const dateEl = document.getElementById('welcome-date');
+      if (dateEl) dateEl.textContent = dateStr + (city ? ' · ' + city : '');
+      const firstName = (Auth.user?.display_name || 'Artist').split(/\s+/)[0];
+      document.getElementById('welcome-name').textContent = firstName;
       if (typeof hydrateIcons === 'function') hydrateIcons();
 
       // Load data (contracts + payouts in parallel with the rest)

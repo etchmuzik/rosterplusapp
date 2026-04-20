@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-accent="mono">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#c9a84c">
+  <meta name="theme-color" content="#08090b">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="ROSTR+">
@@ -74,7 +74,7 @@
       body { background: #fff !important; color: #1a1a1a !important; }
       .nav, #nav-root, .share-bar, .epk-footer, .btn, .epk-socials, .media-embed { display: none !important; }
       .epk-container { margin: 0; padding: 20px; max-width: 100%; }
-      .epk-hero { padding: 20px 0; border-bottom: 2px solid #c9a84c; }
+      .epk-hero { padding: 20px 0; border-bottom: 2px solid #8a92a0; }
       .epk-name { color: #1a1a1a; font-size: 2rem; }
       .epk-meta, .epk-section-title { color: #666; }
       .quote-text, p { color: #333; }
@@ -244,8 +244,8 @@
 
       // Update OG / Twitter tags so WhatsApp, iMessage, Twitter, etc. unfurl nicely
       const genres = Array.isArray(data.genre) ? data.genre.join(', ') : (data.genre || '');
-      const city = (data.cities_active && data.cities_active[0]) || data.city || '';
-      const desc = [genres, city].filter(Boolean).join(' — ') || 'ROSTR+ GCC artist — bookings open.';
+      const cityForMeta = (data.cities_active && data.cities_active[0]) || data.city || '';
+      const desc = [genres, cityForMeta].filter(Boolean).join(' — ') || 'ROSTR+ GCC artist — bookings open.';
       const img = data.avatar_url || data.profiles?.avatar_url || 'https://rosterplus.io/icons/og-default.png';
       const url = `https://rosterplus.io/epk.html?artist=${encodeURIComponent(_artistId || '')}`;
       const setMeta = (sel, val) => { const el = document.querySelector(sel); if (el) el.setAttribute('content', val); };
