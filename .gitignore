@@ -4,3 +4,9 @@ node_modules/
 e2e/
 serve.js
 *.log
+
+# Deploy secrets — never commit the real .env.deploy
+.env
+.env.deploy
+.env.local
+

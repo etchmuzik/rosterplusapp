@@ -1,0 +1,11 @@
+{
+  "name": "rostr-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ROSTR+ GCC — static HTML/JS artist booking platform",
+  "scripts": {
+    "deploy": "bash scripts/deploy.sh",
+    "deploy:dry": "bash scripts/deploy.sh --dry",
+    "deploy:full": "bash scripts/deploy.sh --full"
+  }
+}

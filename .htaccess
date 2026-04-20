@@ -14,14 +14,39 @@ RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
   Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; frame-ancestors 'none'"
 </IfModule>
 
-# Cache static assets
+# Disable LiteSpeed server-side cache for all content. Without this,
+# Hostinger's LSCache served stale files for a week after every deploy.
+# Individual assets still pick up appropriate browser caching from
+# mod_expires below; this only turns off the shared edge cache.
+<IfModule LiteSpeed>
+  CacheDisable public /
+</IfModule>
+
+# Cache static assets (browser-side only now that LSCache is off).
+# HTML/JSON: short. CSS/JS: 1 hour + must-revalidate so the service-worker
+# cache bump takes effect quickly. Images: 1 month is fine.
 <IfModule mod_expires.c>
   ExpiresActive On
-  ExpiresByType text/css "access plus 1 month"
-  ExpiresByType application/javascript "access plus 1 month"
+  ExpiresByType text/html "access plus 0 seconds"
+  ExpiresByType application/manifest+json "access plus 0 seconds"
+  ExpiresByType application/xml "access plus 0 seconds"
+  ExpiresByType text/css "access plus 1 hour"
+  ExpiresByType application/javascript "access plus 1 hour"
+  ExpiresByType application/x-javascript "access plus 1 hour"
   ExpiresByType image/png "access plus 1 month"
   ExpiresByType image/jpeg "access plus 1 month"
   ExpiresByType image/svg+xml "access plus 1 month"
+</IfModule>
+
+# Force revalidation on HTML and the service worker so users always get fresh
+# shell + SW even behind proxies.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html|json|xml)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+  <FilesMatch "^sw\.js$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
 </IfModule>
 
 # GZIP compression
