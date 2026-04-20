@@ -1,782 +1,294 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-accent="mono">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#c9a84c">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="ROSTR+">
+  <meta name="theme-color" content="#08090b">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
-    <title>Artist Directory | ROSTR+ GCC</title>
-    <meta name="description" content="Browse the GCC's top DJs and live acts. Filter by genre, city, and availability. Request a booking in seconds on ROSTR+.">
-
-    <!-- Open Graph / Facebook / WhatsApp -->
-    <meta property="og:type" content="website">
-    <meta property="og:site_name" content="ROSTR+ GCC">
-    <meta property="og:title" content="Artist Directory — ROSTR+ GCC">
-    <meta property="og:description" content="Browse the GCC's top DJs and live acts. Filter by genre, city, and availability.">
-    <meta property="og:image" content="https://rosterplus.io/icons/og-default.png">
-    <meta property="og:url" content="https://rosterplus.io/directory.html">
-
-    <!-- Twitter / X -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Artist Directory — ROSTR+ GCC">
-    <meta name="twitter:description" content="Browse the GCC's top DJs and live acts. Filter by genre, city, and availability.">
-    <meta name="twitter:image" content="https://rosterplus.io/icons/og-default.png">
-
-    <link rel="stylesheet" href="assets/css/system.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            background: #0a0a0f;
-            color: #ffffff;
-            font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            line-height: 1.6;
-        }
-
-        nav-root {
-            display: block;
-        }
-
-        .page-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 24px;
-        }
-
-        .page-header {
-            padding: 64px 0 48px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            margin-bottom: 48px;
-        }
-
-        .page-title {
-            font-family: 'Clash Display', sans-serif;
-            font-size: 48px;
-            font-weight: 600;
-            letter-spacing: -0.04em;
-            margin-bottom: 12px;
-            line-height: 1.2;
-        }
-
-        .page-subtitle {
-            font-size: 16px;
-            color: rgba(255, 255, 255, 0.6);
-            font-weight: 400;
-        }
-
-        .controls-section {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-
-        .search-wrapper {
-            position: relative;
-            width: 100%;
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 14px 16px 14px 44px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 8px;
-            color: #ffffff;
-            font-family: 'Satoshi', sans-serif;
-            font-size: 14px;
-            transition: all cubic-bezier(0.32, 0.72, 0, 1) 400ms;
-        }
-
-        .search-input::placeholder {
-            color: rgba(255, 255, 255, 0.4);
-        }
-
-        .search-input:focus {
-            outline: none;
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(201, 168, 76, 0.4);
-            box-shadow: inset 0 0 0 1px rgba(201, 168, 76, 0.2);
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 20px;
-            height: 20px;
-            opacity: 0.5;
-            pointer-events: none;
-        }
-
-        .filters-row {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .filter-group {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .filter-select {
-            padding: 10px 12px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 6px;
-            color: #ffffff;
-            font-family: 'Satoshi', sans-serif;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all cubic-bezier(0.32, 0.72, 0, 1) 400ms;
-            min-width: 140px;
-        }
-
-        .filter-select:hover {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(255, 255, 255, 0.18);
-        }
-
-        .filter-select:focus {
-            outline: none;
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(201, 168, 76, 0.4);
-        }
-
-        .filter-select option {
-            background: #1a1a22;
-            color: #ffffff;
-        }
-
-        .toggle-switch {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 12px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all cubic-bezier(0.32, 0.72, 0, 1) 400ms;
-            font-size: 13px;
-        }
-
-        .toggle-switch:hover {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(255, 255, 255, 0.18);
-        }
-
-        .toggle-switch input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            cursor: pointer;
-            accent-color: #c9a84c;
-        }
-
-        .results-info {
-            font-size: 13px;
-            color: rgba(255, 255, 255, 0.5);
-            margin-bottom: 20px;
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .artists-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-            gap: 24px;
-            margin-bottom: 60px;
-        }
-
-        .artist-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 12px;
-            padding: 6px;
-            cursor: pointer;
-            transition: all cubic-bezier(0.32, 0.72, 0, 1) 500ms;
-            text-decoration: none;
-            color: inherit;
-            display: flex;
-            flex-direction: column;
-            animation: fadeInCard 600ms cubic-bezier(0.32, 0.72, 0, 1) backwards;
-        }
-
-        .artist-card:hover {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(201, 168, 76, 0.3);
-            transform: scale(0.98);
-        }
-
-        .artist-card:nth-child(1) { animation-delay: 0ms; }
-        .artist-card:nth-child(2) { animation-delay: 60ms; }
-        .artist-card:nth-child(3) { animation-delay: 120ms; }
-        .artist-card:nth-child(4) { animation-delay: 180ms; }
-        .artist-card:nth-child(5) { animation-delay: 240ms; }
-        .artist-card:nth-child(6) { animation-delay: 300ms; }
-        .artist-card:nth-child(7) { animation-delay: 360ms; }
-        .artist-card:nth-child(8) { animation-delay: 420ms; }
-        .artist-card:nth-child(9) { animation-delay: 480ms; }
-        .artist-card:nth-child(10) { animation-delay: 540ms; }
-        .artist-card:nth-child(n+11) { animation-delay: 600ms; }
-
-        @keyframes fadeInCard {
-            from {
-                opacity: 0;
-                transform: translateY(12px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .card-inner {
-            background: #111118;
-            border-radius: 8px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -1px 0 rgba(0, 0, 0, 0.3);
-        }
-
-        .card-header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 12px;
-        }
-
-        .card-avatar-name {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex: 1;
-        }
-
-        .avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Clash Display', sans-serif;
-            font-size: 18px;
-            font-weight: 600;
-            flex-shrink: 0;
-        }
-
-        .card-name-info {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            flex: 1;
-        }
-
-        .artist-name {
-            font-family: 'Clash Display', sans-serif;
-            font-size: 16px;
-            font-weight: 600;
-            letter-spacing: -0.02em;
-            line-height: 1.3;
-        }
-
-        .artist-genres {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        .verified-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 4px 8px;
-            background: rgba(201, 168, 76, 0.15);
-            border: 1px solid rgba(201, 168, 76, 0.3);
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 500;
-            color: #c9a84c;
-            flex-shrink: 0;
-        }
-
-        .card-location {
-            font-size: 13px;
-            color: rgba(255, 255, 255, 0.6);
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .card-rates {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding-top: 12px;
-            border-top: 1px solid rgba(255, 255, 255, 0.06);
-        }
-
-        .rate-range {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .rate-label {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 10px;
-            color: rgba(255, 255, 255, 0.4);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .rate-value {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 14px;
-            font-variant-numeric: tabular-nums;
-            color: #ffffff;
-            font-weight: 500;
-        }
-
-        .card-footer {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding-top: 12px;
-            border-top: 1px solid rgba(255, 255, 255, 0.06);
-        }
-
-        .rating-info {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 13px;
-        }
-
-        .star-icon {
-            width: 16px;
-            height: 16px;
-            color: #c9a84c;
-        }
-
-        .availability-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 500;
-        }
-
-        .availability-badge.available {
-            background: rgba(76, 175, 80, 0.15);
-            border: 1px solid rgba(76, 175, 80, 0.3);
-            color: #4cb050;
-        }
-
-        .availability-badge.unavailable {
-            background: rgba(244, 67, 54, 0.15);
-            border: 1px solid rgba(244, 67, 54, 0.3);
-            color: #f44336;
-        }
-
-        .no-results {
-            text-align: center;
-            padding: 80px 20px;
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        .no-results-title {
-            font-family: 'Clash Display', sans-serif;
-            font-size: 24px;
-            font-weight: 600;
-            letter-spacing: -0.02em;
-            margin-bottom: 8px;
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        @media (max-width: 1024px) {
-            .artists-grid {
-                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-                gap: 20px;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .page-header {
-                padding: 48px 0 32px 0;
-                margin-bottom: 32px;
-            }
-
-            .page-title {
-                font-size: 36px;
-                margin-bottom: 8px;
-            }
-
-            .page-subtitle {
-                font-size: 14px;
-            }
-
-            .filters-row {
-                gap: 8px;
-            }
-
-            .filter-select {
-                min-width: 120px;
-                font-size: 12px;
-            }
-
-            .artists-grid {
-                grid-template-columns: 1fr;
-                gap: 16px;
-            }
-
-            .controls-section {
-                gap: 16px;
-                margin-bottom: 32px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .page-container {
-                padding: 0 16px;
-            }
-
-            .page-header {
-                padding: 40px 0 24px 0;
-                margin-bottom: 24px;
-            }
-
-            .page-title {
-                font-size: 28px;
-            }
-
-            .search-input {
-                font-size: 14px;
-                padding: 12px 12px 12px 40px;
-            }
-
-            .filters-row {
-                flex-direction: column;
-            }
-
-            .filter-select,
-            .toggle-switch {
-                width: 100%;
-            }
-
-            .card-inner {
-                padding: 16px;
-                gap: 12px;
-            }
-
-            .artist-name {
-                font-size: 15px;
-            }
-        }
-    </style>
+  <title>Artist Directory | ROSTR+ GCC</title>
+  <meta name="description" content="Browse the GCC's top DJs and live acts. Filter by genre, city, and availability. Request a booking in seconds on ROSTR+.">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="ROSTR+ GCC">
+  <meta property="og:title" content="Artist Directory — ROSTR+ GCC">
+  <meta property="og:description" content="Browse the GCC's top DJs and live acts. Filter by genre, city, and availability.">
+  <meta property="og:image" content="https://rosterplus.io/icons/og-default.png">
+  <meta property="og:url" content="https://rosterplus.io/directory.html">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Artist Directory — ROSTR+ GCC">
+  <meta name="twitter:description" content="Browse the GCC's top DJs and live acts. Filter by genre, city, and availability.">
+  <meta name="twitter:image" content="https://rosterplus.io/icons/og-default.png">
+
+  <link rel="stylesheet" href="assets/css/system.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/app.js" defer></script>
 </head>
 <body>
-    <div id="nav-root"></div>
+  <div class="page-shell">
+    <nav-root id="nav-root"></nav-root>
 
-    <main class="page-container">
-        <div class="page-header">
-            <h1 class="page-title">Artist Directory</h1>
-            <p class="page-subtitle">Discover and book talented artists across the Gulf region</p>
+    <main class="container" style="padding: var(--space-xl) 0 var(--space-3xl)">
+      <div class="dir-header lp-anim">
+        <span class="eyebrow" style="font-family: var(--font-mono); font-size: 0.7rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-tertiary); display: block; margin-bottom: 8px">
+          Roster · <span id="dir-count-hero">—</span> verified artists
+        </span>
+        <h1 style="font-family: var(--font-display); font-size: clamp(2rem, 4vw, 3rem); letter-spacing: -0.03em; line-height: 1.05">
+          The roster.
+        </h1>
+        <p style="margin-top: 8px; color: var(--text-secondary); max-width: 60ch; font-size: 1rem">
+          Every DJ, live act, and headliner we'd put our name behind. Filter, shortlist, book.
+        </p>
+      </div>
+
+      <div class="dir-toolbar">
+        <div class="dir-search">
+          <span class="js-icon" data-icon="search" data-size="16"></span>
+          <input type="text" class="dir-input" id="searchInput" placeholder="Search artists, genres…" autocomplete="off">
         </div>
-
-        <div class="controls-section">
-            <div class="search-wrapper">
-                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <path d="m21 21-4.35-4.35"></path>
-                </svg>
-                <input
-                    type="text"
-                    class="search-input"
-                    id="searchInput"
-                    placeholder="Search by artist name..."
-                >
-            </div>
-
-            <div class="filters-row">
-                <div class="filter-group">
-                    <select class="filter-select" id="genreFilter">
-                        <option value="">All Genres</option>
-                        <option value="House">House</option>
-                        <option value="Techno">Techno</option>
-                        <option value="Arabic">Arabic</option>
-                        <option value="Hip-Hop">Hip-Hop</option>
-                        <option value="Funk">Funk</option>
-                    </select>
-                </div>
-
-                <div class="filter-group">
-                    <select class="filter-select" id="cityFilter">
-                        <option value="">All Cities</option>
-                        <option value="Dubai">Dubai</option>
-                        <option value="Abu Dhabi">Abu Dhabi</option>
-                        <option value="Doha">Doha</option>
-                        <option value="Riyadh">Riyadh</option>
-                        <option value="Kuwait City">Kuwait City</option>
-                    </select>
-                </div>
-
-                <div class="filter-group">
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="availabilityToggle">
-                        <span>Available Now</span>
-                    </label>
-                </div>
-
-                <div class="filter-group">
-                    <select class="filter-select" id="rateFilter">
-                        <option value="">All Rates</option>
-                        <option value="0-2000">AED 0 - 2,000</option>
-                        <option value="2000-5000">AED 2,000 - 5,000</option>
-                        <option value="5000-10000">AED 5,000 - 10,000</option>
-                        <option value="10000+">AED 10,000+</option>
-                    </select>
-                </div>
-
-                <div class="filter-group">
-                    <input type="date" class="filter-select" id="dateFilter" title="Check availability on date" style="min-width:160px">
-                </div>
-
-                <div class="filter-group">
-                    <select class="filter-select" id="sortBy" onchange="sortArtists()">
-                        <option value="">Sort by...</option>
-                        <option value="rating">Top Rated</option>
-                        <option value="bookings">Most Booked</option>
-                        <option value="price-low">Best Value</option>
-                        <option value="price-high">Highest Rate</option>
-                    </select>
-                </div>
-            </div>
+        <select class="dir-select" id="genreFilter" style="min-width: 160px">
+          <option value="">All genres</option>
+          <option>House</option>
+          <option>Tech House</option>
+          <option>Deep House</option>
+          <option>Afro House</option>
+          <option>Melodic House</option>
+          <option>Melodic Techno</option>
+          <option>Progressive</option>
+          <option>Tribal</option>
+          <option>Open Format</option>
+          <option>Electronic</option>
+        </select>
+        <select class="dir-select" id="cityFilter" style="min-width: 150px">
+          <option value="">All cities</option>
+          <option>Dubai</option>
+          <option>Abu Dhabi</option>
+          <option>Riyadh</option>
+          <option>Jeddah</option>
+          <option>Doha</option>
+          <option>Kuwait City</option>
+          <option>Bahrain</option>
+          <option>Muscat</option>
+          <option>Cairo</option>
+          <option>Hurghada</option>
+          <option>Tashkent</option>
+        </select>
+        <select class="dir-select" id="rateFilter" style="min-width: 130px">
+          <option value="">Any rate</option>
+          <option value="low">Under 10K</option>
+          <option value="mid">10K – 25K</option>
+          <option value="high">25K+</option>
+        </select>
+        <input type="date" class="dir-select" id="dateFilter" title="Check availability on date" style="min-width: 160px">
+        <label style="display: inline-flex; align-items: center; gap: 8px; padding: 0 10px; color: var(--text-secondary); font-size: 0.85rem; cursor: pointer">
+          <input type="checkbox" id="availabilityToggle" style="accent-color: var(--accent)">
+          Available only
+        </label>
+        <div class="dir-view-toggle" role="tablist" aria-label="View mode">
+          <button id="view-grid" class="active" aria-label="Grid view" title="Grid">
+            <span class="js-icon" data-icon="grid" data-size="14"></span>
+          </button>
+          <button id="view-list" aria-label="List view" title="List">
+            <span class="js-icon" data-icon="menu" data-size="14"></span>
+          </button>
         </div>
+      </div>
 
-        <div class="results-info" id="resultsInfo">
-            Showing 0 of 0 artists
-        </div>
+      <div class="dir-meta" id="resultsInfo">Loading artists…</div>
 
-        <div class="artists-grid" id="artistsGrid"></div>
-
-        <div class="no-results" id="noResults" style="display: none;">
-            <div class="no-results-title">No artists found</div>
-            <p>Try adjusting your filters or search terms</p>
-        </div>
+      <div id="artist-grid" class="dir-grid"></div>
+      <div id="artist-list" class="dir-list" style="display: none"></div>
+      <div id="empty-state" class="dir-empty" style="display: none">
+        <h3 style="margin-bottom: 8px">No artists match your filters</h3>
+        <p style="color: var(--text-tertiary); font-size: 0.9rem">Try clearing filters or broadening your search.</p>
+      </div>
     </main>
+  </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="assets/js/app.js" defer></script>
-    <script>
-        let allArtists = [];
-        let filteredArtists = [];
+  <script>
+    let allArtists = [];
+    let filteredArtists = [];
+    let viewMode = 'grid';
 
-        function renderStarIcon() {
-            return `<svg class="star-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>`;
-        }
+    /* Deterministic tinted-gradient cover from the artist's name.
+       Stand-in for real artist photos until artists upload their own. */
+    function coverStyle(name) {
+      const hash = (name || '').split('').reduce((h, c) => h + c.charCodeAt(0), 0);
+      const hue = hash % 360;
+      return `background: radial-gradient(ellipse 70% 60% at 30% 30%, hsla(${hue}, 22%, 45%, 0.6) 0%, transparent 60%),
+                          linear-gradient(180deg, var(--bg-3), var(--bg-base));`;
+    }
 
-        function createArtistCard(artist, index) {
-            const avatarHtml = window.UI ? window.UI.avatar(artist.name, 48) : `<div class="avatar" style="background: linear-gradient(135deg, #c9a84c, #8b7e3a);">${artist.name.charAt(0)}${artist.name.charAt(1)}</div>`;
-            const rateMin = artist.rateMin || 0;
-            const rateMax = artist.rateMax || 5000;
-            const cur = artist.currency || 'AED';
-            const currencyHtml = window.UI ? window.UI.currency(rateMin, cur) + ' — ' + window.UI.currency(rateMax, cur) : `${cur} ${rateMin} - ${cur} ${rateMax}`;
-            
-            const availabilityClass = artist.available ? 'available' : 'unavailable';
-            const availabilityText = artist.available ? 'Available' : 'Unavailable';
+    function initials(name) {
+      return (name || '?')
+        .split(/\s+/)
+        .map(w => w[0])
+        .filter(Boolean)
+        .slice(0, 2)
+        .join('')
+        .toUpperCase();
+    }
 
-            const verifiedBadge = artist.verified ? `
-                <div class="verified-badge">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"></path></svg>
-                    Verified
+    function renderGrid() {
+      const g = document.getElementById('artist-grid');
+      g.innerHTML = filteredArtists.map((a, i) => {
+        const name = a.name || a.stage_name || 'Artist';
+        const genre = a.genre || '';
+        const city = a.city || '—';
+        const avail = a.available === false ? 'booked' : 'avail';
+        const availLabel = avail === 'avail' ? 'Free' : 'Booked';
+        const initialsHtml = `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:3rem;letter-spacing:-0.04em;color:rgba(255,255,255,0.18);z-index:1">${esc(initials(name))}</div>`;
+
+        return `
+          <div class="artist-card lp-anim lp-d-${(i % 5) + 1}" onclick="window.location.href='profile.html?id=${esc(a.id)}'">
+            <div class="cover" style="${coverStyle(name)}"></div>
+            ${initialsHtml}
+            <div class="artist-card-content">
+              <div class="artist-card-top">
+                <div class="availability-dot ${avail}">
+                  ${avail === 'avail' ? '<span class="pulse-dot"></span>' : ''}
+                  ${availLabel}
                 </div>
-            ` : '';
+                ${a.verified ? `<div class="artist-card-verified">${UI.icon('check', 11)}</div>` : ''}
+              </div>
+              <div class="artist-card-bot">
+                ${genre ? `<div class="artist-card-genre">${esc(genre)}</div>` : ''}
+                <div class="artist-card-name">${esc(name)}</div>
+                <div class="artist-card-meta">
+                  <span style="display:inline-flex;align-items:center;gap:4px">${UI.icon('mapPin', 10)} ${esc(city)}</span>
+                  <span class="dot"></span>
+                  <span>On request</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
 
-            const genreText = artist.subgenre ? `${esc(artist.genre)} • ${esc(artist.subgenre)}` : artist.genre;
+    function renderList() {
+      const l = document.getElementById('artist-list');
+      l.innerHTML = filteredArtists.map(a => {
+        const name = a.name || a.stage_name || 'Artist';
+        const genre = a.genre || '';
+        const city = a.city || '—';
+        const avail = a.available === false ? 'booked' : 'avail';
+        const availLabel = avail === 'avail' ? 'Free' : 'Booked';
+        return `
+          <div class="dir-list-row" onclick="window.location.href='profile.html?id=${esc(a.id)}'">
+            <div class="dir-list-thumb" style="${coverStyle(name)}">${esc(initials(name))}</div>
+            <div>
+              <div class="dir-list-name">
+                ${esc(name)}
+                ${a.verified ? `<span class="verified-badge">${UI.icon('check', 12)}</span>` : ''}
+              </div>
+              <div class="dir-list-sub">${esc(genre)}</div>
+            </div>
+            <div class="dir-list-cell">${UI.icon('mapPin', 11)} ${esc(city)}</div>
+            <div class="dir-list-cell mono">On request</div>
+            <div class="availability-dot ${avail}">${availLabel}</div>
+            <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window.location.href='booking.html?artist=${esc(a.id)}'">Book</button>
+          </div>
+        `;
+      }).join('');
+    }
 
-            return `
-                <a href="profile.html?id=${artist.id}" class="artist-card">
-                    <div class="card-inner">
-                        <div class="card-header">
-                            <div class="card-avatar-name">
-                                ${avatarHtml}
-                                <div class="card-name-info">
-                                    <div class="artist-name">${esc(artist.name)}</div>
-                                    <div class="artist-genres">${genreText}</div>
-                                </div>
-                            </div>
-                            ${verifiedBadge}
-                        </div>
+    function render() {
+      const count = filteredArtists.length;
+      document.getElementById('resultsInfo').textContent =
+        count + ' artist' + (count === 1 ? '' : 's') + ' · sorted by relevance';
 
-                        <div class="card-location">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                                <circle cx="12" cy="10" r="3"></circle>
-                            </svg>
-                            ${esc(artist.city)}, ${artist.country}
-                        </div>
+      const empty = count === 0;
+      document.getElementById('empty-state').style.display = empty ? 'block' : 'none';
+      document.getElementById('artist-grid').style.display = !empty && viewMode === 'grid' ? 'grid' : 'none';
+      document.getElementById('artist-list').style.display = !empty && viewMode === 'list' ? 'block' : 'none';
 
-                        <div class="card-rates">
-                            <div class="rate-range">
-                                <div class="rate-label">Rate</div>
-                                <div class="rate-value">${currencyHtml}</div>
-                            </div>
-                        </div>
+      if (empty) return;
+      if (viewMode === 'grid') renderGrid();
+      else renderList();
+    }
 
-                        ${artist.bio ? `<div style="font-size:0.78rem;color:var(--text-tertiary);line-height:1.5;margin-bottom:var(--space-sm);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(artist.bio.substring(0, 100))}</div>` : ''}
+    function applyFilters() {
+      const q        = document.getElementById('searchInput').value.trim().toLowerCase();
+      const genre    = document.getElementById('genreFilter').value;
+      const city     = document.getElementById('cityFilter').value;
+      const rate     = document.getElementById('rateFilter').value;
+      const date     = document.getElementById('dateFilter').value;
+      const availOnly= document.getElementById('availabilityToggle').checked;
 
-                        <div class="card-footer">
-                            <div class="rating-info">
-                                <span style="color:var(--text-secondary);font-size:0.82rem">${esc(artist.city || '')}</span>
-                            </div>
-                            <div class="availability-badge ${availabilityClass}">
-                                <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                </svg>
-                                ${availabilityText}
-                            </div>
-                        </div>
-                    </div>
-                </a>
-            `;
+      filteredArtists = allArtists.filter(a => {
+        const name = (a.name || a.stage_name || '').toLowerCase();
+        const aGenre = (a.genre || '').toLowerCase();
+        if (q && !name.includes(q) && !aGenre.includes(q)) return false;
+        if (genre && aGenre !== genre.toLowerCase()) return false;
+        if (city && (a.city || '').toLowerCase() !== city.toLowerCase()) return false;
+        if (availOnly && a.available === false) return false;
+        if (rate) {
+          const fee = a.rate_min || a.rateMin || 0;
+          if (rate === 'low'  && fee >= 10000) return false;
+          if (rate === 'mid'  && (fee < 10000 || fee >= 25000)) return false;
+          if (rate === 'high' && fee < 25000) return false;
         }
+        if (date && Array.isArray(a.blocked_dates) && a.blocked_dates.includes(date)) return false;
+        return true;
+      });
+      render();
+    }
 
-        async function applyFilters() {
-            const searchTerm = document.getElementById('searchInput').value.trim();
-            const selectedGenre = document.getElementById('genreFilter').value;
-            const selectedCity = document.getElementById('cityFilter').value;
-            const availableOnly = document.getElementById('availabilityToggle').checked;
-            const rateRange = document.getElementById('rateFilter').value;
-            const dateFilter = document.getElementById('dateFilter').value;
+    function setupEventListeners() {
+      document.getElementById('searchInput').addEventListener('input', applyFilters);
+      document.getElementById('genreFilter').addEventListener('change', applyFilters);
+      document.getElementById('cityFilter').addEventListener('change', applyFilters);
+      document.getElementById('rateFilter').addEventListener('change', applyFilters);
+      document.getElementById('dateFilter').addEventListener('change', applyFilters);
+      document.getElementById('availabilityToggle').addEventListener('change', applyFilters);
 
-            const { data } = await DB.getArtists({
-                search: searchTerm,
-                genre: selectedGenre,
-                city: selectedCity,
-                availableOnly,
-            });
+      document.getElementById('view-grid').addEventListener('click', () => {
+        viewMode = 'grid';
+        document.getElementById('view-grid').classList.add('active');
+        document.getElementById('view-list').classList.remove('active');
+        render();
+      });
+      document.getElementById('view-list').addEventListener('click', () => {
+        viewMode = 'list';
+        document.getElementById('view-list').classList.add('active');
+        document.getElementById('view-grid').classList.remove('active');
+        render();
+      });
+    }
 
-            filteredArtists = (data || []).filter(artist => {
-                // Rate filter
-                if (rateRange) {
-                    const rm = artist.rateMin || artist.rate_min || 0;
-                    if (rateRange === '0-2000' && rm > 2000) return false;
-                    if (rateRange === '2000-5000' && (rm < 2000 || rm > 5000)) return false;
-                    if (rateRange === '5000-10000' && (rm < 5000 || rm > 10000)) return false;
-                    if (rateRange === '10000+' && rm < 10000) return false;
-                }
-                // Date availability filter (client-side check against blocked_dates)
-                if (dateFilter && artist.blocked_dates && Array.isArray(artist.blocked_dates)) {
-                    if (artist.blocked_dates.includes(dateFilter)) return false;
-                }
-                if (dateFilter && artist.available_from && new Date(dateFilter) < new Date(artist.available_from)) return false;
-                if (dateFilter && artist.available_to && new Date(dateFilter) > new Date(artist.available_to)) return false;
-                return true;
-            });
+    async function initializeDirectory() {
+      const res = await DB.getArtists();
+      allArtists = (res.success && res.data) ? res.data : [];
+      filteredArtists = [...allArtists];
+      const countEl = document.getElementById('dir-count-hero');
+      if (countEl) countEl.textContent = allArtists.length > 0 ? allArtists.length + '+' : '—';
+      render();
+      if (!res.success) {
+        document.getElementById('resultsInfo').textContent = "Couldn't load artists — please refresh.";
+      }
+    }
 
-            renderArtists();
-            updateResultsInfo();
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (typeof Auth !== 'undefined') {
+        await Auth.ready();
+        if (Auth.isLoggedIn() && Auth.role === 'artist') {
+          window.location.replace('artist-dashboard.html');
+          return;
         }
-
-        function sortArtists() {
-            const sortBy = document.getElementById('sortBy').value;
-            if (!sortBy) return;
-            filteredArtists.sort((a, b) => {
-                if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
-                if (sortBy === 'bookings') return (b.bookings || b.reviewCount || 0) - (a.bookings || a.reviewCount || 0);
-                if (sortBy === 'price-low') return (a.rateMin || a.rate_min || 0) - (b.rateMin || b.rate_min || 0);
-                if (sortBy === 'price-high') return (b.rateMin || b.rate_min || 0) - (a.rateMin || a.rate_min || 0);
-                return 0;
-            });
-            renderArtists();
-        }
-
-        function renderArtists() {
-            const grid = document.getElementById('artistsGrid');
-            const noResults = document.getElementById('noResults');
-
-            grid.innerHTML = '';
-
-            if (filteredArtists.length === 0) {
-                grid.style.display = 'none';
-                noResults.style.display = 'block';
-            } else {
-                grid.style.display = 'grid';
-                noResults.style.display = 'none';
-
-                filteredArtists.forEach((artist, index) => {
-                    const cardHtml = createArtistCard(artist, index);
-                    grid.insertAdjacentHTML('beforeend', cardHtml);
-                });
-            }
-        }
-
-        function updateResultsInfo() {
-            const resultsInfo = document.getElementById('resultsInfo');
-            const totalCount = allArtists.length;
-            const shownCount = filteredArtists.length;
-            resultsInfo.textContent = `Showing ${shownCount} of ${totalCount} artists`;
-        }
-
-        async function initializeDirectory() {
-            document.getElementById('resultsInfo').textContent = 'Loading artists...';
-            const result = await DB.getArtists();
-            allArtists = (result.success && result.data) ? result.data : [];
-            filteredArtists = [...allArtists];
-            renderArtists();
-            updateResultsInfo();
-            if (!result.success) {
-                document.getElementById('resultsInfo').textContent = 'Couldn\u2019t load artists — please refresh.';
-            }
-        }
-
-        function setupEventListeners() {
-            document.getElementById('searchInput').addEventListener('input', applyFilters);
-            document.getElementById('genreFilter').addEventListener('change', applyFilters);
-            document.getElementById('cityFilter').addEventListener('change', applyFilters);
-            document.getElementById('availabilityToggle').addEventListener('change', applyFilters);
-            document.getElementById('rateFilter').addEventListener('change', applyFilters);
-            document.getElementById('dateFilter').addEventListener('change', applyFilters);
-        }
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Directory is for promoters shopping for artists — redirect artists away
-            if (typeof Auth !== 'undefined') {
-                await Auth.ready();
-                if (Auth.isLoggedIn() && Auth.role === 'artist') {
-                    window.location.replace('artist-dashboard.html');
-                    return;
-                }
-            }
-            const navRoot = document.getElementById('nav-root');
-            if (navRoot && typeof renderNav === 'function') {
-                navRoot.innerHTML = renderNav('directory');
-            }
-            setupEventListeners();
-            initializeDirectory();
-        });
-
-        window.addEventListener('load', () => {
-            initializeDirectory();
-        });
-    </script>
+      }
+      const navRoot = document.getElementById('nav-root');
+      if (navRoot && typeof renderNav === 'function') {
+        navRoot.innerHTML = renderNav('directory');
+      }
+      if (typeof hydrateIcons === 'function') hydrateIcons();
+      setupEventListeners();
+      initializeDirectory();
+    });
+  </script>
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
 </body>
 </html>
