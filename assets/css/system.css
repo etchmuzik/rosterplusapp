@@ -1,71 +1,102 @@
 /* ═══════════════════════════════════════════════════════════
-   ROSTR+ GCC — Design System v2
-   Dark glassmorphic · OLED-optimized · Premium nightlife
+   ROSTR+ GCC — Design System v3
+   Sleek monochrome glass · cool graphite base · swappable accent
+   Phase-1 port: tokens only, legacy names preserved so every existing
+   page (using --gold, --text-*, --bg-*, --space-*, --radius-*) keeps
+   working unchanged — they just resolve to the new values.
    ═══════════════════════════════════════════════════════════ */
 
-/* ── Fonts — Satoshi + JetBrains Mono (taste-skill approved) ── */
-@import url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+/* ── Fonts — Satoshi body, Chillax display, JetBrains Mono ── */
+@import url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700,900&f[]=chillax@500,600,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 /* ── Reset ── */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  /* Surfaces — Charcoal base, layered glass */
-  --bg-base: #0c0c10;
-  --bg-raised: rgba(18,18,26,0.92);
-  --bg-card: rgba(255,255,255,0.035);
-  --bg-card-hover: rgba(255,255,255,0.06);
-  --bg-input: rgba(255,255,255,0.045);
-  --bg-input-focus: rgba(255,255,255,0.08);
+  /* ═══ ACCENT SYSTEM ═══
+     Default is cool-white monochrome. Override on <html> to swap:
+     <html data-accent="gold">  — warm gold (legacy)
+     <html data-accent="sand">  — warm sand
+     <html data-accent="neon">  — acid lime
+     <html data-accent="magenta"> — hot pink
+     <html data-accent="ice">   — cold sky blue
+  */
+  --accent: #f3f5f8;
+  --accent-soft: #ffffff;
+  --accent-deep: #8a92a0;
+  --accent-dim-05: rgba(243,245,248,0.04);
+  --accent-dim-10: rgba(243,245,248,0.08);
+  --accent-dim-20: rgba(243,245,248,0.14);
+  --accent-dim-30: rgba(243,245,248,0.22);
+  --accent-glow: 0 0 32px rgba(243,245,248,0.08), 0 0 64px rgba(243,245,248,0.03);
+
+  /* ═══ LEGACY ACCENT ALIASES ═══
+     Every existing page references --gold / --gold-dim / --gold-glow /
+     --gold-text / --border-gold. Re-point them at the new accent so
+     we don't have to edit 20+ HTML files. When pages are ported in
+     Phase 2 we'll migrate callers to --accent directly.
+  */
+  --gold: var(--accent);
+  --gold-dim: var(--accent-dim-10);
+  --gold-glow: var(--accent-dim-05);
+  --gold-text: var(--accent-soft);
+  --border-gold: var(--accent-dim-30);
+  --shadow-gold: var(--accent-glow);
+
+  /* ═══ SURFACES ═══ cool graphite base */
+  --bg-base: #08090b;
+  --bg-1: #0c0d10;
+  --bg-2: #101116;
+  --bg-3: #15171d;
+  --bg-raised: rgba(14,16,22,0.80);
+  --bg-card: rgba(255,255,255,0.025);
+  --bg-card-hover: rgba(255,255,255,0.045);
+  --bg-input: rgba(255,255,255,0.035);
+  --bg-input-focus: rgba(255,255,255,0.065);
 
   /* Glass — core design language */
-  --glass-bg: rgba(255,255,255,0.05);
-  --glass-bg-strong: rgba(255,255,255,0.08);
-  --glass-border: rgba(255,255,255,0.1);
-  --glass-blur: 20px;
-  --glass-shine: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.02) 40%, rgba(255,255,255,0) 100%);
+  --glass-bg: rgba(255,255,255,0.04);
+  --glass-bg-strong: rgba(255,255,255,0.07);
+  --glass-border: rgba(255,255,255,0.08);
+  --glass-blur: 14px;
+  --glass-shine: linear-gradient(135deg, rgba(255,255,255,0.035) 0%, rgba(255,255,255,0.005) 40%, transparent 80%);
 
   /* Borders */
-  --border-subtle: rgba(255,255,255,0.06);
-  --border-medium: rgba(255,255,255,0.1);
-  --border-strong: rgba(255,255,255,0.16);
-  --border-gold: rgba(201,168,76,0.3);
+  --border-subtle: rgba(255,255,255,0.05);
+  --border-medium: rgba(255,255,255,0.08);
+  --border-strong: rgba(255,255,255,0.14);
 
-  /* Text */
-  --text-primary: rgba(255,255,255,0.94);
-  --text-secondary: rgba(255,255,255,0.56);
-  --text-tertiary: rgba(255,255,255,0.32);
-  --text-inverse: #0c0c10;
+  /* Text — slightly lifted from previous for cool-white palette */
+  --text-primary: rgba(255,255,255,0.96);
+  --text-secondary: rgba(255,255,255,0.58);
+  --text-tertiary: rgba(255,255,255,0.34);
+  --text-quaternary: rgba(255,255,255,0.18);
+  --text-inverse: #08090b;
 
-  /* Accent — warm gold */
-  --gold: #c9a84c;
-  --gold-dim: rgba(201,168,76,0.1);
-  --gold-glow: rgba(201,168,76,0.05);
-  --gold-text: #dbbe62;
-
-  /* Status */
-  --status-confirmed: #34d399;
-  --status-confirmed-bg: rgba(52,211,153,0.1);
-  --status-pending: #fbbf24;
-  --status-pending-bg: rgba(251,191,36,0.1);
-  --status-cancelled: #f87171;
-  --status-cancelled-bg: rgba(248,113,113,0.1);
+  /* Status — desaturated toward grey for cooler palette */
+  --status-confirmed: #8ee6b5;
+  --status-confirmed-bg: rgba(142,230,181,0.08);
+  --status-pending: #e9cf92;
+  --status-pending-bg: rgba(233,207,146,0.08);
+  --status-cancelled: #f3a0a0;
+  --status-cancelled-bg: rgba(243,160,160,0.08);
+  --status-info: #a6c5ea;
+  --status-info-bg: rgba(166,197,234,0.08);
   --status-draft: rgba(255,255,255,0.4);
   --status-draft-bg: rgba(255,255,255,0.05);
 
-  /* Shadows — tinted to bg hue (taste-skill: no pure black) */
-  --shadow-sm: 0 1px 2px rgba(12,12,16,0.6);
-  --shadow-md: 0 4px 20px rgba(12,12,16,0.5), 0 0 1px rgba(255,255,255,0.05);
-  --shadow-lg: 0 16px 48px rgba(12,12,16,0.6), 0 0 1px rgba(255,255,255,0.08);
-  --shadow-gold: 0 0 24px rgba(201,168,76,0.12), 0 0 48px rgba(201,168,76,0.04);
+  /* Shadows — tinted to bg hue */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.35);
+  --shadow-md: 0 4px 20px rgba(0,0,0,0.40), 0 0 1px rgba(255,255,255,0.05);
+  --shadow-lg: 0 20px 40px rgba(0,0,0,0.45), 0 0 1px rgba(255,255,255,0.08);
 
-  /* Typography — Satoshi (taste-approved, premium) */
+  /* Typography */
   --font-body: 'Satoshi', -apple-system, system-ui, sans-serif;
-  --font-display: 'Satoshi', -apple-system, system-ui, sans-serif;
+  --font-display: 'Chillax', 'Satoshi', -apple-system, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
 
-  /* Spacing */
+  /* Spacing — same scale as before, extended */
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: 16px;
@@ -74,23 +105,76 @@
   --space-2xl: 48px;
   --space-3xl: 64px;
   --space-4xl: 96px;
+  --space-5xl: 128px;
 
-  /* Radius — taste-skill premium rounding */
+  /* Radius */
   --radius-sm: 10px;
   --radius-md: 14px;
   --radius-lg: 20px;
-  --radius-xl: 2.5rem;
+  --radius-xl: 28px;
 
-  /* Motion — cubic-bezier(0.32, 0.72, 0, 1) */
+  /* Motion */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --duration-fast: 200ms;
-  --duration-base: 400ms;
-  --duration-slow: 600ms;
+  --duration-fast: 160ms;
+  --duration-base: 280ms;
+  --duration-slow: 480ms;
 
   /* Layout */
-  --max-width: 1280px;
+  --max-width: 1360px;
   --nav-height: 64px;
+}
+
+/* ═══ Accent theme swaps ═══ */
+html[data-accent="gold"] {
+  --accent: #c9a84c;
+  --accent-soft: #dbbe62;
+  --accent-deep: #8a6f27;
+  --accent-dim-05: rgba(201,168,76,0.05);
+  --accent-dim-10: rgba(201,168,76,0.10);
+  --accent-dim-20: rgba(201,168,76,0.20);
+  --accent-dim-30: rgba(201,168,76,0.30);
+  --accent-glow: 0 0 32px rgba(201,168,76,0.18), 0 0 64px rgba(201,168,76,0.06);
+}
+html[data-accent="sand"] {
+  --accent: #e4c588;
+  --accent-soft: #efd8a5;
+  --accent-deep: #a68b4c;
+  --accent-dim-05: rgba(228,197,136,0.05);
+  --accent-dim-10: rgba(228,197,136,0.10);
+  --accent-dim-20: rgba(228,197,136,0.20);
+  --accent-dim-30: rgba(228,197,136,0.30);
+  --accent-glow: 0 0 32px rgba(228,197,136,0.18), 0 0 64px rgba(228,197,136,0.06);
+}
+html[data-accent="neon"] {
+  --accent: #d4ff3d;
+  --accent-soft: #e5ff7a;
+  --accent-deep: #9bbd20;
+  --accent-dim-05: rgba(212,255,61,0.05);
+  --accent-dim-10: rgba(212,255,61,0.10);
+  --accent-dim-20: rgba(212,255,61,0.20);
+  --accent-dim-30: rgba(212,255,61,0.30);
+  --accent-glow: 0 0 32px rgba(212,255,61,0.22), 0 0 64px rgba(212,255,61,0.08);
+}
+html[data-accent="magenta"] {
+  --accent: #ff3d88;
+  --accent-soft: #ff78a8;
+  --accent-deep: #b01b58;
+  --accent-dim-05: rgba(255,61,136,0.05);
+  --accent-dim-10: rgba(255,61,136,0.10);
+  --accent-dim-20: rgba(255,61,136,0.20);
+  --accent-dim-30: rgba(255,61,136,0.30);
+  --accent-glow: 0 0 32px rgba(255,61,136,0.22), 0 0 64px rgba(255,61,136,0.08);
+}
+html[data-accent="ice"] {
+  --accent: #7dd3fc;
+  --accent-soft: #b3e3fd;
+  --accent-deep: #3d8eb5;
+  --accent-dim-05: rgba(125,211,252,0.05);
+  --accent-dim-10: rgba(125,211,252,0.10);
+  --accent-dim-20: rgba(125,211,252,0.20);
+  --accent-dim-30: rgba(125,211,252,0.30);
+  --accent-glow: 0 0 32px rgba(125,211,252,0.20), 0 0 64px rgba(125,211,252,0.06);
 }
 
 html {
@@ -105,9 +189,10 @@ body {
   font-weight: 400;
   color: var(--text-primary);
   background: var(--bg-base);
+  /* Cool graphite ambient — neutral hue picks up whichever --accent is active */
   background-image:
-    radial-gradient(ellipse 80% 60% at 10% -10%, rgba(201,168,76,0.03) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 50% at 80% 110%, rgba(201,168,76,0.015) 0%, transparent 60%);
+    radial-gradient(ellipse 80% 60% at 10% -10%, var(--accent-dim-05) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 50% at 80% 110%, var(--accent-dim-05) 0%, transparent 60%);
   background-attachment: fixed;
   line-height: 1.6;
   min-height: 100vh;
@@ -356,15 +441,23 @@ a:hover { color: var(--gold); }
 .btn:disabled { opacity: 0.4; pointer-events: none; }
 
 .btn-primary {
-  background: linear-gradient(145deg, #d4b85c 0%, #b8942f 100%);
+  background: var(--accent);
   color: var(--text-inverse);
-  box-shadow: 0 2px 12px rgba(201,168,76,0.25), inset 0 1px 0 rgba(255,255,255,0.2);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.5) inset,
+    0 -1px 0 rgba(0,0,0,0.08) inset,
+    0 1px 2px rgba(0,0,0,0.35),
+    0 0 0 1px rgba(0,0,0,0.20);
   font-weight: 600;
   letter-spacing: 0.01em;
 }
 .btn-primary:hover {
-  background: linear-gradient(145deg, #dcc464 0%, #c9a84c 100%);
-  box-shadow: 0 4px 20px rgba(201,168,76,0.35), inset 0 1px 0 rgba(255,255,255,0.25);
+  background: var(--accent-soft);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.6) inset,
+    0 -1px 0 rgba(0,0,0,0.08) inset,
+    0 4px 14px rgba(0,0,0,0.35),
+    0 0 0 1px rgba(0,0,0,0.20);
   transform: translateY(-1px);
 }
 
@@ -437,8 +530,8 @@ a:hover { color: var(--gold); }
 .form-select:focus,
 .form-textarea:focus {
   background: rgba(255,255,255,0.06);
-  border-color: rgba(201,168,76,0.5);
-  box-shadow: 0 0 0 3px rgba(201,168,76,0.1), 0 0 20px rgba(201,168,76,0.06);
+  border-color: var(--accent-dim-30);
+  box-shadow: 0 0 0 3px var(--accent-dim-10), 0 0 20px var(--accent-dim-05);
 }
 
 .form-input::placeholder,
