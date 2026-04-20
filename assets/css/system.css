@@ -2298,3 +2298,324 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   margin-top: 12px;
   color: var(--text-secondary);
 }
+
+/* ═══════════════════════════════════════════════════════════
+   Booking wizard — 3-step create flow
+   ═══════════════════════════════════════════════════════════ */
+
+/* Container: narrow column */
+.bk-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--space-xl) var(--space-lg) var(--space-3xl);
+}
+
+.bk-head { margin-bottom: var(--space-xl); }
+.bk-head h1 {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+}
+.bk-head p {
+  margin-top: 6px;
+  color: var(--text-secondary);
+  max-width: 60ch;
+}
+
+/* Step progress strip */
+.bk-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: var(--space-xl);
+}
+.bk-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-tertiary);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.bk-step .dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--border-medium);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: var(--bg-card);
+  flex-shrink: 0;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+.bk-step.active { color: var(--text-primary); }
+.bk-step.active .dot {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--text-inverse);
+  box-shadow: 0 0 0 4px var(--accent-dim-10);
+}
+.bk-step.done { color: var(--text-secondary); }
+.bk-step.done .dot {
+  background: var(--accent-dim-10);
+  color: var(--accent-soft);
+  border-color: var(--accent-dim-30);
+}
+.bk-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, var(--border-medium), var(--border-subtle));
+}
+.bk-line.done { background: var(--accent-dim-30); }
+@media (max-width: 640px) {
+  .bk-progress { gap: 6px; }
+  .bk-step span:last-child { display: none; }
+  .bk-step.active span:last-child { display: inline; }
+}
+
+/* Step body */
+.bk-step-body h3 {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  letter-spacing: -0.03em;
+  margin-bottom: var(--space-md);
+}
+
+/* Step 1: artist pick grid */
+.bk-artist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: var(--space-lg);
+}
+.bk-artist-card {
+  padding: 12px;
+  cursor: pointer;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+.bk-artist-card:hover {
+  border-color: var(--border-medium);
+  background: var(--bg-card-hover);
+}
+.bk-artist-card.selected {
+  border-color: var(--accent);
+  box-shadow: var(--accent-glow);
+  background: var(--accent-dim-05);
+}
+.bk-artist-tile {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.8rem;
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+}
+.bk-artist-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+.bk-artist-meta {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+/* Chosen-artist summary block (steps 2 + 3) */
+.bk-chosen {
+  display: flex;
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+  padding: var(--space-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  align-items: center;
+}
+.bk-chosen .tile {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.4rem;
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+}
+.bk-chosen .name {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+.bk-chosen .meta {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+/* Form fields (wizard uses distinct class names so we don't collide
+   with the legacy .form-input rules) */
+.bk-field { display: flex; flex-direction: column; gap: 6px; }
+.bk-field-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+.bk-input, .bk-select, .bk-textarea {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  transition: all var(--duration-fast) var(--ease-out);
+  outline: none;
+}
+.bk-input:focus, .bk-select:focus, .bk-textarea:focus {
+  background: var(--bg-card-hover);
+  border-color: var(--accent-dim-30);
+  box-shadow: 0 0 0 3px var(--accent-dim-10);
+}
+.bk-input::placeholder, .bk-textarea::placeholder { color: var(--text-tertiary); }
+.bk-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.5)' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 34px;
+  cursor: pointer;
+}
+.bk-textarea { resize: vertical; min-height: 96px; font-family: var(--font-body); }
+
+.bk-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+}
+.bk-form-grid .span-2 { grid-column: span 2; }
+@media (max-width: 640px) {
+  .bk-form-grid { grid-template-columns: 1fr; }
+  .bk-form-grid .span-2 { grid-column: auto; }
+}
+
+.bk-currency-group {
+  display: flex;
+  gap: 8px;
+}
+.bk-currency-group .bk-select { max-width: 90px; }
+
+/* Footer nav (Back / Continue) */
+.bk-foot {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--space-xl);
+  gap: 10px;
+}
+
+/* Review card (step 3) */
+.bk-review {
+  padding: var(--space-xl);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-lg);
+}
+.bk-review-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.bk-review-facts {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md);
+}
+.bk-review-facts .eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-tertiary);
+}
+.bk-review-facts .val {
+  margin-top: 6px;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+.bk-review-notes {
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border-subtle);
+}
+.bk-review-notes .eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-tertiary);
+}
+.bk-review-notes p {
+  margin-top: 6px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* Reassurance banner above the Send button */
+.bk-reassure {
+  padding: var(--space-md);
+  background: var(--accent-dim-05);
+  border: 1px solid var(--accent-dim-20);
+  border-radius: var(--radius-md);
+  display: flex;
+  gap: 12px;
+  margin-bottom: var(--space-lg);
+}
+.bk-reassure .i {
+  color: var(--accent-soft);
+  padding-top: 2px;
+  flex-shrink: 0;
+}
+.bk-reassure .title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+.bk-reassure p {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
