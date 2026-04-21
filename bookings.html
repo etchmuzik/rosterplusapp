@@ -464,7 +464,7 @@
             </div>
 
             <div class="booking-actions">
-              <button class="btn btn-ghost btn-sm" onclick="viewBooking('${b.id}')">View</button>
+              <a href="booking-detail.html?id=${b.id}" class="btn btn-ghost btn-sm">Open</a>
               ${b.status === 'draft' ? `<a href="booking.html?artist=${b.artist_id}" class="btn btn-secondary btn-sm">Edit</a>` : ''}
               ${b.status === 'pending' ? `<button class="btn btn-secondary btn-sm" onclick="cancelBooking('${b.id}')">Cancel</button>` : ''}
               ${b.status === 'confirmed' ? `<a href="messages.html" class="btn btn-secondary btn-sm">Message</a>` : ''}

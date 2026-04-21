@@ -104,15 +104,23 @@ const Auth = {
 
   async loadProfile() {
     if (!this.user || DEMO_MODE) return;
+    // Pull all the profile fields the app actually reads off Auth.user
+    // elsewhere (dashboard greeting uses city, settings prefills phone/
+    // company, etc.). Previously only role + display_name + avatar were
+    // loaded so freshly-saved city/phone didn't surface until a reload.
     const { data } = await _sb
       .from('profiles')
-      .select('role, display_name, avatar_url')
+      .select('role, display_name, avatar_url, city, phone, company, bio')
       .eq('id', this.user.id)
       .single();
     if (data) {
       this.role = data.role;
       this.user.display_name = data.display_name;
       this.user.avatar_url = data.avatar_url;
+      this.user.city = data.city;
+      this.user.phone = data.phone;
+      this.user.company = data.company;
+      this.user.bio = data.bio;
     }
   },
 
@@ -410,13 +418,32 @@ function renderNav(activePage = '') {
 }
 
 // ── Password Reset ──
+// Calls our custom send-password-reset edge function rather than
+// _sb.auth.resetPasswordForEmail(). The built-in method depends on
+// Supabase's dashboard-configured SMTP, which we don't have set up.
+// Our edge function generates a recovery link via the admin API and
+// dispatches it through Resend (same vendor our other transactional
+// emails use).
+//
+// The response is always success:true regardless of whether the email
+// exists — prevents account-enumeration attacks. The edge function
+// silently skips sending if the account doesn't exist.
 Auth.sendPasswordReset = async function(email) {
   if (DEMO_MODE) return { success: false, error: 'Not available in demo mode' };
-  const { error } = await _sb.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.origin + '/auth.html?mode=reset'
-  });
-  if (error) return { success: false, error: error.message };
-  return { success: true };
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/send-password-reset`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      return { success: false, error: body.error || 'Request failed' };
+    }
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: String(e) };
+  }
 };
 
 Auth.updatePassword = async function(newPassword) {
@@ -524,6 +551,13 @@ const DB = {
       social: a.social_links || {},
       bio: (a.profiles && a.profiles.bio) || '',
       email: (a.profiles && a.profiles.email) || '',
+      // Real availability fields — consumed by profile.html's 21-day
+      // calendar so promoters see actual blocked dates, not fake patterns.
+      blocked_dates: Array.isArray(a.blocked_dates) ? a.blocked_dates : [],
+      available_from: a.available_from || null,
+      available_to: a.available_to || null,
+      tech_rider: a.tech_rider || {},
+      profile_id: a.profile_id || null,
     };
 
     return { success: true, data: normalised };

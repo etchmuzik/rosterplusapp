@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en" data-accent="mono">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#08090b">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <title>Booking — ROSTR+ GCC</title>
+  <link rel="stylesheet" href="assets/css/system.css">
+  <style>
+    .bd-wrap { max-width: 900px; margin: 0 auto; padding: var(--space-2xl) var(--space-lg); }
+    .bd-head { display:flex; align-items: flex-start; justify-content: space-between; gap: var(--space-md); margin-bottom: var(--space-xl); flex-wrap: wrap; }
+    .bd-head h1 {
+      font-family: var(--font-display);
+      font-size: clamp(1.8rem, 3vw, 2.4rem);
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+    .bd-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-tertiary);
+      margin-bottom: 8px;
+    }
+    .bd-grid {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: var(--space-lg);
+    }
+    @media (max-width: 780px) { .bd-grid { grid-template-columns: 1fr; } }
+    .bd-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: var(--space-xl);
+      backdrop-filter: blur(14px);
+    }
+    .bd-card + .bd-card { margin-top: var(--space-lg); }
+    .bd-card h3 { font-family: var(--font-display); font-size: 1.05rem; letter-spacing: -0.02em; margin-bottom: var(--space-md); }
+    .bd-facts { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-md); }
+    @media (max-width: 520px) { .bd-facts { grid-template-columns: 1fr; } }
+    .bd-fact .label {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-tertiary);
+      margin-bottom: 4px;
+    }
+    .bd-fact .val { color: var(--text-primary); font-weight: 500; font-size: 0.95rem; }
+    .bd-fact .val.mono { font-family: var(--font-mono); font-size: 0.88rem; }
+    .bd-notes {
+      background: var(--bg-1);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: var(--space-md);
+      margin-top: var(--space-sm);
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .bd-actions { display: flex; gap: var(--space-sm); flex-wrap: wrap; margin-top: var(--space-lg); }
+    .bd-timeline { position: relative; padding-left: 18px; }
+    .bd-timeline::before {
+      content: '';
+      position: absolute;
+      left: 5px; top: 6px; bottom: 6px;
+      width: 1px;
+      background: var(--border-subtle);
+    }
+    .bd-timeline-item { position: relative; padding: 6px 0 10px; }
+    .bd-timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -18px; top: 10px;
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: var(--text-tertiary);
+      border: 2px solid var(--bg-base);
+    }
+    .bd-timeline-item.current::before {
+      background: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-dim-20);
+    }
+    .bd-timeline-item .when {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--text-tertiary);
+    }
+    .bd-timeline-item .what {
+      font-size: 0.92rem;
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+    .bd-empty {
+      padding: var(--space-2xl);
+      text-align: center;
+      color: var(--text-tertiary);
+    }
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+    <nav-root id="nav-root"></nav-root>
+
+    <main class="bd-wrap">
+      <a href="javascript:history.back()" class="btn btn-ghost btn-sm" style="margin-bottom: var(--space-md)">&larr; Back</a>
+      <div id="bd-root" class="bd-empty">Loading booking…</div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/app.js"></script>
+  <script>
+    let _booking = null;
+    let _viewerRole = null; // 'promoter' | 'artist' — determined from current user's relation to the booking
+
+    function fmtDate(iso) {
+      if (!iso) return '—';
+      return new Date(iso + (iso.length === 10 ? 'T00:00:00' : '')).toLocaleDateString('en', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+      });
+    }
+    function fmtDateTime(iso) {
+      if (!iso) return '—';
+      return new Date(iso).toLocaleString('en', {
+        day: 'numeric', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', hour12: false,
+      });
+    }
+    function fmtTime(t) {
+      if (!t) return '—';
+      // strip seconds + timezone offsets if present
+      return String(t).slice(0, 5);
+    }
+    function fmtMoney(n, currency) {
+      if (!n) return '—';
+      return (currency || 'AED') + ' ' + Number(n).toLocaleString();
+    }
+    function fmtDuration(mins) {
+      if (!mins) return '—';
+      const h = mins / 60;
+      return (h % 1 === 0 ? h : h.toFixed(1)) + ' hrs';
+    }
+
+    // Build the status timeline — shows the full lifecycle with the
+    // current stage highlighted. Cancelled bookings truncate early.
+    function renderTimeline(b) {
+      const events = [
+        { key: 'inquiry',    label: 'Requested', at: b.created_at },
+        { key: 'pending',    label: 'Under review', at: null },
+        { key: 'confirmed',  label: 'Accepted by artist', at: null },
+        { key: 'contracted', label: 'Contract issued', at: null },
+        { key: 'completed',  label: 'Gig performed', at: null },
+      ];
+      const order = ['inquiry','pending','confirmed','contracted','completed'];
+      const currentIdx = order.indexOf(b.status);
+      const cancelled = b.status === 'cancelled';
+      const display = cancelled
+        ? [events[0], { key: 'cancelled', label: 'Cancelled', at: b.updated_at }]
+        : events;
+      return display.map(ev => {
+        const isCurrent = (cancelled && ev.key === 'cancelled') ||
+                          (!cancelled && ev.key === b.status);
+        return `<div class="bd-timeline-item ${isCurrent ? 'current' : ''}">
+          ${ev.at ? `<div class="when">${fmtDateTime(ev.at)}</div>` : ''}
+          <div class="what">${esc(ev.label)}</div>
+        </div>`;
+      }).join('');
+    }
+
+    function renderActions(b) {
+      // Context-aware action buttons. Always start with "Open messages"
+      // as the universal fallback — every booking has a thread.
+      const actions = [];
+
+      // Promoter-only actions
+      if (_viewerRole === 'promoter') {
+        if (b.status === 'inquiry' || b.status === 'pending') {
+          actions.push(`<button class="btn btn-ghost btn-sm" onclick="cancelBooking()">Cancel booking</button>`);
+        }
+        if (['confirmed','contracted'].includes(b.status)) {
+          actions.push(`<a class="btn btn-secondary btn-sm" href="contracts.html?booking=${esc(b.id)}">Manage contract</a>`);
+        }
+      }
+
+      // Artist-only actions
+      if (_viewerRole === 'artist' && b.status === 'pending') {
+        actions.push(`<button class="btn btn-primary btn-sm" onclick="acceptBooking()">Accept</button>`);
+        actions.push(`<button class="btn btn-ghost btn-sm" onclick="rejectBooking()">Decline</button>`);
+      }
+
+      actions.push(`<a class="btn btn-secondary btn-sm" href="messages.html">Open messages</a>`);
+      return actions.join('');
+    }
+
+    async function acceptBooking() {
+      if (!confirm('Accept this booking request?')) return;
+      const res = await DB.acceptBooking(_booking.id, '');
+      if (!res.success) { UI.toast('Failed: ' + (res.error || ''), 'error'); return; }
+      UI.toast('Booking accepted ✓', 'success');
+      setTimeout(load, 500);
+    }
+    async function rejectBooking() {
+      const reason = prompt('Optional message to the promoter:') || '';
+      const res = await DB.rejectBooking(_booking.id, reason);
+      if (!res.success) { UI.toast('Failed: ' + (res.error || ''), 'error'); return; }
+      UI.toast('Booking declined', 'info');
+      setTimeout(load, 500);
+    }
+    async function cancelBooking() {
+      if (!confirm('Cancel this booking? The artist will be notified.')) return;
+      const res = await DB.updateBookingStatus(_booking.id, 'cancelled');
+      if (!res.success) { UI.toast('Failed: ' + (res.error || ''), 'error'); return; }
+      UI.toast('Booking cancelled', 'info');
+      setTimeout(load, 500);
+    }
+
+    function render(b) {
+      const root = document.getElementById('bd-root');
+      const artist = b.artists || {};
+      const profile = artist.profiles || {};
+      const promoter = b.promoter || {};
+      const artistName = artist.stage_name || profile.display_name || 'Artist';
+      const promoterName = promoter.display_name || '—';
+
+      // OG-style update of document title so shared links look decent
+      document.title = `${b.event_name || 'Booking'} — ROSTR+ GCC`;
+
+      root.classList.remove('bd-empty');
+      root.innerHTML = `
+        <div class="bd-head">
+          <div>
+            <div class="bd-eyebrow">${esc(b.status || '—')}</div>
+            <h1>${esc(b.event_name || 'Performance')}</h1>
+            <p class="text-secondary" style="margin-top:4px">
+              ${esc(artistName)} · ${fmtDate(b.event_date)}
+            </p>
+          </div>
+          ${UI.statusTag(b.status)}
+        </div>
+
+        <div class="bd-grid">
+          <div>
+            <div class="bd-card">
+              <h3>Event details</h3>
+              <div class="bd-facts">
+                <div class="bd-fact"><div class="label">Event</div><div class="val">${esc(b.event_name || '—')}</div></div>
+                <div class="bd-fact"><div class="label">Date</div><div class="val">${fmtDate(b.event_date)}</div></div>
+                <div class="bd-fact"><div class="label">Start time</div><div class="val mono">${fmtTime(b.event_time)}</div></div>
+                <div class="bd-fact"><div class="label">Set length</div><div class="val">${fmtDuration(b.set_duration)}</div></div>
+                <div class="bd-fact"><div class="label">Venue</div><div class="val">${esc(b.venue || b.venue_name || '—')}</div></div>
+                <div class="bd-fact"><div class="label">Fee</div><div class="val mono">${fmtMoney(b.fee, b.currency)}</div></div>
+              </div>
+              ${b.notes ? `
+                <div style="margin-top:var(--space-lg)">
+                  <div class="label" style="font-family:var(--font-mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-tertiary);margin-bottom:4px">Notes</div>
+                  <div class="bd-notes">${esc(b.notes)}</div>
+                </div>
+              ` : ''}
+              <div class="bd-actions">${renderActions(b)}</div>
+            </div>
+
+            <div class="bd-card">
+              <h3>Parties</h3>
+              <div class="bd-facts">
+                <div class="bd-fact">
+                  <div class="label">Artist</div>
+                  <div class="val">${esc(artistName)}</div>
+                  ${b.artist_id ? `<a class="text-tertiary" style="font-size:0.82rem" href="profile.html?id=${esc(b.artist_id)}">View profile →</a>` : ''}
+                </div>
+                <div class="bd-fact">
+                  <div class="label">Promoter</div>
+                  <div class="val">${esc(promoterName)}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="bd-card">
+              <h3>Status timeline</h3>
+              <div class="bd-timeline">${renderTimeline(b)}</div>
+            </div>
+
+            <div class="bd-card">
+              <h3>Booking reference</h3>
+              <div class="bd-facts" style="grid-template-columns: 1fr">
+                <div class="bd-fact">
+                  <div class="label">ID</div>
+                  <div class="val mono" style="font-size:0.78rem;word-break:break-all">${esc(b.id)}</div>
+                </div>
+                <div class="bd-fact">
+                  <div class="label">Created</div>
+                  <div class="val mono" style="font-size:0.82rem">${fmtDateTime(b.created_at)}</div>
+                </div>
+                ${b.updated_at && b.updated_at !== b.created_at ? `
+                  <div class="bd-fact">
+                    <div class="label">Last updated</div>
+                    <div class="val mono" style="font-size:0.82rem">${fmtDateTime(b.updated_at)}</div>
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    async function load() {
+      const id = new URLSearchParams(location.search).get('id');
+      if (!id) {
+        document.getElementById('bd-root').innerHTML = '<div class="bd-empty"><h3>No booking ID</h3><p>Return to bookings and pick one.</p></div>';
+        return;
+      }
+      // Fetch the booking with both sides' metadata. RLS guarantees we
+      // only see bookings we're party to.
+      const { data, error } = await _sb.from('bookings')
+        .select('*, artists(id, stage_name, profiles(display_name)), promoter:profiles!promoter_id(display_name, avatar_url, email)')
+        .eq('id', id)
+        .single();
+      if (error || !data) {
+        document.getElementById('bd-root').innerHTML = '<div class="bd-empty"><h3>Booking not found</h3><p>It may have been cancelled or you don\u2019t have access.</p></div>';
+        return;
+      }
+
+      _booking = data;
+      // Figure out viewer role so action buttons match the right party.
+      if (Auth.user && data.promoter_id === Auth.user.id) _viewerRole = 'promoter';
+      else _viewerRole = 'artist';
+
+      render(data);
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await Auth.ready();
+      if (!Auth.isLoggedIn()) { Auth.require(); return; }
+      document.getElementById('nav-root').innerHTML = renderNav('bookings');
+      if (typeof hydrateIcons === 'function') hydrateIcons();
+      await load();
+    });
+  </script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
+</body>
+</html>

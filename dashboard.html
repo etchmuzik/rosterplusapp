@@ -298,7 +298,9 @@
     }
 
     function viewBooking(id) {
-      window.location.href = 'bookings.html?id=' + encodeURIComponent(id);
+      // booking-detail.html = single-booking view (status timeline, parties,
+      // context-aware actions). bookings.html is the list + modal version.
+      window.location.href = 'booking-detail.html?id=' + encodeURIComponent(id);
     }
 
     /* ── Pipeline ── */

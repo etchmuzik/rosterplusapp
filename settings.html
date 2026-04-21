@@ -228,7 +228,13 @@
 
       const result = await DB.updateProfile(updates);
       if (!result.error) {
-        if (updates.display_name && Auth.user) Auth.user.display_name = updates.display_name;
+        // Patch the in-memory Auth.user so other pages (dashboards, nav,
+        // greeting lines) see the new values without requiring a full
+        // page reload. Without this, display_name / city / phone would
+        // show stale for one navigation.
+        if (Auth.user) {
+          Object.assign(Auth.user, updates);
+        }
         await DB.completeOnboarding();
         UI.toast('Profile saved!', 'success');
         if (new URLSearchParams(window.location.search).has('onboarding')) {

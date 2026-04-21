@@ -71,18 +71,31 @@
       return (result.data || []).filter(a => a.id !== artist.id).slice(0, 4);
     }
 
-    /* 21-day availability strip — deterministic per-artist pattern
-       until we wire real availability_blocks. */
-    function buildAvailability(artistId) {
-      const seed = (artistId || 'x').split('').reduce((h, c) => h + c.charCodeAt(0), 0);
+    /* 21-day availability strip built from the artist's real data.
+       We render three states per cell:
+         - 'today'     today's date (just a ring, no fill)
+         - 'booked'    in artist.blocked_dates
+         - 'available' everything else within available_from..available_to
+       Falls back to a neutral (empty) cell if the artist hasn't set any
+       dates — promoters can still contact to confirm. */
+    function buildAvailability(artist) {
+      const blocked = Array.isArray(artist.blocked_dates) ? new Set(artist.blocked_dates) : new Set();
+      const from = artist.available_from ? new Date(artist.available_from) : null;
+      const to   = artist.available_to   ? new Date(artist.available_to)   : null;
+      const today = new Date(); today.setHours(0,0,0,0);
+
+      const toIso = (d) => d.toISOString().slice(0, 10);
       const days = [];
       for (let i = 0; i < 21; i++) {
-        const r = Math.abs(Math.sin(seed * (i + 1) * 13)) * 10;
-        const cls =
-          i === 5              ? 'today'     :
-          r < 3                ? 'booked'    :
-          r < 6                ? 'available' :
-                                 '';
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
+        const iso = toIso(d);
+        let cls = '';
+        if (i === 0) cls = 'today';
+        else if (blocked.has(iso)) cls = 'booked';
+        else if (from && d < from) cls = 'booked';
+        else if (to && d > to) cls = 'booked';
+        else cls = 'available';
         days.push(cls);
       }
       return days;
@@ -97,7 +110,7 @@
       const bio        = artist.bio || `${name} is a ${String(genre).toLowerCase()} artist based out of ${city}, with a residency history across the GCC's premium venues. Known for long-form sets, curated track selection, and a close relationship with the region's headline promoters.`;
       const avail      = artist.available === false ? 'booked' : 'avail';
       const availLabel = avail === 'avail' ? 'Available' : 'Fully booked';
-      const days       = buildAvailability(artist.id);
+      const days       = buildAvailability(artist);
 
       // Social chips (keep what's provided; no fake counts)
       const social = artist.social || {};
