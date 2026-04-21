@@ -1295,7 +1295,7 @@ const DB = {
   // Forbidden from setting profile_id — only unclaimed rows allowed via
   // this path. If the artist signs up later they claim it via the
   // claim-profile flow.
-  async adminCreateUnclaimedArtist({ stage_name, genre, cities_active, status, verified, social_links }) {
+  async adminCreateUnclaimedArtist({ stage_name, genre, cities_active, status, verified, social_links, base_fee }) {
     if (DEMO_MODE) return { success: true };
     if (!Auth.user) return { success: false, error: 'Not authenticated' };
     if (!stage_name) return { success: false, error: 'stage_name required' };
@@ -1308,12 +1308,96 @@ const DB = {
         status: ['active','pending','inactive'].includes(status) ? status : 'pending',
         verified: !!verified,
         social_links: social_links || {},
+        base_fee: (typeof base_fee === 'number' && !isNaN(base_fee) && base_fee >= 0) ? base_fee : null,
         currency: 'AED',
       };
       const { data, error } = await _sb.from('artists').insert(row).select().single();
       if (error) return { success: false, error: error.message };
       return { success: true, data };
     } catch(e) { return { success: false, error: String(e) }; }
+  },
+
+  /**
+   * Bulk-import artists from a parsed CSV. Rows is an array of raw
+   * objects (whatever CSV.parse spat out); this normalises them,
+   * validates, and inserts each one sequentially so partial failure
+   * doesn't wipe successful rows. Returns per-row success/error list
+   * so the UI can show a clean preview + outcome table.
+   *
+   * Expected column names (case-insensitive):
+   *   stage_name (required)
+   *   genre          — single value or comma-separated list
+   *   city           — primary city (maps to cities_active[0])
+   *   instagram      — handle or URL
+   *   soundcloud     — URL
+   *   spotify        — URL
+   *   status         — 'active' | 'pending' (default 'pending')
+   *   verified       — yes/true/1 -> true
+   *   base_fee       — numeric, AED assumed
+   */
+  async adminBulkImportArtists(rows) {
+    if (DEMO_MODE) return { success: true, results: [] };
+    if (!Auth.user) return { success: false, error: 'Not authenticated' };
+    if (!Array.isArray(rows) || rows.length === 0) return { success: false, error: 'No rows to import' };
+
+    const results = [];
+    // Normalise keys once so "Stage Name", "stage_name", "STAGE NAME" all match.
+    const norm = (k) => String(k || '').toLowerCase().trim().replace(/[\s-]+/g, '_');
+    // Truthy parser for optional boolean columns.
+    const toBool = (v) => ['yes','true','1','y','x','✓'].includes(String(v ?? '').toLowerCase().trim());
+    // Instagram handle -> full URL. Accepts @handle, handle, or a full URL.
+    const igUrl = (v) => {
+      const s = String(v ?? '').trim();
+      if (!s) return null;
+      if (/^https?:\/\//i.test(s)) return s;
+      return 'https://instagram.com/' + s.replace(/^@/, '');
+    };
+
+    for (const raw of rows) {
+      const r = {};
+      for (const k of Object.keys(raw || {})) r[norm(k)] = raw[k];
+
+      const stageName = String(r.stage_name || r.name || '').trim();
+      if (!stageName) {
+        results.push({ ok: false, stage_name: '(empty)', error: 'missing stage_name' });
+        continue;
+      }
+
+      const genre = r.genre
+        ? String(r.genre).split(',').map(s => s.trim()).filter(Boolean)
+        : [];
+      const cities = r.city ? [String(r.city).trim()] : [];
+      const social_links = {};
+      if (r.instagram)  social_links.instagram  = igUrl(r.instagram);
+      if (r.soundcloud) social_links.soundcloud = String(r.soundcloud).trim();
+      if (r.spotify)    social_links.spotify    = String(r.spotify).trim();
+
+      let baseFee = null;
+      if (r.base_fee != null && r.base_fee !== '') {
+        const n = Number(String(r.base_fee).replace(/[^\d.]/g, ''));
+        if (!isNaN(n) && n >= 0) baseFee = n;
+      }
+
+      const payload = {
+        stage_name: stageName,
+        genre,
+        cities_active: cities,
+        status: String(r.status || 'pending').toLowerCase().trim(),
+        verified: toBool(r.verified),
+        social_links,
+        base_fee: baseFee,
+      };
+
+      const res = await this.adminCreateUnclaimedArtist(payload);
+      results.push({
+        ok: res.success,
+        stage_name: stageName,
+        error: res.success ? null : res.error,
+      });
+    }
+
+    const succeeded = results.filter(r => r.ok).length;
+    return { success: true, results, succeeded, failed: results.length - succeeded };
   },
 
   // Check if the current user is an admin. Used client-side to show/hide
