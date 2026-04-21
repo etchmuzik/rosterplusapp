@@ -9,13 +9,32 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 let _sb = null;
 let DEMO_MODE = false;
-const FORCE_DEMO = false;
+// FORCE_DEMO: opt-in flag for local offline demos. Enable by adding
+// ?demo=1 to any URL, or by setting localStorage.rostr_force_demo=1.
+// Previously DEMO_MODE silently turned on when the Supabase CDN failed
+// to load — which caused the 'logged in as demo-123456789' bug where
+// users thought they had real accounts but were actually in fake mode.
+// Now we fail loudly and show a connection-error state instead.
+const FORCE_DEMO = (() => {
+  try {
+    if (new URLSearchParams(location.search).get('demo') === '1') return true;
+    if (localStorage.getItem('rostr_force_demo') === '1') return true;
+  } catch (_) { /* no storage / SSR */ }
+  return false;
+})();
 
 function initSupabase() {
-  if (FORCE_DEMO) { DEMO_MODE = true; return; }
-  if (!window.supabase) {
-    console.error('[ROSTR] Supabase library not loaded from CDN — falling back to demo mode');
+  if (FORCE_DEMO) {
     DEMO_MODE = true;
+    console.warn('[ROSTR] FORCE_DEMO active — running on localStorage only. Real Supabase calls disabled.');
+    return;
+  }
+  if (!window.supabase) {
+    console.error('[ROSTR] Supabase SDK failed to load. Check CSP / ad-blocker / network.');
+    // Do NOT silently fall into demo mode. Leave _sb null so DB functions
+    // return a clear 'Not authenticated' / 'Offline' error rather than
+    // quietly pretending everything works via fake data.
+    DEMO_MODE = false;
     return;
   }
   try {
@@ -24,7 +43,8 @@ function initSupabase() {
     console.log('[ROSTR] Supabase connected');
   } catch(e) {
     console.error('[ROSTR] Supabase client creation failed:', e);
-    DEMO_MODE = true;
+    DEMO_MODE = false;
+    _sb = null;
   }
 }
 
@@ -133,18 +153,49 @@ const Auth = {
       return { success: true };
     }
 
-    const { data, error } = await _sb.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { display_name: name, role }
+    // Custom signup via the 'signup' edge function. Bypasses Supabase's
+    // built-in SMTP (which would require dashboard config + gets
+    // rate-limited) by using the admin API to create the user with
+    // email_confirm=true so they can sign in immediately.
+    //
+    // Flow:
+    //   1. POST email/password/role/name to the edge function
+    //   2. Edge function calls supaAdmin.auth.admin.createUser() with
+    //      pre-confirmed email, which fires the handle_new_user trigger
+    //      to create the matching profiles row
+    //   3. Edge function sends the welcome email via Resend
+    //   4. Client then does a normal _sb.auth.signInWithPassword()
+    //      to establish a session locally
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+        body: JSON.stringify({ email, password, role, display_name: name }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        // Surface the error codes our edge function returns in a friendly way
+        const msgMap = {
+          email_taken:   'An account with that email already exists. Try signing in.',
+          weak_password: 'Password must be at least 8 characters.',
+          invalid_email: 'That doesn\u2019t look like a valid email address.',
+          invalid_role:  'Pick either Promoter or Artist.',
+          rate_limited:  'Too many attempts. Wait a minute and try again.',
+        };
+        return { success: false, error: msgMap[body.error] || body.error || 'Sign up failed' };
       }
-    });
-    if (error) return { success: false, error: error.message };
+    } catch (e) {
+      return { success: false, error: String(e) };
+    }
 
-    // Profile is auto-created by database trigger using metadata above
+    // Signup succeeded server-side. Now sign in locally so the browser
+    // has a valid Supabase session for subsequent DB queries.
+    const { data, error } = await _sb.auth.signInWithPassword({ email, password });
+    if (error) return { success: false, error: 'Account created but sign-in failed: ' + error.message };
+
     this.user = data.user;
     this.role = role;
+    await this.loadProfile();
     return { success: true };
   },
 
