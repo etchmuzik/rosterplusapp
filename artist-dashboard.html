@@ -105,6 +105,9 @@
             <p style="margin-top:6px;color:var(--text-secondary);max-width:60ch" id="welcome-sub">Here's your booking activity.</p>
           </div>
 
+          <!-- ═══ Profile completion nudge ═══ -->
+          <div id="completion-mount"></div>
+
           <div class="stats-grid">
             <div class="stat-card"><div class="card-inner"><div class="stat-label">Incoming Requests</div><div class="stat-value" id="stat-requests">0</div></div></div>
             <div class="stat-card"><div class="card-inner"><div class="stat-label">Confirmed Gigs</div><div class="stat-value" id="stat-confirmed" style="color:var(--status-confirmed)">0</div></div></div>
@@ -573,6 +576,22 @@
       const firstName = (Auth.user?.display_name || 'Artist').split(/\s+/)[0];
       document.getElementById('welcome-name').textContent = firstName;
       if (typeof hydrateIcons === 'function') hydrateIcons();
+
+      // Completion nudge — same pattern as promoter dashboard. Hidden
+      // when profile is complete, dismissible for the rest of the day.
+      (async () => {
+        const host = document.getElementById('completion-mount');
+        if (!host) return;
+        if (UI.isCompletionDismissedToday && UI.isCompletionDismissedToday('artist-dash')) return;
+        const c = await DB.getProfileCompletion();
+        if (!c || c.percent >= 100) return;
+        host.innerHTML = UI.completionMeter(c.percent, {
+          variant: 'banner',
+          missing: c.missing,
+          heading: `Profile ${c.percent}% complete`,
+          dismissId: 'artist-dash',
+        });
+      })().catch(() => {});
 
       // Load data (contracts + payouts in parallel with the rest)
       const [bookingsRes, messagesRes, earningsRes, contractsRes, payoutsRes] = await Promise.all([

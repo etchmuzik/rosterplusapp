@@ -426,6 +426,61 @@ const UI = {
     `;
   },
 
+  // Renders a small completion meter: accent-filled bar + "N% complete"
+  // label. `variant: 'banner'` wraps it in a padded card with a heading
+  // and the first missing field as an inline nudge — used on dashboards.
+  // `variant: 'inline'` is just the bar + label, meant for the top of
+  // the settings page.
+  completionMeter(pct, opts = {}) {
+    const { variant = 'inline', missing = [], heading = null, dismissId = null } = opts;
+    pct = Math.max(0, Math.min(100, Math.round(pct || 0)));
+    const barHtml = `
+      <div style="display:flex;align-items:center;gap:var(--space-sm);font-size:0.78rem;color:var(--text-tertiary)">
+        <div style="flex:1;height:6px;background:var(--bg-card);border-radius:999px;overflow:hidden;border:1px solid var(--border-subtle)">
+          <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--accent-deep),var(--accent));transition:width 500ms ease-out"></div>
+        </div>
+        <span style="font-family:var(--font-mono);font-weight:600;color:${pct === 100 ? 'var(--status-confirmed)' : 'var(--text-secondary)'};min-width:44px;text-align:right">${pct}%</span>
+      </div>
+    `;
+    if (variant === 'inline') return barHtml;
+
+    // Banner variant — skip entirely if at 100%
+    if (pct >= 100) return '';
+    const first = missing && missing[0];
+    const nudge = first
+      ? `<a href="${first.href}" class="btn btn-secondary btn-sm" style="margin-left:auto;flex-shrink:0">${first.label} →</a>`
+      : '';
+    const dismissBtn = dismissId
+      ? `<button onclick="UI.dismissCompletion('${dismissId}')" aria-label="Hide" style="background:none;border:none;color:var(--text-tertiary);cursor:pointer;padding:4px 6px;font-size:1.1rem;line-height:1">×</button>`
+      : '';
+    return `
+      <div class="completion-banner" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:var(--space-md) var(--space-lg);margin-bottom:var(--space-lg);display:flex;flex-direction:column;gap:var(--space-sm)">
+        <div style="display:flex;align-items:center;gap:var(--space-md)">
+          <div style="flex:1">
+            <div style="font-size:0.88rem;font-weight:600;color:var(--text-primary);margin-bottom:2px">${heading || 'Finish setting up your profile'}</div>
+            <div style="font-size:0.76rem;color:var(--text-tertiary)">${missing.length} ${missing.length === 1 ? 'thing' : 'things'} left to make your profile shine</div>
+          </div>
+          ${nudge}
+          ${dismissBtn}
+        </div>
+        ${barHtml}
+      </div>
+    `;
+  },
+
+  // Persist a "hide this banner for today" flag in localStorage. Banner
+  // reappears at midnight local time.
+  dismissCompletion(id) {
+    try { localStorage.setItem(`rostr_completion_dismissed_${id}`, new Date().toDateString()); } catch (_) {}
+    const banner = document.querySelector('.completion-banner');
+    if (banner) banner.remove();
+  },
+
+  isCompletionDismissedToday(id) {
+    try { return localStorage.getItem(`rostr_completion_dismissed_${id}`) === new Date().toDateString(); }
+    catch (_) { return false; }
+  },
+
   // SVG Icons (inline, no external deps)
   icon(name, size = 18) {
     const icons = {
@@ -1293,6 +1348,78 @@ const DB = {
       .single();
 
     return { data, error };
+  },
+
+  // Compute profile completion for the current user. Role-aware: promoters
+  // are scored on the profile row alone; artists merge profile + artist row
+  // fields. Returns { percent, filled, total, missing: [{key,label,href}] }
+  // where each missing entry links to the editor that fixes it.
+  //
+  // Kept cheap: does one profile fetch, plus one artists fetch when the
+  // viewer is an artist. Safe to call on every dashboard render.
+  async getProfileCompletion() {
+    if (DEMO_MODE) return { percent: 100, filled: 0, total: 0, missing: [] };
+    if (!Auth.user) return { percent: 0, filled: 0, total: 0, missing: [] };
+
+    const hasValue = (v) => {
+      if (v === null || v === undefined) return false;
+      if (typeof v === 'string') return v.trim().length > 0;
+      if (Array.isArray(v)) return v.length > 0;
+      if (typeof v === 'object') return Object.keys(v).length > 0;
+      return !!v;
+    };
+
+    const profRes = await this.getProfile();
+    const p = profRes?.data || {};
+    const role = Auth.role;
+    const settingsHref = '/settings.html';
+
+    // Promoter: scored on 6 fields (profile-row only).
+    if (role !== 'artist') {
+      const checks = [
+        { key: 'display_name', label: 'Add your name',    present: hasValue(p.display_name), href: settingsHref },
+        { key: 'avatar_url',   label: 'Upload a photo',   present: hasValue(p.avatar_url),   href: settingsHref },
+        { key: 'company',      label: 'Add your company', present: hasValue(p.company),      href: settingsHref },
+        { key: 'phone',        label: 'Add a phone',      present: hasValue(p.phone),        href: settingsHref },
+        { key: 'city',         label: 'Set your city',    present: hasValue(p.city),         href: settingsHref },
+        { key: 'bio',          label: 'Write a short bio',present: hasValue(p.bio),          href: settingsHref },
+      ];
+      const filled = checks.filter(c => c.present).length;
+      return {
+        percent: Math.round((filled / checks.length) * 100),
+        filled,
+        total: checks.length,
+        missing: checks.filter(c => !c.present).map(({ key, label, href }) => ({ key, label, href })),
+      };
+    }
+
+    // Artist: merge profile + artist row. 9 fields total.
+    const artistRes = await this.getMyArtistProfile();
+    const a = (artistRes && artistRes.success) ? (artistRes.data || {}) : {};
+    const socials = a.social_links || a.social || {};
+    const hasSocial = !!(socials.instagram || socials.soundcloud || socials.spotify || socials.mixcloud);
+    const genres = Array.isArray(a.genre) ? a.genre : (a.genre ? [a.genre] : []);
+    const cities = Array.isArray(a.cities_active) ? a.cities_active : [];
+    const editor = '/artist-profile-edit.html';
+
+    const checks = [
+      { key: 'display_name', label: 'Add your name',        present: hasValue(p.display_name), href: settingsHref },
+      { key: 'avatar_url',   label: 'Upload a photo',       present: hasValue(p.avatar_url),   href: settingsHref },
+      { key: 'phone',        label: 'Add a phone',          present: hasValue(p.phone),        href: settingsHref },
+      { key: 'city',         label: 'Set your city',        present: hasValue(p.city) || cities.length > 0, href: settingsHref },
+      { key: 'bio',          label: 'Write a short bio',    present: hasValue(p.bio),          href: settingsHref },
+      { key: 'stage_name',   label: 'Set a stage name',     present: hasValue(a.stage_name),   href: editor },
+      { key: 'genre',        label: 'Pick your genres',     present: genres.length > 0,        href: editor },
+      { key: 'base_fee',     label: 'Add a base fee',       present: hasValue(a.base_fee),     href: editor },
+      { key: 'social',       label: 'Link one social profile', present: hasSocial,             href: editor },
+    ];
+    const filled = checks.filter(c => c.present).length;
+    return {
+      percent: Math.round((filled / checks.length) * 100),
+      filled,
+      total: checks.length,
+      missing: checks.filter(c => !c.present).map(({ key, label, href }) => ({ key, label, href })),
+    };
   },
 
   // ── Artist-Specific Methods ──

@@ -39,6 +39,9 @@
         </div>
       </div>
 
+      <!-- ═══ Profile completion nudge ═══ -->
+      <div id="completion-mount"></div>
+
       <!-- ═══ Big stats ═══ -->
       <div class="dash-stats">
         <div class="dash-stat lp-anim lp-d-1">
@@ -177,6 +180,23 @@
 
       const h1 = document.querySelector('.dash-welcome h1');
       if (h1) h1.firstChild.textContent = greeting + ', ';
+    }
+
+    /* ── Profile completion banner: appears above stats when profile has
+       gaps. Dismissible per-day (stored in localStorage). Never shows for
+       a fully-completed profile. Links directly to the first missing field. */
+    async function renderCompletionBanner() {
+      const host = document.getElementById('completion-mount');
+      if (!host) return;
+      if (UI.isCompletionDismissedToday && UI.isCompletionDismissedToday('dash')) return;
+      const c = await DB.getProfileCompletion();
+      if (!c || c.percent >= 100) { host.innerHTML = ''; return; }
+      host.innerHTML = UI.completionMeter(c.percent, {
+        variant: 'banner',
+        missing: c.missing,
+        heading: `Profile ${c.percent}% complete`,
+        dismissId: 'dash',
+      });
     }
 
     /* ── Stats ── */
@@ -427,6 +447,7 @@
       document.getElementById('nav-root').innerHTML = renderNav('dashboard');
       if (typeof hydrateIcons === 'function') hydrateIcons();
       renderWelcome();
+      renderCompletionBanner().catch(() => {});
 
       // Load data
       const [bookingsRes, messagesRes] = await Promise.all([

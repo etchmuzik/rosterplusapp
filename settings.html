@@ -44,6 +44,7 @@
       <!-- Profile Section -->
       <div class="settings-section">
         <div class="settings-header">Profile</div>
+        <div id="profile-completion" style="margin-bottom:var(--space-lg)"></div>
         <div class="avatar-edit" style="margin-bottom:var(--space-lg)">
           <div class="avatar-large" id="avatar-preview"></div>
           <div>
@@ -271,6 +272,9 @@
         }
         await DB.completeOnboarding();
         UI.toast('Profile saved!', 'success');
+        // Re-render the completion meter so the user sees the pct
+        // go up immediately as they fill fields.
+        renderCompletion().catch(() => {});
         if (new URLSearchParams(window.location.search).has('onboarding')) {
           setTimeout(() => window.location.href = 'dashboard.html', 800);
           return;
@@ -565,7 +569,42 @@
         const companyEl = document.getElementById('company');
         if (companyEl) companyEl.value = profile.data.company || '';
       }
+
+      await renderCompletion();
     });
+
+    // Profile-completion widget: score + missing-field checklist above
+    // the profile form. Re-rendered after saveProfile() so the meter
+    // updates without a page reload.
+    async function renderCompletion() {
+      const host = document.getElementById('profile-completion');
+      if (!host) return;
+      const c = await DB.getProfileCompletion();
+      const meter = UI.completionMeter(c.percent, { variant: 'inline' });
+      if (c.percent >= 100) {
+        host.innerHTML = `
+          <div style="display:flex;align-items:center;gap:var(--space-sm);padding:var(--space-md) var(--space-lg);background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md)">
+            <div style="flex:1">
+              <div style="font-size:0.88rem;font-weight:600;color:var(--status-confirmed);margin-bottom:4px">Profile complete</div>
+              <div>${meter}</div>
+            </div>
+          </div>`;
+        return;
+      }
+      const missList = (c.missing || []).map(m =>
+        `<li style="padding:6px 0;border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between;gap:var(--space-sm);font-size:0.85rem">
+          <span style="color:var(--text-secondary)">${m.label}</span>
+          <a href="${m.href}" style="font-size:0.78rem;color:var(--accent);text-decoration:none">Fix →</a>
+        </li>`
+      ).join('');
+      host.innerHTML = `
+        <div style="padding:var(--space-md) var(--space-lg);background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md)">
+          <div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);margin-bottom:var(--space-xs)">Profile ${c.percent}% complete</div>
+          <div style="font-size:0.78rem;color:var(--text-tertiary);margin-bottom:var(--space-md)">${c.filled} of ${c.total} fields filled</div>
+          ${meter}
+          ${missList ? `<ul style="list-style:none;padding:0;margin:var(--space-md) 0 0">${missList}</ul>` : ''}
+        </div>`;
+    }
   </script>
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
 </body>
