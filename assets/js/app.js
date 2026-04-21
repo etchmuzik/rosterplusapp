@@ -468,6 +468,54 @@ const UI = {
     `;
   },
 
+  // First-session onboarding stepper. Renders a card with each checklist
+  // item as a row: ring icon (done/todo), label, and a "Start" CTA for
+  // the first open step. Completed steps are visually checked off.
+  // Caller passes steps[] — each has { key, label, desc, href, done }.
+  onboardingChecklist(steps, opts = {}) {
+    const { heading = 'Welcome to ROSTR+', dismissId = 'onboard' } = opts;
+    const total = steps.length;
+    const done = steps.filter(s => s.done).length;
+    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+    const nextIdx = steps.findIndex(s => !s.done);
+    const rows = steps.map((s, i) => {
+      const isNext = i === nextIdx;
+      const ring = s.done
+        ? `<div style="width:22px;height:22px;border-radius:50%;background:var(--status-confirmed);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff">${this.icon('check', 12)}</div>`
+        : `<div style="width:22px;height:22px;border-radius:50%;border:1.5px solid ${isNext ? 'var(--accent)' : 'var(--border-medium)'};background:transparent;flex-shrink:0"></div>`;
+      const cta = !s.done && isNext
+        ? `<a href="${s.href}" class="btn btn-secondary btn-sm" style="margin-left:auto;flex-shrink:0">Start \u2192</a>`
+        : '';
+      return `
+        <div style="display:flex;align-items:center;gap:var(--space-md);padding:10px 0;${s.done ? 'opacity:0.65' : ''}">
+          ${ring}
+          <div style="flex:1;min-width:0">
+            <div style="font-size:0.88rem;color:var(--text-primary);font-weight:${isNext ? '600' : '500'};${s.done ? 'text-decoration:line-through' : ''}">${s.label}</div>
+            ${s.desc ? `<div style="font-size:0.74rem;color:var(--text-tertiary);margin-top:2px">${s.desc}</div>` : ''}
+          </div>
+          ${cta}
+        </div>
+      `;
+    }).join('');
+    const dismissBtn = dismissId
+      ? `<button onclick="UI.dismissCompletion('${dismissId}')" aria-label="Hide" style="background:none;border:none;color:var(--text-tertiary);cursor:pointer;padding:4px 6px;font-size:1.2rem;line-height:1">\u00d7</button>`
+      : '';
+    return `
+      <div class="completion-banner" style="background:var(--bg-card);border:1px solid var(--accent-dim-20);border-radius:var(--radius-md);padding:var(--space-lg);margin-bottom:var(--space-lg);box-shadow:var(--accent-glow)">
+        <div style="display:flex;align-items:center;gap:var(--space-md);margin-bottom:var(--space-md)">
+          <div style="flex:1">
+            <div style="font-size:0.78rem;color:var(--accent);letter-spacing:0.12em;text-transform:uppercase;font-family:var(--font-mono);margin-bottom:4px">Get set up</div>
+            <div style="font-size:1.1rem;font-weight:600;color:var(--text-primary)">${heading}</div>
+            <div style="font-size:0.82rem;color:var(--text-tertiary);margin-top:2px">${done} of ${total} steps complete \u00b7 takes ~3 min</div>
+          </div>
+          ${dismissBtn}
+        </div>
+        ${this.completionMeter(pct, { variant: 'inline' })}
+        <div style="margin-top:var(--space-md);display:flex;flex-direction:column">${rows}</div>
+      </div>
+    `;
+  },
+
   // Persist a "hide this banner for today" flag in localStorage. Banner
   // reappears at midnight local time.
   dismissCompletion(id) {
@@ -595,6 +643,11 @@ function renderNav(activePage = '') {
             <a href="/auth.html" class="btn btn-primary btn-sm">Get Started</a>
           </div>
           <div data-auth="logged-in" data-auth-flex="1" style="${isLoggedIn ? 'display:flex;align-items:center;gap:12px' : 'display:none'}">
+            <button onclick="openSearchPalette()" title="Search (\u2318K)" aria-label="Search" style="display:flex;align-items:center;gap:6px;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:5px 10px;color:var(--text-tertiary);cursor:pointer;font-family:var(--font-mono);font-size:0.72rem;transition:border-color 120ms ease">
+              ${UI.icon('search', 14)}
+              <span style="display:none" class="nav-search-label-desktop">Search</span>
+              <kbd style="font-family:inherit;font-size:0.68rem;background:var(--bg-raised);border:1px solid var(--border-subtle);border-radius:3px;padding:1px 5px">\u2318K</kbd>
+            </button>
             <button class="nav-bell" id="notif-bell" onclick="toggleNotifications()" style="position:relative;background:none;border:none;color:var(--text-secondary);cursor:pointer;padding:4px" title="Notifications">
               ${UI.icon('inbox', 18)}
               <span id="notif-badge" style="display:none;position:absolute;top:-2px;right:-2px;width:8px;height:8px;border-radius:50%;background:var(--status-cancelled)"></span>
@@ -674,6 +727,156 @@ function _wireUnreadBadge() {
 }
 
 window.refreshUnreadBadge = refreshUnreadBadge;
+
+// ══════════════════════════════════════════════════════════
+// Global cmd+K / "/" search palette
+// ══════════════════════════════════════════════════════════
+// Mounted once at module load. Hidden by default; triggered by:
+//   - cmd/ctrl + K  (everywhere)
+//   - "/"           (when focus is NOT in an input/textarea)
+// Searches artists + bookings + contracts in parallel via DB.globalSearch,
+// debounced 180ms. Enter opens the selected result. Escape closes.
+// ──────────────────────────────────────────────────────────
+
+let _searchResults = [];
+let _searchSelected = 0;
+let _searchDebounceTimer = null;
+
+function mountSearchPalette() {
+  if (document.getElementById('rostr-search-overlay')) return;
+  const wrap = document.createElement('div');
+  wrap.id = 'rostr-search-overlay';
+  wrap.setAttribute('role', 'dialog');
+  wrap.setAttribute('aria-modal', 'true');
+  wrap.setAttribute('aria-label', 'Search');
+  wrap.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding-top:12vh';
+  wrap.innerHTML = `
+    <div style="width:min(620px, 94vw);max-height:70vh;background:var(--bg-raised);border:1px solid var(--border-medium);border-radius:var(--radius-lg);box-shadow:0 24px 80px rgba(0,0,0,0.6);overflow:hidden;display:flex;flex-direction:column" id="rostr-search-panel">
+      <div style="display:flex;align-items:center;gap:var(--space-md);padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border-subtle)">
+        ${UI.icon('search', 18)}
+        <input id="rostr-search-input" type="text" placeholder="Search artists, bookings, contracts\u2026" autocomplete="off" spellcheck="false"
+          style="flex:1;background:transparent;border:none;outline:none;color:var(--text-primary);font-size:1rem;font-family:var(--font-body)">
+        <kbd style="font-family:var(--font-mono);font-size:0.68rem;color:var(--text-tertiary);background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:4px;padding:2px 6px">Esc</kbd>
+      </div>
+      <div id="rostr-search-results" style="overflow-y:auto;flex:1;padding:var(--space-xs) 0"></div>
+      <div style="display:flex;align-items:center;gap:var(--space-md);padding:10px var(--space-lg);border-top:1px solid var(--border-subtle);font-size:0.72rem;color:var(--text-tertiary);font-family:var(--font-mono)">
+        <span><kbd style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:4px;padding:1px 5px">\u2191\u2193</kbd> navigate</span>
+        <span><kbd style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:4px;padding:1px 5px">\u21b5</kbd> open</span>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(wrap);
+
+  // Outside-click dismiss
+  wrap.addEventListener('click', (e) => { if (e.target === wrap) closeSearchPalette(); });
+
+  const input = document.getElementById('rostr-search-input');
+  input.addEventListener('input', () => {
+    if (_searchDebounceTimer) clearTimeout(_searchDebounceTimer);
+    const q = input.value;
+    _searchDebounceTimer = setTimeout(() => runSearch(q), 180);
+  });
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { closeSearchPalette(); return; }
+    if (e.key === 'ArrowDown') { e.preventDefault(); _searchSelected = Math.min(_searchSelected + 1, _searchResults.length - 1); renderSearchResults(); return; }
+    if (e.key === 'ArrowUp')   { e.preventDefault(); _searchSelected = Math.max(_searchSelected - 1, 0); renderSearchResults(); return; }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const hit = _searchResults[_searchSelected];
+      if (hit) { location.href = hit.href; }
+    }
+  });
+}
+
+function openSearchPalette() {
+  if (!Auth.isLoggedIn()) return; // search is a signed-in feature
+  mountSearchPalette();
+  const overlay = document.getElementById('rostr-search-overlay');
+  overlay.style.display = 'flex';
+  const input = document.getElementById('rostr-search-input');
+  input.value = '';
+  _searchResults = [];
+  _searchSelected = 0;
+  renderSearchResults();
+  setTimeout(() => input.focus(), 0);
+}
+
+function closeSearchPalette() {
+  const overlay = document.getElementById('rostr-search-overlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+async function runSearch(query) {
+  if (!query || !query.trim()) {
+    _searchResults = [];
+    _searchSelected = 0;
+    renderSearchResults();
+    return;
+  }
+  try {
+    const { results } = await DB.globalSearch(query);
+    _searchResults = results;
+    _searchSelected = 0;
+    renderSearchResults();
+  } catch (_) { /* ignore */ }
+}
+
+function renderSearchResults() {
+  const host = document.getElementById('rostr-search-results');
+  if (!host) return;
+  const input = document.getElementById('rostr-search-input');
+  if (!_searchResults.length) {
+    const msg = input && input.value.trim()
+      ? '<div style="padding:var(--space-xl);text-align:center;color:var(--text-tertiary);font-size:0.85rem">No matches</div>'
+      : '<div style="padding:var(--space-xl);text-align:center;color:var(--text-tertiary);font-size:0.85rem">Type to search artists, bookings, contracts\u2026</div>';
+    host.innerHTML = msg;
+    return;
+  }
+  const kindMeta = {
+    artist:   { icon: 'music',    label: 'Artist' },
+    booking:  { icon: 'calendar', label: 'Booking' },
+    contract: { icon: 'fileText', label: 'Contract' },
+  };
+  host.innerHTML = _searchResults.map((r, i) => {
+    const m = kindMeta[r.kind] || { icon: 'search', label: r.kind };
+    const isSel = i === _searchSelected;
+    return `
+      <a href="${r.href}" data-idx="${i}" style="display:flex;align-items:center;gap:var(--space-md);padding:10px var(--space-lg);text-decoration:none;color:inherit;border-left:3px solid ${isSel ? 'var(--accent)' : 'transparent'};background:${isSel ? 'var(--bg-card)' : 'transparent'};transition:background 80ms ease">
+        <div style="width:28px;height:28px;border-radius:8px;background:var(--bg-card);border:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:center;color:var(--text-tertiary);flex-shrink:0">${UI.icon(m.icon, 14)}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:0.9rem;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${(r.title || '').replace(/[<>&]/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</div>
+          ${r.subtitle ? `<div style="font-size:0.75rem;color:var(--text-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${(r.subtitle || '').replace(/[<>&]/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</div>` : ''}
+        </div>
+        <div style="font-family:var(--font-mono);font-size:0.68rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.08em">${m.label}${r.meta ? ' \u00b7 ' + r.meta : ''}</div>
+      </a>
+    `;
+  }).join('');
+  // Scroll selected into view
+  const sel = host.querySelector(`[data-idx="${_searchSelected}"]`);
+  if (sel && sel.scrollIntoView) sel.scrollIntoView({ block: 'nearest' });
+}
+
+// Global keyboard shortcuts
+window.addEventListener('keydown', (e) => {
+  // cmd/ctrl + K
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault();
+    openSearchPalette();
+    return;
+  }
+  // "/" — but only when focus is NOT in an input/textarea/contenteditable
+  if (e.key === '/' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+    const t = e.target;
+    const typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+    if (!typing) {
+      e.preventDefault();
+      openSearchPalette();
+    }
+  }
+});
+
+window.openSearchPalette = openSearchPalette;
+window.closeSearchPalette = closeSearchPalette;
 
 // ── Password Reset ──
 // Calls our custom send-password-reset edge function rather than
@@ -2111,6 +2314,75 @@ const DB = {
       return error ? { success: false, error: error.message } : { success: true };
     } catch(e) { return { success: false, error: String(e) }; }
   },
+
+  // ── Global search (cmd+K) ──
+  // Runs three parallel partial-match queries: artists (stage_name),
+  // bookings (event_name/venue), contracts (via joined booking). All
+  // scoped to the current user's visibility via RLS — no extra guard
+  // needed here. Returns a unified result array with { kind, title,
+  // subtitle, href, meta } for direct rendering.
+  async globalSearch(query) {
+    if (!query || !query.trim()) return { results: [] };
+    const q = query.trim();
+    const like = `%${q}%`;
+    if (DEMO_MODE) return { results: [] };
+    if (!Auth.user) return { results: [] };
+
+    // Fire the three lookups in parallel, each guarded so a failure on
+    // one doesn't torpedo the others.
+    const [artistsRes, bookingsRes, contractsRes] = await Promise.all([
+      _sb.from('artists')
+        .select('id, stage_name, genre, cities_active, verified')
+        .ilike('stage_name', like)
+        .limit(6)
+        .then(r => r).catch(() => ({ data: [] })),
+      _sb.from('bookings')
+        .select('id, event_name, venue_name, event_date, status, artists(stage_name, profiles(display_name))')
+        .or(`event_name.ilike.${like},venue_name.ilike.${like}`)
+        .limit(6)
+        .then(r => r).catch(() => ({ data: [] })),
+      _sb.from('contracts')
+        .select('id, status, bookings!inner(event_name, venue_name, artists(stage_name))')
+        .ilike('bookings.event_name', like)
+        .limit(4)
+        .then(r => r).catch(() => ({ data: [] })),
+    ]);
+
+    const results = [];
+    for (const a of (artistsRes.data || [])) {
+      const genre = Array.isArray(a.genre) ? a.genre[0] : a.genre;
+      const city = Array.isArray(a.cities_active) ? a.cities_active[0] : '';
+      results.push({
+        kind: 'artist',
+        title: a.stage_name || 'Unnamed artist',
+        subtitle: [genre, city].filter(Boolean).join(' \u00b7 '),
+        href: `/profile.html?id=${a.id}`,
+        meta: a.verified ? 'Verified' : '',
+      });
+    }
+    for (const b of (bookingsRes.data || [])) {
+      const artistName = b.artists?.stage_name || b.artists?.profiles?.display_name || 'Artist';
+      const dateStr = b.event_date ? new Date(b.event_date + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+      results.push({
+        kind: 'booking',
+        title: b.event_name || b.venue_name || 'Booking',
+        subtitle: [artistName, b.venue_name, dateStr].filter(Boolean).join(' \u00b7 '),
+        href: `/booking-detail.html?id=${b.id}`,
+        meta: b.status || '',
+      });
+    }
+    for (const c of (contractsRes.data || [])) {
+      const artistName = c.bookings?.artists?.stage_name || 'Artist';
+      results.push({
+        kind: 'contract',
+        title: `Contract \u2014 ${c.bookings?.event_name || c.bookings?.venue_name || 'Event'}`,
+        subtitle: artistName,
+        href: `/contract.html?id=${c.id}`,
+        meta: c.status || '',
+      });
+    }
+    return { results };
+  },
 };
 
 // ══════════════════════════════════════════════════════════
@@ -2219,6 +2491,35 @@ const Realtime = {
       )
       .subscribe();
 
+    this._channels[channelName] = channel;
+    return () => { channel.unsubscribe(); delete this._channels[channelName]; };
+  },
+
+  // Subscribe to UPDATEs on messages I sent. Fires when the recipient
+  // marks the message as read — used for live read receipts ("✓" → "✓✓")
+  // on the sender's side without requiring a full refetch.
+  subscribeToMyMessageReads(onUpdate) {
+    if (!_sb || !Auth.user) return () => {};
+    const userId = Auth.user.id;
+    const channelName = `messages-reads:${userId}`;
+    if (this._channels[channelName]) {
+      this._channels[channelName].unsubscribe();
+    }
+    const channel = _sb
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages',
+          filter: `sender_id=eq.${userId}`,
+        },
+        (payload) => {
+          if (onUpdate) onUpdate(payload.new);
+        }
+      )
+      .subscribe();
     this._channels[channelName] = channel;
     return () => { channel.unsubscribe(); delete this._channels[channelName]; };
   },

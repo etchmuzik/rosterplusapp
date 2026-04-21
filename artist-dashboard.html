@@ -693,14 +693,30 @@
       document.getElementById('welcome-name').textContent = firstName;
       if (typeof hydrateIcons === 'function') hydrateIcons();
 
-      // Completion nudge — same pattern as promoter dashboard. Hidden
-      // when profile is complete, dismissible for the rest of the day.
+      // Completion nudge — promotes to a full onboarding checklist
+      // when the artist's profile is still under 50%, otherwise drops
+      // to the compact meter banner.
       (async () => {
         const host = document.getElementById('completion-mount');
         if (!host) return;
         if (UI.isCompletionDismissedToday && UI.isCompletionDismissedToday('artist-dash')) return;
         const c = await DB.getProfileCompletion();
         if (!c || c.percent >= 100) return;
+
+        if (c.percent < 50) {
+          const isMissing = (k) => c.missing.some(m => m.key === k);
+          const steps = [
+            { key: 'display_name', label: 'Add your name', desc: 'How promoters identify you in the directory', href: '/settings.html', done: !isMissing('display_name') },
+            { key: 'stage_name',   label: 'Set your stage name', desc: 'The name you perform under', href: '/artist-profile-edit.html', done: !isMissing('stage_name') },
+            { key: 'avatar_url',   label: 'Upload a photo', desc: 'Profiles with photos get booked 3\u00d7 more often', href: '/settings.html', done: !isMissing('avatar_url') },
+            { key: 'genre',        label: 'Pick your genres', desc: 'Promoters filter by genre when browsing', href: '/artist-profile-edit.html', done: !isMissing('genre') },
+            { key: 'base_fee',     label: 'Add a base fee', desc: 'Sets expectations and speeds up booking flow', href: '/artist-profile-edit.html', done: !isMissing('base_fee') },
+            { key: 'social',       label: 'Link a social profile', desc: 'Instagram, SoundCloud, or Spotify \u2014 at least one', href: '/artist-profile-edit.html', done: !isMissing('social') },
+          ];
+          host.innerHTML = UI.onboardingChecklist(steps, { heading: 'Finish setting up your artist profile', dismissId: 'artist-dash' });
+          return;
+        }
+
         host.innerHTML = UI.completionMeter(c.percent, {
           variant: 'banner',
           missing: c.missing,

@@ -182,15 +182,34 @@
       if (h1) h1.firstChild.textContent = greeting + ', ';
     }
 
-    /* ── Profile completion banner: appears above stats when profile has
-       gaps. Dismissible per-day (stored in localStorage). Never shows for
-       a fully-completed profile. Links directly to the first missing field. */
+    /* ── Profile completion / onboarding nudge ──
+       Two modes depending on how far along the user is:
+         < 50% complete  → full onboarding checklist (first-session feel)
+         50\u201399% complete → compact completion meter banner
+         100%            → nothing
+       Both dismissible for the rest of the day via localStorage. */
     async function renderCompletionBanner() {
       const host = document.getElementById('completion-mount');
       if (!host) return;
       if (UI.isCompletionDismissedToday && UI.isCompletionDismissedToday('dash')) return;
       const c = await DB.getProfileCompletion();
       if (!c || c.percent >= 100) { host.innerHTML = ''; return; }
+
+      if (c.percent < 50) {
+        // First-session onboarding checklist: promoter version
+        const present = new Set((c.missing || []).map(m => m.key).reduce((a,b)=>a.concat([b]),[]));
+        const isMissing = (k) => c.missing.some(m => m.key === k);
+        const steps = [
+          { key: 'display_name', label: 'Add your name', desc: 'How artists see you in messages and contracts', href: '/settings.html', done: !isMissing('display_name') },
+          { key: 'avatar_url',   label: 'Upload a photo', desc: 'Builds trust \u2014 profiles with photos get 2\u00d7 responses', href: '/settings.html', done: !isMissing('avatar_url') },
+          { key: 'company',      label: 'Add your company', desc: 'So venues and artists know who they\u2019re dealing with', href: '/settings.html', done: !isMissing('company') },
+          { key: 'city',         label: 'Set your city', desc: 'We surface local artists first', href: '/settings.html', done: !isMissing('city') },
+          { key: 'first_booking', label: 'Send your first booking', desc: 'Browse the directory and send a request', href: '/directory.html', done: (_allBookings && _allBookings.length > 0) },
+        ];
+        host.innerHTML = UI.onboardingChecklist(steps, { heading: 'Finish setting up your account', dismissId: 'dash' });
+        return;
+      }
+
       host.innerHTML = UI.completionMeter(c.percent, {
         variant: 'banner',
         missing: c.missing,

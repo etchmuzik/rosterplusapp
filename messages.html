@@ -393,6 +393,7 @@
     let activeThread = null;       // { kind, bookingId?, otherId }
     let activeMessages = [];
     let realtimeUnsub = null;
+    let readReceiptUnsub = null;
 
     function threadKey(t) {
       return t.kind === 'booking' ? ('b:' + t.bookingId) : ('dm:' + t.otherId);
@@ -540,6 +541,9 @@
 
     function subscribeRealtime() {
       if (realtimeUnsub) realtimeUnsub();
+      if (readReceiptUnsub) readReceiptUnsub();
+
+      // INSERT — new incoming messages
       realtimeUnsub = Realtime.subscribeToMessages((msg) => {
         const relevant =
           activeThread?.kind === 'booking'
@@ -551,7 +555,25 @@
         }
         loadConversations();
       });
+
+      // UPDATE — read receipts on messages I sent. When the recipient
+      // opens the thread and markThreadRead() flips read=true, we get
+      // a live postgres_changes UPDATE and can upgrade ✓ to ✓✓ without
+      // a full re-fetch.
+      readReceiptUnsub = Realtime.subscribeToMyMessageReads((updated) => {
+        const idx = activeMessages.findIndex(m => m.id === updated.id);
+        if (idx !== -1) {
+          activeMessages[idx] = { ...activeMessages[idx], read: updated.read };
+          renderMessages(activeMessages);
+        }
+      });
     }
+
+    // Checkmark glyph used for read receipts on sent messages.
+    // Single tick (grey) = sent but not yet read. Double tick (accent) =
+    // read by the recipient. Using aria-label for screen readers.
+    const RECEIPT_SENT = '<svg class="msg-receipt" viewBox="0 0 18 14" width="16" height="12" aria-label="Sent" style="vertical-align:middle;margin-left:4px;fill:none;stroke:var(--text-tertiary);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><polyline points="3,7 7,11 14,3"/></svg>';
+    const RECEIPT_READ = '<svg class="msg-receipt msg-receipt--read" viewBox="0 0 18 14" width="16" height="12" aria-label="Read" style="vertical-align:middle;margin-left:4px;fill:none;stroke:var(--accent);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><polyline points="3,7 7,11 14,3"/><polyline points="7,7 11,11 18,3" style="opacity:0.85"/></svg>';
 
     function renderMessages(msgs) {
       const area = document.getElementById('messagesArea');
@@ -570,7 +592,12 @@
           lastDate = msgDate;
         }
 
-        return `${dateSep}<div class="msg ${cls}" style="animation-delay:${i * 30}ms">${esc(msg.content)}<div class="msg-time">${msgTime}</div></div>`;
+        // Read receipts only on messages I sent. Hidden on received
+        // messages (they're the other person's — their read state is
+        // meaningless from my perspective).
+        const receipt = isMe ? (msg.read ? RECEIPT_READ : RECEIPT_SENT) : '';
+
+        return `${dateSep}<div class="msg ${cls}" data-msg-id="${msg.id}" style="animation-delay:${i * 30}ms">${esc(msg.content)}<div class="msg-time">${msgTime}${receipt}</div></div>`;
       }).join('');
 
       requestAnimationFrame(() => { area.scrollTop = area.scrollHeight; });
