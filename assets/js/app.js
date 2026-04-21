@@ -529,6 +529,70 @@ const UI = {
     catch (_) { return false; }
   },
 
+  // Render a share button that opens a popover with QR code, copy-link,
+  // WhatsApp share, and native Web Share API (mobile). Used on artist
+  // profile + EPK + artist dashboard. Returns HTML string for inline
+  // placement; the open/close is wired via UI.openShare(url, title).
+  shareButton({ label = 'Share', variant = 'ghost', size = 'sm' } = {}) {
+    const btnClass = `btn btn-${variant}${size ? ' btn-' + size : ''}`;
+    return `<button class="${btnClass}" onclick="UI.openShare(location.href, document.title)">${this.icon('send', 14)} ${label}</button>`;
+  },
+
+  // Open the share popover. Mounted lazily on body, hidden by default.
+  openShare(url, title) {
+    let overlay = document.getElementById('rostr-share-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'rostr-share-overlay';
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:2500;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:var(--space-md)';
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.style.display = 'none'; });
+      document.body.appendChild(overlay);
+    }
+    const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=8&format=svg&data=${encodeURIComponent(url)}`;
+    const waUrl = `https://wa.me/?text=${encodeURIComponent((title || 'Check this out') + '\n' + url)}`;
+    const hasNative = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+    overlay.innerHTML = `
+      <div style="background:var(--bg-raised);border:1px solid var(--border-medium);border-radius:var(--radius-lg);padding:var(--space-lg);width:min(400px,94vw);box-shadow:var(--shadow-lg)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-md)">
+          <h3 style="margin:0;font-size:1rem">Share</h3>
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('rostr-share-overlay').style.display='none'" aria-label="Close">&times;</button>
+        </div>
+        <div style="display:flex;justify-content:center;margin-bottom:var(--space-md)">
+          <div style="background:#fff;padding:12px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center">
+            <img src="${qrSrc}" alt="QR code" width="180" height="180" style="display:block" onerror="this.style.opacity='0.3';this.alt='QR unavailable'">
+          </div>
+        </div>
+        <div style="font-size:0.76rem;color:var(--text-tertiary);text-align:center;margin-bottom:var(--space-md)">Scan with a phone camera</div>
+        <div style="display:flex;gap:8px;align-items:stretch;margin-bottom:8px">
+          <input type="text" value="${url.replace(/"/g,'&quot;')}" readonly class="form-input" style="flex:1;font-family:var(--font-mono);font-size:0.78rem" onclick="this.select()" id="rostr-share-url">
+          <button class="btn btn-secondary btn-sm" onclick="UI._copyShareLink()">${this.icon('copy', 14)}</button>
+        </div>
+        <div style="display:flex;gap:8px">
+          <a href="${waUrl}" target="_blank" rel="noopener" class="btn btn-sm" style="flex:1;background:#25D366;color:#fff;border:none">WhatsApp</a>
+          ${hasNative ? `<button class="btn btn-secondary btn-sm" style="flex:1" onclick="UI._nativeShare('${url.replace(/'/g,'\\\'')}','${(title||'').replace(/'/g,'\\\'')}')">More\u2026</button>` : ''}
+        </div>
+      </div>
+    `;
+    overlay.style.display = 'flex';
+  },
+
+  _copyShareLink() {
+    const input = document.getElementById('rostr-share-url');
+    if (!input) return;
+    input.select();
+    try {
+      navigator.clipboard.writeText(input.value).then(
+        () => this.toast('Link copied', 'success'),
+        () => this.toast('Copy failed', 'error')
+      );
+    } catch (_) { this.toast('Copy failed', 'error'); }
+  },
+
+  async _nativeShare(url, title) {
+    try { await navigator.share({ url, title }); }
+    catch (_) { /* user dismissed — fine */ }
+  },
+
   // Trigger a browser download of rows as CSV. Inputs:
   //   filename: string, appended with .csv if missing
   //   rows: Array<Record<string, any>> \u2014 headers inferred from first row,
@@ -2314,6 +2378,37 @@ const DB = {
         .eq('token', token);
       return error ? { success: false, error: error.message } : { success: true };
     } catch(e) { return { success: false, error: String(e) }; }
+  },
+
+  // ── Quick-reply templates ──
+  // Persisted on profiles.quick_replies (jsonb array). UI falls back to
+  // role-appropriate starter suggestions when empty.
+  async getQuickReplies() {
+    if (DEMO_MODE) return { success: true, data: [] };
+    if (!Auth.user) return { success: false, data: [] };
+    try {
+      const { data, error } = await _sb.from('profiles')
+        .select('quick_replies')
+        .eq('id', Auth.user.id)
+        .single();
+      if (error) return { success: false, data: [], error: error.message };
+      return { success: true, data: Array.isArray(data?.quick_replies) ? data.quick_replies : [] };
+    } catch (e) { return { success: false, data: [], error: String(e) }; }
+  },
+
+  async setQuickReplies(arr) {
+    if (DEMO_MODE) return { success: true };
+    if (!Auth.user) return { success: false, error: 'Not authenticated' };
+    const clean = (Array.isArray(arr) ? arr : [])
+      .map(s => String(s || '').trim())
+      .filter(Boolean)
+      .slice(0, 20); // cap to keep profile rows small
+    try {
+      const { error } = await _sb.from('profiles')
+        .update({ quick_replies: clean })
+        .eq('id', Auth.user.id);
+      return error ? { success: false, error: error.message } : { success: true, data: clean };
+    } catch (e) { return { success: false, error: String(e) }; }
   },
 
   // ── Notifications ──

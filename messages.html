@@ -374,9 +374,32 @@
             <p>Select a conversation to start messaging</p>
           </div>
         </div>
+        <div id="quickRepliesRow" style="display:none;padding:8px 16px 0;gap:6px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--border-subtle)"></div>
         <div class="chat-input-bar" id="chatInputBar" style="display:none">
           <textarea id="msgInput" placeholder="Type a message..." rows="1" oninput="autoGrow(this)" onkeydown="handleKey(event)"></textarea>
           <button class="send-btn" id="sendBtn" disabled onclick="sendMessage()"></button>
+        </div>
+
+        <!-- Quick-reply templates modal -->
+        <div id="qrModal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);align-items:center;justify-content:center" onclick="if(event.target===this)closeQrModal()">
+          <div style="background:var(--bg-raised);border:1px solid var(--border-medium);border-radius:var(--radius-lg);padding:var(--space-lg);width:min(520px,94vw);max-height:80vh;overflow-y:auto;box-shadow:var(--shadow-lg)">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-md)">
+              <div>
+                <h3 style="margin:0 0 2px">Quick-reply templates</h3>
+                <div style="font-size:0.78rem;color:var(--text-tertiary)">One-tap replies for common responses. Up to 20 saved.</div>
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="closeQrModal()" aria-label="Close">&times;</button>
+            </div>
+            <div id="qrList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:var(--space-md)"></div>
+            <div style="display:flex;gap:8px">
+              <input type="text" id="qrNewInput" class="form-input" placeholder="New template\u2026" maxlength="280" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();addQuickReply()}">
+              <button class="btn btn-primary btn-sm" onclick="addQuickReply()">Add</button>
+            </div>
+            <div style="margin-top:var(--space-md);padding-top:var(--space-md);border-top:1px solid var(--border-subtle)">
+              <div style="font-size:0.78rem;color:var(--text-tertiary);margin-bottom:8px">Suggested</div>
+              <div id="qrSuggested" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -502,6 +525,7 @@
       document.getElementById('chatStatus').innerHTML = esc(headerSub) + ` · <a href="booking-detail.html?id=${esc(bookingId)}" style="color:var(--accent-soft)">Open booking</a>`;
       document.getElementById('messagesArea').innerHTML = `<div style="text-align:center;padding:var(--space-xl);color:var(--text-tertiary)">Loading messages...</div>`;
       document.getElementById('chatInputBar').style.display = '';
+      renderQrChips();
       document.getElementById('chatLayout').classList.add('chat-open');
       renderConvList(document.getElementById('convSearch').value);
 
@@ -524,6 +548,7 @@
       document.getElementById('chatStatus').textContent = 'Direct message';
       document.getElementById('messagesArea').innerHTML = `<div style="text-align:center;padding:var(--space-xl);color:var(--text-tertiary)">Loading messages...</div>`;
       document.getElementById('chatInputBar').style.display = '';
+      renderQrChips();
       document.getElementById('chatLayout').classList.add('chat-open');
       renderConvList(document.getElementById('convSearch').value);
 
@@ -644,6 +669,140 @@
       document.getElementById('sendBtn').disabled = !el.value.trim();
     }
 
+    // ═══ Quick-reply templates ═══
+    // Loaded from DB.getQuickReplies(); falls back to role-specific
+    // starter suggestions when empty. Chips render above the composer —
+    // tapping one inserts the text into msgInput (doesn't send; user can
+    // edit before hitting Send).
+    let _qrTemplates = [];
+
+    const QR_SUGGESTED_ARTIST = [
+      'Thanks for the request — confirming availability now.',
+      'Confirmed, see you then. I\u2019ll send my tech rider separately.',
+      'Unfortunately booked that night — can we look at another date?',
+      'Running 15 minutes late — see you shortly.',
+    ];
+    const QR_SUGGESTED_PROMOTER = [
+      'Details confirmed — contract coming your way shortly.',
+      'Load-in is 90 minutes before doors. Please confirm.',
+      'Can you share your tech rider and promo materials?',
+      'Payment recorded — you should see it within 1-2 business days.',
+    ];
+
+    function suggestedQr() {
+      return Auth.role === 'artist' ? QR_SUGGESTED_ARTIST : QR_SUGGESTED_PROMOTER;
+    }
+
+    async function loadQuickReplies() {
+      const res = await DB.getQuickReplies();
+      _qrTemplates = res.success ? (res.data || []) : [];
+      renderQrChips();
+    }
+
+    function renderQrChips() {
+      const row = document.getElementById('quickRepliesRow');
+      if (!row) return;
+      // Only show when a chat is open
+      if (!activeThread) { row.style.display = 'none'; return; }
+      row.style.display = 'flex';
+      const list = _qrTemplates.length ? _qrTemplates : suggestedQr();
+      const truncate = (s) => s.length > 42 ? s.slice(0, 40) + '\u2026' : s;
+      row.innerHTML = list.slice(0, 5).map((t, i) => `
+        <button class="qr-chip" title="${esc(t)}" onclick="insertQuickReply(${i})"
+          style="background:var(--bg-card);border:1px solid var(--border-subtle);color:var(--text-secondary);padding:4px 10px;border-radius:999px;font-size:0.76rem;cursor:pointer;white-space:nowrap;transition:border-color 120ms ease"
+          onmouseover="this.style.borderColor='var(--accent-dim-30)'" onmouseout="this.style.borderColor='var(--border-subtle)'">
+          ${esc(truncate(t))}
+        </button>
+      `).join('') + `
+        <button onclick="openQrModal()" title="Manage templates"
+          style="background:transparent;border:1px dashed var(--border-subtle);color:var(--text-tertiary);padding:4px 10px;border-radius:999px;font-size:0.76rem;cursor:pointer;white-space:nowrap">
+          ${_qrTemplates.length ? 'Manage' : 'Save your own'}
+        </button>
+      `;
+    }
+
+    function insertQuickReply(idx) {
+      const list = _qrTemplates.length ? _qrTemplates : suggestedQr();
+      const text = list[idx];
+      if (!text) return;
+      const input = document.getElementById('msgInput');
+      // Append if input already has content, else replace
+      input.value = input.value.trim() ? (input.value.replace(/\s+$/, '') + ' ' + text) : text;
+      autoGrow(input);
+      input.focus();
+      // Put cursor at end
+      const end = input.value.length;
+      input.setSelectionRange(end, end);
+    }
+    window.insertQuickReply = insertQuickReply;
+
+    function openQrModal() {
+      document.getElementById('qrModal').style.display = 'flex';
+      renderQrList();
+      // Populate suggested chips
+      const sug = document.getElementById('qrSuggested');
+      sug.innerHTML = suggestedQr().map(t => `
+        <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" onclick="addSuggestedQr(this)" data-tpl="${esc(t)}">
+          + ${esc(t.length > 30 ? t.slice(0, 28) + '\u2026' : t)}
+        </button>
+      `).join('');
+    }
+    window.openQrModal = openQrModal;
+
+    function closeQrModal() {
+      document.getElementById('qrModal').style.display = 'none';
+    }
+    window.closeQrModal = closeQrModal;
+
+    function renderQrList() {
+      const list = document.getElementById('qrList');
+      if (_qrTemplates.length === 0) {
+        list.innerHTML = '<div style="padding:12px;color:var(--text-tertiary);font-size:0.82rem;text-align:center">No saved templates yet. Add one below or pick a suggestion.</div>';
+        return;
+      }
+      list.innerHTML = _qrTemplates.map((t, i) => `
+        <div style="display:flex;gap:8px;align-items:center;padding:8px 10px;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm)">
+          <div style="flex:1;font-size:0.85rem;color:var(--text-primary);line-height:1.4;word-break:break-word">${esc(t)}</div>
+          <button class="btn btn-ghost btn-sm" style="font-size:0.72rem;padding:4px 8px" onclick="removeQuickReply(${i})">Remove</button>
+        </div>
+      `).join('');
+    }
+
+    async function addQuickReply() {
+      const input = document.getElementById('qrNewInput');
+      const text = (input.value || '').trim();
+      if (!text) return;
+      if (_qrTemplates.length >= 20) { UI.toast('Max 20 templates', 'info'); return; }
+      _qrTemplates = [..._qrTemplates, text];
+      const res = await DB.setQuickReplies(_qrTemplates);
+      if (!res.success) { UI.toast(res.error || 'Could not save', 'error'); return; }
+      input.value = '';
+      renderQrList();
+      renderQrChips();
+    }
+    window.addQuickReply = addQuickReply;
+
+    async function removeQuickReply(idx) {
+      _qrTemplates = _qrTemplates.filter((_, i) => i !== idx);
+      const res = await DB.setQuickReplies(_qrTemplates);
+      if (!res.success) { UI.toast(res.error || 'Could not save', 'error'); return; }
+      renderQrList();
+      renderQrChips();
+    }
+    window.removeQuickReply = removeQuickReply;
+
+    async function addSuggestedQr(btn) {
+      const tpl = btn.dataset.tpl;
+      if (!tpl || _qrTemplates.includes(tpl)) return;
+      if (_qrTemplates.length >= 20) { UI.toast('Max 20 templates', 'info'); return; }
+      _qrTemplates = [..._qrTemplates, tpl];
+      const res = await DB.setQuickReplies(_qrTemplates);
+      if (!res.success) { UI.toast(res.error || 'Could not save', 'error'); return; }
+      renderQrList();
+      renderQrChips();
+    }
+    window.addSuggestedQr = addSuggestedQr;
+
     function filterConversations() {
       const q = document.getElementById('convSearch').value;
       renderConvList(q);
@@ -686,6 +845,7 @@
       document.getElementById('sendBtn').innerHTML = UI.icon('send', 16);
 
       await loadConversations();
+      loadQuickReplies().catch(() => {});
 
       // Deep-link support.
       //   ?booking=<uuid>          — open that booking's thread.

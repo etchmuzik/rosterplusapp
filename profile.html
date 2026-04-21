@@ -159,6 +159,7 @@
               </div>
             </div>
             <div class="ap-actions">
+              ${UI.shareButton({ label: 'Share', variant: 'ghost', size: 'sm' })}
               <a class="btn btn-secondary" href="messages.html?to=${esc(artist.profile_id || '')}">${UI.icon('inbox', 14)} Message</a>
               <a class="btn btn-primary" href="booking.html?artist=${esc(artist.id)}">${UI.icon('send', 14)} Request booking</a>
             </div>

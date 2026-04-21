@@ -154,6 +154,7 @@
             <a href="artist-profile-edit.html" class="card card--interactive"><div class="card-inner" style="text-align:center;padding:var(--space-xl)"><span class="js-icon" data-icon="music" data-size="24"></span><div style="margin-top:var(--space-sm);font-weight:500">Edit Profile</div></div></a>
             <a href="epk.html" class="card card--interactive"><div class="card-inner" style="text-align:center;padding:var(--space-xl)"><span class="js-icon" data-icon="fileText" data-size="24"></span><div style="margin-top:var(--space-sm);font-weight:500">Build EPK</div></div></a>
             <a href="messages.html" class="card card--interactive"><div class="card-inner" style="text-align:center;padding:var(--space-xl)"><span class="js-icon" data-icon="inbox" data-size="24"></span><div style="margin-top:var(--space-sm);font-weight:500">Messages</div></div></a>
+            <button onclick="shareMyEpk()" class="card card--interactive" style="background:none;border:1px solid var(--border-subtle);cursor:pointer;font-family:inherit;color:inherit;width:100%;text-align:center"><div class="card-inner" style="text-align:center;padding:var(--space-xl)"><span class="js-icon" data-icon="send" data-size="24"></span><div style="margin-top:var(--space-sm);font-weight:500">Share my EPK</div></div></button>
           </div>
         </section>
 
@@ -492,6 +493,19 @@
       }).join('');
     }
     window.renderBlockedDates = renderBlockedDates;
+
+    // Share this artist's public EPK via the reusable share popover.
+    // Resolves the artist's id from the cached profile so the link points
+    // to /epk.html?id=<artist_id> — a public, share-friendly URL that
+    // works for non-logged-in recipients (promoters scanning the QR).
+    async function shareMyEpk() {
+      const artistId = await DB._getMyArtistId();
+      if (!artistId) { UI.toast('Finish your artist profile first', 'info'); return; }
+      const url = `${location.origin}/epk.html?id=${artistId}`;
+      const name = Auth.user?.display_name || 'My EPK';
+      UI.openShare(url, `${name} — EPK | ROSTR+ GCC`);
+    }
+    window.shareMyEpk = shareMyEpk;
 
     // ── Filter requests by status ──
     let _activeRequestFilter = 'all';
