@@ -245,7 +245,29 @@
       // ?booking=<id> and opens that thread, seeding a blank one if
       // no messages exist yet.
       actions.push(`<a class="btn btn-secondary btn-sm" href="messages.html?booking=${esc(b.id)}">Open messages</a>`);
+
+      // Hide / Unhide — always available to both sides. Soft-hides the
+      // booking from the caller's own list without affecting the other
+      // party. See DB.hideBooking() for role detection.
+      const alreadyHidden = _viewerRole === 'promoter' ? !!b.hidden_by_promoter : !!b.hidden_by_artist;
+      if (alreadyHidden) {
+        actions.push(`<button class="btn btn-ghost btn-sm" onclick="hideBooking(false)">Unhide from my list</button>`);
+      } else {
+        actions.push(`<button class="btn btn-ghost btn-sm" onclick="hideBooking(true)" style="color:var(--text-tertiary)">Hide from my list</button>`);
+      }
       return actions.join('');
+    }
+
+    async function hideBooking(hide) {
+      if (hide && !confirm('Hide this booking from your list? You can restore it later from the "Show hidden" toggle on the bookings page.')) return;
+      const id = new URLSearchParams(location.search).get('id');
+      if (!id) return;
+      const res = await DB.hideBooking(id, hide);
+      if (!res.success) { UI.toast(res.error || 'Could not update', 'error'); return; }
+      UI.toast(hide ? 'Booking hidden' : 'Booking restored', 'success');
+      // If they hid it from the detail page, bounce back to the list.
+      if (hide) { location.href = 'bookings.html'; }
+      else { location.reload(); }
     }
 
     // ── Payments block ─────────────────────────────────────

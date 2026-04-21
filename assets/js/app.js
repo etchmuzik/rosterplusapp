@@ -725,15 +725,19 @@ const DB = {
   },
 
   // ── Bookings ──
-  async getMyBookings() {
+  // Promoter-side booking list. By default excludes rows the promoter has
+  // soft-hidden; pass { includeHidden: true } to show everything (for the
+  // "Show hidden" toggle in the bookings filter bar).
+  async getMyBookings({ includeHidden = false } = {}) {
     if (DEMO_MODE) return { success: true, data: [] };
     const user = Auth.user;
     if (!user) return { success: false, error: 'Not authenticated' };
     try {
-      const { data, error } = await _sb.from('bookings')
+      let q = _sb.from('bookings')
         .select(`*, artists(stage_name, genre, cities_active, profiles(display_name))`)
-        .eq('promoter_id', user.id)
-        .order('event_date', { ascending: true });
+        .eq('promoter_id', user.id);
+      if (!includeHidden) q = q.eq('hidden_by_promoter', false);
+      const { data, error } = await q.order('event_date', { ascending: true });
       if (error) return { success: false, data: [], error: error.message };
       return { success: true, data: data || [] };
     } catch(e) { return { success: false, data: [], error: String(e) }; }
@@ -1568,19 +1572,60 @@ const DB = {
     } catch(e) { return { success: false, error: String(e) }; }
   },
 
-  async getIncomingBookings() {
+  // Artist-side incoming booking list. By default excludes rows the artist
+  // has soft-hidden; pass { includeHidden: true } to see everything.
+  async getIncomingBookings({ includeHidden = false } = {}) {
     if (DEMO_MODE) return { success: true, data: [] };
     if (!Auth.user) return { success: false, error: 'Not authenticated' };
     try {
       const artistId = await this._getMyArtistId();
       if (!artistId) return { success: true, data: [] };
-      const { data, error } = await _sb.from('bookings')
+      let q = _sb.from('bookings')
         .select('*, promoter:profiles!promoter_id(display_name, avatar_url, email)')
-        .eq('artist_id', artistId)
-        .order('event_date', { ascending: true });
+        .eq('artist_id', artistId);
+      if (!includeHidden) q = q.eq('hidden_by_artist', false);
+      const { data, error } = await q.order('event_date', { ascending: true });
       if (error) return { success: false, data: [], error: error.message };
       return { success: true, data: (data || []).map(b => ({ ...b, promoter_name: b.promoter?.display_name || 'Unknown', promoter_email: b.promoter?.email || '' })) };
     } catch(e) { return mockFallback(); }
+  },
+
+  // Soft-hide (or unhide) a booking from the caller's list. Figures out the
+  // caller's role: promoter updates hidden_by_promoter, artist updates
+  // hidden_by_artist. RLS "Involved parties can update bookings" already
+  // enforces that a user can only update bookings they're actually in.
+  async hideBooking(bookingId, hide = true) {
+    if (DEMO_MODE) return { success: true };
+    if (!Auth.user) return { success: false, error: 'Not authenticated' };
+    try {
+      // Load the booking to figure out which side we're on — we don't trust
+      // Auth.role alone because it's possible (edge-case) for a user to hit
+      // a booking where they're the counterparty.
+      const { data: row, error: loadErr } = await _sb
+        .from('bookings')
+        .select('promoter_id, artist_id')
+        .eq('id', bookingId)
+        .single();
+      if (loadErr) return { success: false, error: loadErr.message };
+
+      const isPromoter = row.promoter_id === Auth.user.id;
+      const myArtistId = await this._getMyArtistId();
+      const isArtist = myArtistId && row.artist_id === myArtistId;
+
+      if (!isPromoter && !isArtist) {
+        return { success: false, error: 'Not a party to this booking' };
+      }
+
+      const patch = isPromoter
+        ? { hidden_by_promoter: hide }
+        : { hidden_by_artist: hide };
+      patch.updated_at = new Date().toISOString();
+
+      const { error } = await _sb.from('bookings').update(patch).eq('id', bookingId);
+      return error ? { success: false, error: error.message } : { success: true };
+    } catch (e) {
+      return { success: false, error: String(e) };
+    }
   },
 
   async acceptBooking(bookingId, message) {

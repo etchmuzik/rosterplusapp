@@ -311,6 +311,10 @@
           <div class="filter-search-icon" id="searchIcon"></div>
           <input type="text" placeholder="Search artist, venue..." id="searchInput" oninput="applyFilters()">
         </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:var(--text-secondary);cursor:pointer;white-space:nowrap;padding:0 var(--space-sm)">
+          <input type="checkbox" id="showHidden" onchange="reloadBookings()" style="accent-color:var(--accent);cursor:pointer">
+          Show hidden
+        </label>
       </div>
 
       <!-- Bookings list -->
@@ -426,12 +430,12 @@
         const isPast = new Date(b.date) < new Date();
 
         return `
-        <div class="booking-card" data-status="${b.status}" style="animation-delay:${i * 60}ms">
+        <div class="booking-card" data-status="${b.status}" style="animation-delay:${i * 60}ms;${b.hidden ? 'opacity:0.6' : ''}">
           <div class="booking-inner">
             <div class="booking-artist">
               ${UI.avatar(b.artist_name, 44)}
               <div>
-                <div class="booking-artist-name">${esc(b.artist_name)}</div>
+                <div class="booking-artist-name">${esc(b.artist_name)}${b.hidden ? ' <span style="font-size:0.68rem;font-weight:500;color:var(--text-tertiary);background:var(--bg-card);border:1px solid var(--border-subtle);padding:2px 8px;border-radius:999px;margin-left:6px;vertical-align:middle">Hidden</span>' : ''}</div>
                 <div class="booking-artist-genre">${esc(b.genre)}</div>
               </div>
             </div>
@@ -468,6 +472,9 @@
               ${b.status === 'draft' ? `<a href="booking.html?artist=${b.artist_id}" class="btn btn-secondary btn-sm">Edit</a>` : ''}
               ${b.status === 'pending' ? `<button class="btn btn-secondary btn-sm" onclick="cancelBooking('${b.id}')">Cancel</button>` : ''}
               ${b.status === 'confirmed' ? `<a href="messages.html" class="btn btn-secondary btn-sm">Message</a>` : ''}
+              ${b.hidden
+                ? `<button class="btn btn-secondary btn-sm" onclick="toggleHideBooking('${b.id}', false)">Unhide</button>`
+                : `<button class="btn btn-ghost btn-sm" title="Hide from your list" onclick="toggleHideBooking('${b.id}', true)" style="color:var(--text-tertiary)">Hide</button>`}
             </div>
           </div>
         </div>
@@ -613,7 +620,12 @@
       document.getElementById('newBookingBtn').innerHTML = UI.icon('plus', 16) + ' New Booking';
       document.getElementById('modalClose').innerHTML = UI.icon('x', 18);
 
-      const result = await DB.getMyBookings();
+      await reloadBookings();
+    });
+
+    async function reloadBookings() {
+      const includeHidden = !!document.getElementById('showHidden')?.checked;
+      const result = await DB.getMyBookings({ includeHidden });
       if (result.success) {
         allBookings = result.data.map(b => ({
           id: b.id,
@@ -630,13 +642,22 @@
           currency: b.currency || 'AED',
           created: b.created_at,
           contract: b.contracts?.[0]?.status || 'none',
+          hidden: !!b.hidden_by_promoter,
         }));
       }
-
       renderStats();
       renderFilterTabs();
       applyFilters();
-    });
+    }
+
+    async function toggleHideBooking(id, hide) {
+      const verb = hide ? 'Hide this booking from your list?' : 'Unhide this booking?';
+      if (hide && !confirm(verb)) return;
+      const res = await DB.hideBooking(id, hide);
+      if (!res.success) { UI.toast(res.error || 'Could not update', 'error'); return; }
+      UI.toast(hide ? 'Booking hidden' : 'Booking restored', 'success');
+      await reloadBookings();
+    }
 
     // Close modal on Escape
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
