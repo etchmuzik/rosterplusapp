@@ -263,11 +263,20 @@ const Auth = {
     document.querySelectorAll('[data-auth="logged-out"]').forEach(el => {
       el.style.display = this.isLoggedIn() ? 'none' : '';
     });
-    // Set user initials in avatar
+    // Set user avatar — prefer uploaded avatar_url, fall back to first initial.
     document.querySelectorAll('.nav-avatar').forEach(el => {
-      if (this.user) {
+      if (!this.user) return;
+      const url = this.user.avatar_url;
+      if (url) {
+        el.textContent = '';
+        el.style.backgroundImage = `url("${url.replace(/"/g, '%22')}")`;
+        el.style.backgroundSize = 'cover';
+        el.style.backgroundPosition = 'center';
+        el.setAttribute('aria-label', this.user.display_name || 'Account');
+      } else {
         const name = this.user.display_name || this.user.email || '';
         el.textContent = name.charAt(0).toUpperCase();
+        el.style.backgroundImage = '';
       }
     });
     // Set display name
@@ -453,7 +462,7 @@ function renderNav(activePage = '') {
               </div>
               <div id="notif-list" style="padding:8px"><div style="padding:16px;text-align:center;color:var(--text-tertiary);font-size:0.82rem">No notifications yet</div></div>
             </div>
-            <div class="nav-avatar" onclick="document.getElementById('user-menu').classList.toggle('hidden')">${Auth.user?.display_name?.charAt(0)?.toUpperCase() || 'U'}</div>
+            <div class="nav-avatar" onclick="document.getElementById('user-menu').classList.toggle('hidden')"${Auth.user?.avatar_url ? ` style="background-image:url(&quot;${String(Auth.user.avatar_url).replace(/"/g, '%22')}&quot;);background-size:cover;background-position:center" aria-label="${(Auth.user.display_name || 'Account').replace(/"/g, '&quot;')}"` : ''}>${Auth.user?.avatar_url ? '' : (Auth.user?.display_name?.charAt(0)?.toUpperCase() || 'U')}</div>
             <div id="user-menu" class="hidden" style="position:absolute;top:56px;right:24px;background:var(--bg-raised);border:1px solid var(--border-medium);border-radius:var(--radius-md);padding:8px;min-width:180px;box-shadow:var(--shadow-lg);z-index:1001">
               <div style="padding:8px 12px;font-size:0.82rem;color:var(--text-tertiary);border-bottom:1px solid var(--border-subtle);margin-bottom:4px" data-user-name>${Auth.user?.display_name || ''}</div>
               <a href="/invite.html" class="sidebar-item" style="font-size:0.85rem">${UI.icon('send', 14)} Invite</a>
