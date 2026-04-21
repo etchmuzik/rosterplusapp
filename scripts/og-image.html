@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ROSTR+ — OG image source</title>
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700,900&f[]=chillax@500,600,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /*
+      How to turn this into /icons/og-default.png:
+
+      Option A (fastest) — Chrome DevTools
+        1. open this file in Chrome
+        2. DevTools > ⋮ > More tools > Capture full size screenshot
+        3. resize the PNG to exactly 1200x630 (the page is already that size)
+        4. save as icons/og-default.png
+
+      Option B — headless
+        npx playwright screenshot --viewport-size=1200,630 \
+          scripts/og-image.html icons/og-default.png
+
+      Option C — cloud renderer
+        any OG-image service that accepts an HTML URL — Vercel OG, htmlcsstoimage.com, etc.
+
+      The point: this file is the source of truth for the OG image. Tweak
+      copy/palette here, re-render, ship the PNG.
+    */
+
+    :root {
+      --bg-base: #08090b;
+      --bg-2: #101116;
+      --accent: #f3f5f8;
+      --accent-soft: #ffffff;
+      --accent-deep: #8a92a0;
+      --fg-1: rgba(255,255,255,0.96);
+      --fg-2: rgba(255,255,255,0.58);
+      --fg-3: rgba(255,255,255,0.34);
+      --bd-1: rgba(255,255,255,0.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 1200px;
+      height: 630px;
+      overflow: hidden;
+      background: var(--bg-base);
+      font-family: 'Satoshi', -apple-system, system-ui, sans-serif;
+      color: var(--fg-1);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .card {
+      width: 1200px;
+      height: 630px;
+      position: relative;
+      overflow: hidden;
+      background:
+        radial-gradient(ellipse 80% 60% at 10% -10%, rgba(243,245,248,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 50% at 80% 110%, rgba(243,245,248,0.06) 0%, transparent 60%),
+        var(--bg-base);
+      padding: 72px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* Subtle dot-grid texture (the same idea as the landing world map) */
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle at 8px 8px, rgba(255,255,255,0.05) 1px, transparent 1px);
+      background-size: 16px 16px;
+      -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 50%, #000 40%, transparent 100%);
+              mask-image: radial-gradient(ellipse 70% 60% at 50% 50%, #000 40%, transparent 100%);
+      pointer-events: none;
+    }
+
+    /* Brand mark */
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      position: relative;
+      z-index: 1;
+    }
+    .brand-mark {
+      width: 52px;
+      height: 52px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Chillax', 'Satoshi', sans-serif;
+      font-weight: 800;
+      font-size: 28px;
+      color: var(--fg-1);
+      backdrop-filter: blur(8px);
+    }
+    .brand-text {
+      font-family: 'Chillax', 'Satoshi', sans-serif;
+      font-weight: 700;
+      font-size: 28px;
+      letter-spacing: -0.03em;
+    }
+    .brand-text span { color: var(--fg-2); font-weight: 500; }
+
+    /* Headline */
+    .body {
+      position: relative;
+      z-index: 1;
+      max-width: 960px;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 14px;
+      background: rgba(243,245,248,0.08);
+      border: 1px solid rgba(243,245,248,0.22);
+      border-radius: 100px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent-soft);
+      margin-bottom: 28px;
+    }
+    .eyebrow .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    h1 {
+      font-family: 'Chillax', 'Satoshi', sans-serif;
+      font-weight: 600;
+      font-size: 104px;
+      line-height: 0.98;
+      letter-spacing: -0.045em;
+      color: var(--fg-1);
+      text-wrap: balance;
+    }
+    h1 em {
+      font-style: italic;
+      font-weight: 500;
+      color: var(--accent-soft);
+    }
+    .tagline {
+      margin-top: 24px;
+      font-size: 26px;
+      color: var(--fg-2);
+      max-width: 720px;
+      line-height: 1.35;
+    }
+
+    /* Footer strip */
+    .foot {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 40px;
+    }
+    .foot-left {
+      display: flex;
+      gap: 40px;
+    }
+    .stat {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .stat-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--fg-3);
+    }
+    .stat-value {
+      font-family: 'Chillax', sans-serif;
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--fg-1);
+      font-variant-numeric: tabular-nums;
+    }
+    .stat-value em {
+      font-style: normal;
+      color: var(--accent-soft);
+    }
+
+    .url {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 16px;
+      color: var(--fg-2);
+      letter-spacing: 0.02em;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand">
+      <div class="brand-mark">R</div>
+      <div class="brand-text">ROSTR<span>+</span></div>
+    </div>
+
+    <div class="body">
+      <div class="eyebrow">
+        <span class="dot"></span>
+        GCC Nightlife · 5+ artists live
+      </div>
+      <h1>Book the Gulf's<br>loudest <em>nights</em>.</h1>
+      <p class="tagline">
+        Every DJ, live act and headliner across Dubai, Riyadh, Abu Dhabi and the wider Gulf — behind one roster.
+      </p>
+    </div>
+
+    <div class="foot">
+      <div class="foot-left">
+        <div class="stat">
+          <div class="stat-label">Cities live</div>
+          <div class="stat-value"><em>15</em></div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Avg response</div>
+          <div class="stat-value">2.4<span style="font-size:18px;color:var(--fg-3)">hrs</span></div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Artists on roster</div>
+          <div class="stat-value"><em>5+</em></div>
+        </div>
+      </div>
+      <div class="url">rosterplus.io</div>
+    </div>
+  </div>
+</body>
+</html>
