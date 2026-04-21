@@ -860,6 +860,95 @@ const DB = {
     } catch(e) { return { success: false, error: String(e) }; }
   },
 
+  // ── Admin: manage the artist roster ──────────────────────
+  // These are gated server-side by the is_admin() RLS helper. Non-admins
+  // can still call them; Supabase just returns 0 rows affected.
+
+  // List every artist, including pending/inactive ones that aren't in
+  // the public directory. Only admins will actually get the hidden rows
+  // if the SELECT policy ever tightens — today it's already public.
+  async adminListAllArtists() {
+    if (DEMO_MODE) return { success: true, data: [] };
+    if (!Auth.user) return { success: false, error: 'Not authenticated' };
+    try {
+      const { data, error } = await _sb.from('artists')
+        .select('id, stage_name, genre, cities_active, base_fee, currency, status, verified, profile_id, created_at')
+        .order('status', { ascending: true })
+        .order('stage_name', { ascending: true });
+      return error ? { success: false, error: error.message } : { success: true, data: data || [] };
+    } catch(e) { return { success: false, error: String(e) }; }
+  },
+
+  // Change an artist's status. Valid values: 'active' | 'pending' | 'inactive'.
+  // Blocked by RLS unless is_admin() returns true.
+  async adminUpdateArtistStatus(artistId, status) {
+    if (DEMO_MODE) return { success: true };
+    if (!Auth.user) return { success: false, error: 'Not authenticated' };
+    if (!['active','pending','inactive'].includes(status)) return { success: false, error: 'Invalid status' };
+    try {
+      const { data, error } = await _sb.from('artists')
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq('id', artistId)
+        .select();
+      if (error) return { success: false, error: error.message };
+      if (!data || data.length === 0) return { success: false, error: 'Not allowed (admin only) or artist not found' };
+      return { success: true, data: data[0] };
+    } catch(e) { return { success: false, error: String(e) }; }
+  },
+
+  // Toggle the verified checkmark. Same RLS gate as status.
+  async adminSetArtistVerified(artistId, verified) {
+    if (DEMO_MODE) return { success: true };
+    if (!Auth.user) return { success: false, error: 'Not authenticated' };
+    try {
+      const { data, error } = await _sb.from('artists')
+        .update({ verified: !!verified, updated_at: new Date().toISOString() })
+        .eq('id', artistId)
+        .select();
+      if (error) return { success: false, error: error.message };
+      if (!data || data.length === 0) return { success: false, error: 'Not allowed or not found' };
+      return { success: true, data: data[0] };
+    } catch(e) { return { success: false, error: String(e) }; }
+  },
+
+  // Seed a new unclaimed artist (the way we seeded the initial 14).
+  // Forbidden from setting profile_id — only unclaimed rows allowed via
+  // this path. If the artist signs up later they claim it via the
+  // claim-profile flow.
+  async adminCreateUnclaimedArtist({ stage_name, genre, cities_active, status, verified, social_links }) {
+    if (DEMO_MODE) return { success: true };
+    if (!Auth.user) return { success: false, error: 'Not authenticated' };
+    if (!stage_name) return { success: false, error: 'stage_name required' };
+    try {
+      const row = {
+        profile_id: null,
+        stage_name,
+        genre: Array.isArray(genre) ? genre : (genre ? [genre] : []),
+        cities_active: Array.isArray(cities_active) ? cities_active : (cities_active ? [cities_active] : []),
+        status: ['active','pending','inactive'].includes(status) ? status : 'pending',
+        verified: !!verified,
+        social_links: social_links || {},
+        currency: 'AED',
+      };
+      const { data, error } = await _sb.from('artists').insert(row).select().single();
+      if (error) return { success: false, error: error.message };
+      return { success: true, data };
+    } catch(e) { return { success: false, error: String(e) }; }
+  },
+
+  // Check if the current user is an admin. Used client-side to show/hide
+  // the admin panel in settings.html. Server-side every mutation is still
+  // re-checked via RLS, so spoofing this flag doesn't actually grant
+  // any powers.
+  async isAdmin() {
+    if (DEMO_MODE) return false;
+    if (!Auth.user) return false;
+    try {
+      const { data, error } = await _sb.rpc('is_admin');
+      return !error && !!data;
+    } catch(e) { return false; }
+  },
+
   async createArtistProfile(data) {
     if (DEMO_MODE) return { success: true, data: { id: 'demo-artist-1', ...data } };
     if (!Auth.user) return { success: false, error: 'Not authenticated' };

@@ -151,6 +151,42 @@
         </div>
       </div>
 
+      <!-- Admin panel (shown only if DB.isAdmin() resolves true) -->
+      <div class="settings-section" id="admin-panel" style="display:none">
+        <div class="settings-header">Admin · Artist Roster</div>
+        <p class="text-secondary" style="font-size:0.88rem;margin-bottom:var(--space-md)">
+          Promote pending artists, deactivate, or toggle verified status. Visible only to platform admins.
+        </p>
+        <div id="admin-artists-list" style="display:flex;flex-direction:column;gap:var(--space-sm);margin-bottom:var(--space-md)"></div>
+        <details style="margin-top:var(--space-md)">
+          <summary style="cursor:pointer;color:var(--text-secondary);font-size:0.88rem">+ Add new unclaimed artist</summary>
+          <div style="padding:var(--space-md);background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);margin-top:var(--space-sm)">
+            <div class="form-grid" style="margin-bottom:var(--space-sm)">
+              <div class="form-group">
+                <label class="form-label">Stage Name</label>
+                <input type="text" class="form-input" id="admin-new-name" placeholder="e.g. DJ ETCH">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Primary Genre</label>
+                <input type="text" class="form-input" id="admin-new-genre" placeholder="Tech House">
+              </div>
+              <div class="form-group">
+                <label class="form-label">City</label>
+                <input type="text" class="form-input" id="admin-new-city" placeholder="Dubai">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Status</label>
+                <select class="form-select" id="admin-new-status">
+                  <option value="pending">Pending (hidden)</option>
+                  <option value="active">Active (public)</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="adminCreateArtist()">Create unclaimed artist</button>
+          </div>
+        </details>
+      </div>
+
       <!-- Danger Zone -->
       <div class="settings-section">
         <div class="settings-header" style="color:var(--status-cancelled)">Danger Zone</div>
@@ -220,6 +256,86 @@
       }
     }
 
+    // ── Admin panel ──
+    // Only shown if DB.isAdmin() resolves true (email allowlist server-side).
+    // All mutations re-check is_admin() via RLS, so the UI-side guard is
+    // just for cleanliness, not security.
+
+    async function renderAdminArtists() {
+      const list = document.getElementById('admin-artists-list');
+      if (!list) return;
+      list.innerHTML = '<div class="text-tertiary" style="font-size:0.85rem">Loading…</div>';
+      const res = await DB.adminListAllArtists();
+      if (!res.success) {
+        list.innerHTML = `<div style="color:var(--status-cancelled);font-size:0.85rem">Failed to load: ${esc(res.error || '')}</div>`;
+        return;
+      }
+      if (!res.data || res.data.length === 0) {
+        list.innerHTML = '<div class="text-tertiary" style="font-size:0.85rem">No artists seeded yet.</div>';
+        return;
+      }
+      list.innerHTML = res.data.map(a => {
+        const genre = Array.isArray(a.genre) ? a.genre.join(', ') : (a.genre || '');
+        const city = Array.isArray(a.cities_active) ? a.cities_active[0] : '';
+        const claimed = a.profile_id ? '<span style="color:var(--status-confirmed);font-size:0.75rem">claimed</span>' : '<span class="text-tertiary" style="font-size:0.75rem">unclaimed</span>';
+        const statusClr = a.status === 'active' ? 'var(--status-confirmed)' : a.status === 'pending' ? 'var(--status-pending)' : 'var(--text-tertiary)';
+        return `
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-sm);padding:var(--space-sm) var(--space-md);background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm)">
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:8px;font-weight:500">
+                ${esc(a.stage_name)}
+                ${a.verified ? '<span style="color:var(--accent-soft);font-size:0.75rem">✓ verified</span>' : ''}
+                ${claimed}
+              </div>
+              <div style="font-size:0.75rem;color:var(--text-tertiary);margin-top:2px">
+                ${esc(genre)}${genre && city ? ' · ' : ''}${esc(city)} · <span style="color:${statusClr}">${esc(a.status)}</span>
+              </div>
+            </div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
+              ${a.status !== 'active' ? `<button class="btn btn-ghost btn-sm" style="font-size:0.75rem" onclick="adminSetStatus('${esc(a.id)}','active')">Activate</button>` : ''}
+              ${a.status !== 'pending' ? `<button class="btn btn-ghost btn-sm" style="font-size:0.75rem" onclick="adminSetStatus('${esc(a.id)}','pending')">Hide</button>` : ''}
+              ${a.status !== 'inactive' ? `<button class="btn btn-ghost btn-sm" style="font-size:0.75rem" onclick="adminSetStatus('${esc(a.id)}','inactive')">Retire</button>` : ''}
+              <button class="btn btn-ghost btn-sm" style="font-size:0.75rem" onclick="adminToggleVerified('${esc(a.id)}',${!a.verified})">${a.verified ? 'Unverify' : 'Verify'}</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function adminSetStatus(artistId, status) {
+      const res = await DB.adminUpdateArtistStatus(artistId, status);
+      if (!res.success) { UI.toast('Failed: ' + (res.error || ''), 'error'); return; }
+      UI.toast(`Status → ${status}`, 'success');
+      renderAdminArtists();
+    }
+
+    async function adminToggleVerified(artistId, verified) {
+      const res = await DB.adminSetArtistVerified(artistId, verified);
+      if (!res.success) { UI.toast('Failed: ' + (res.error || ''), 'error'); return; }
+      UI.toast(verified ? 'Marked verified' : 'Unverified', 'success');
+      renderAdminArtists();
+    }
+
+    async function adminCreateArtist() {
+      const name = document.getElementById('admin-new-name').value.trim();
+      const genre = document.getElementById('admin-new-genre').value.trim();
+      const city = document.getElementById('admin-new-city').value.trim();
+      const status = document.getElementById('admin-new-status').value;
+      if (!name) { UI.toast('Stage name required', 'warning'); return; }
+      const res = await DB.adminCreateUnclaimedArtist({
+        stage_name: name,
+        genre: genre ? [genre] : [],
+        cities_active: city ? [city] : [],
+        status,
+      });
+      if (!res.success) { UI.toast('Failed: ' + (res.error || ''), 'error'); return; }
+      UI.toast(`Added ${name}`, 'success');
+      document.getElementById('admin-new-name').value = '';
+      document.getElementById('admin-new-genre').value = '';
+      document.getElementById('admin-new-city').value = '';
+      renderAdminArtists();
+    }
+
     document.addEventListener('DOMContentLoaded', async function() {
       await Auth.ready();
       if (!Auth.isLoggedIn()) { Auth.require(); return; }
@@ -230,6 +346,12 @@
       // Show only the sections that belong to the current role
       const roleClass = Auth.role === 'artist' ? '.role-artist' : '.role-promoter';
       document.querySelectorAll(roleClass).forEach(el => { el.style.display = ''; });
+
+      // Admin panel — only show if the server-side check passes
+      if (await DB.isAdmin()) {
+        document.getElementById('admin-panel').style.display = '';
+        renderAdminArtists();
+      }
 
       // Populate form
       const user = Auth.user;
