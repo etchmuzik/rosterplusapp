@@ -124,6 +124,32 @@
           <h3 style="margin-bottom:var(--space-md)">Recent Messages</h3>
           <div id="recent-messages" style="display:flex;flex-direction:column;gap:var(--space-sm);margin-bottom:var(--space-xl)"></div>
 
+          <!-- Quick-block availability: preset buttons + custom date, plus a
+               list of already-blocked upcoming dates with one-click unblock.
+               Writes straight into artists.blocked_dates — promoters see the
+               effect immediately in the directory filter + availability check. -->
+          <div class="card" style="margin-bottom:var(--space-xl)"><div class="card-inner">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-md);margin-bottom:var(--space-md);flex-wrap:wrap">
+              <div>
+                <h3 style="margin:0 0 2px;font-size:1rem">Mark yourself unavailable</h3>
+                <div style="font-size:0.78rem;color:var(--text-tertiary)">Block dates so promoters don't send requests you'll have to decline.</div>
+              </div>
+              <a href="artist-profile-edit.html#availability" class="btn btn-ghost btn-sm" style="font-size:0.78rem">Full calendar →</a>
+            </div>
+
+            <div style="display:flex;gap:var(--space-xs);flex-wrap:wrap;margin-bottom:var(--space-md)">
+              <button class="btn btn-secondary btn-sm" onclick="quickBlock('thisWeekend')" style="font-size:0.78rem">This weekend</button>
+              <button class="btn btn-secondary btn-sm" onclick="quickBlock('nextWeekend')" style="font-size:0.78rem">Next weekend</button>
+              <button class="btn btn-secondary btn-sm" onclick="quickBlock('nextWeek')" style="font-size:0.78rem">Next week</button>
+              <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
+                <input type="date" id="quick-block-date" style="background:var(--bg-input);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:6px 10px;color:var(--text-primary);font-size:0.82rem;color-scheme:dark">
+                <button class="btn btn-primary btn-sm" onclick="quickBlockCustom()" style="font-size:0.78rem">Block</button>
+              </div>
+            </div>
+
+            <div id="my-blocked-dates" style="display:flex;flex-direction:column;gap:6px"></div>
+          </div></div>
+
           <div class="quick-actions">
             <a href="artist-profile-edit.html" class="card card--interactive"><div class="card-inner" style="text-align:center;padding:var(--space-xl)"><span class="js-icon" data-icon="music" data-size="24"></span><div style="margin-top:var(--space-sm);font-weight:500">Edit Profile</div></div></a>
             <a href="epk.html" class="card card--interactive"><div class="card-inner" style="text-align:center;padding:var(--space-xl)"><span class="js-icon" data-icon="fileText" data-size="24"></span><div style="margin-top:var(--space-sm);font-weight:500">Build EPK</div></div></a>
@@ -377,6 +403,96 @@
       }
     }
 
+    // ═══ Quick-block availability ═══
+    // Preset helpers return an array of ISO dates (YYYY-MM-DD) for the
+    // named range. Weekends = Fri+Sat in UAE/KSA (where most ROSTR+ gigs
+    // happen). Callers pass these straight to DB.blockDates().
+    function _isoDate(d) { return d.toISOString().slice(0, 10); }
+    function _preset(name) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const dow = today.getDay(); // 0=Sun .. 6=Sat
+      const addDays = (base, n) => { const d = new Date(base); d.setDate(d.getDate() + n); return d; };
+      // Gulf weekend is Fri(5) + Sat(6). If today is after Friday, "this weekend"
+      // means the upcoming Friday.
+      const daysToFriday = (5 - dow + 7) % 7;
+      const nextFri = addDays(today, daysToFriday === 0 && dow !== 5 ? 7 : daysToFriday);
+      const nextSat = addDays(nextFri, 1);
+      if (name === 'thisWeekend') return [_isoDate(nextFri), _isoDate(nextSat)];
+      if (name === 'nextWeekend') return [_isoDate(addDays(nextFri, 7)), _isoDate(addDays(nextSat, 7))];
+      if (name === 'nextWeek') {
+        // Next Monday through next Sunday (7 days starting from the Monday
+        // after today). If today is Sunday we want tomorrow.
+        const daysToMon = (1 - dow + 7) % 7 || 7;
+        const start = addDays(today, daysToMon);
+        return Array.from({ length: 7 }, (_, i) => _isoDate(addDays(start, i)));
+      }
+      return [];
+    }
+
+    async function quickBlock(presetName) {
+      const dates = _preset(presetName);
+      if (!dates.length) return;
+      const res = await DB.blockDates(dates);
+      if (!res.success) { UI.toast(res.error || 'Could not save', 'error'); return; }
+      UI.toast(`Blocked ${dates.length} date${dates.length === 1 ? '' : 's'}`, 'success');
+      renderBlockedDates();
+    }
+
+    async function quickBlockCustom() {
+      const input = document.getElementById('quick-block-date');
+      const iso = input?.value;
+      if (!iso) { UI.toast('Pick a date first', 'info'); return; }
+      const today = new Date().toISOString().slice(0, 10);
+      if (iso < today) { UI.toast('Can\u2019t block past dates', 'error'); return; }
+      const res = await DB.blockDates([iso]);
+      if (!res.success) { UI.toast(res.error || 'Could not save', 'error'); return; }
+      input.value = '';
+      UI.toast('Date blocked', 'success');
+      renderBlockedDates();
+    }
+
+    async function unblockDate(iso) {
+      const res = await DB.unblockDates([iso]);
+      if (!res.success) { UI.toast(res.error || 'Could not update', 'error'); return; }
+      UI.toast('Date unblocked', 'success');
+      renderBlockedDates();
+    }
+    window.unblockDate = unblockDate;
+
+    async function renderBlockedDates() {
+      const host = document.getElementById('my-blocked-dates');
+      if (!host) return;
+      const res = await DB.getMyBlockedDates({ upcomingOnly: true });
+      const list = res.data || [];
+      if (list.length === 0) {
+        host.innerHTML = `<div style="font-size:0.78rem;color:var(--text-tertiary);padding:var(--space-sm) 0">No upcoming dates blocked.</div>`;
+        return;
+      }
+      // Collapse consecutive runs for display — "Fri 24 – Sat 25 Apr" reads
+      // better than two separate pills. Still stored as individual dates.
+      const runs = [];
+      let run = [list[0]];
+      for (let i = 1; i < list.length; i++) {
+        const prev = new Date(list[i - 1]);
+        const curr = new Date(list[i]);
+        const diff = (curr - prev) / 86400000;
+        if (diff === 1) run.push(list[i]);
+        else { runs.push(run); run = [list[i]]; }
+      }
+      runs.push(run);
+      const fmt = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+      host.innerHTML = runs.map(r => {
+        const label = r.length === 1 ? fmt(r[0]) : `${fmt(r[0])} \u2013 ${fmt(r[r.length - 1])}`;
+        const unblockAll = r.map(d => `'${d}'`).join(',');
+        return `<div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-sm);padding:8px 12px;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);font-size:0.82rem">
+          <span style="color:var(--text-secondary)"><strong style="color:var(--text-primary)">${label}</strong> \u2014 blocked</span>
+          <button class="btn btn-ghost btn-sm" style="font-size:0.72rem;padding:4px 10px" onclick="(async () => { for (const d of [${unblockAll}]) { await DB.unblockDates([d]); } renderBlockedDates(); UI.toast('Unblocked', 'success'); })()">Unblock</button>
+        </div>`;
+      }).join('');
+    }
+    window.renderBlockedDates = renderBlockedDates;
+
     // ── Filter requests by status ──
     let _activeRequestFilter = 'all';
     function filterRequests(status) {
@@ -611,6 +727,10 @@
       renderMessages(_messages);
       renderContracts();
       renderPayouts();
+      renderBlockedDates().catch(() => {});
+      // Prevent selecting past dates in the custom picker.
+      const qbd = document.getElementById('quick-block-date');
+      if (qbd) qbd.min = new Date().toISOString().slice(0, 10);
       refreshUI();
 
       // Realtime

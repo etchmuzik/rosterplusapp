@@ -1876,6 +1876,68 @@ const DB = {
     } catch(e) { return { success: false, error: String(e) }; }
   },
 
+  // Add one or more ISO dates (YYYY-MM-DD) to the current artist's
+  // blocked_dates array. Deduped, sorted, merges with existing values.
+  // Returns { success, data: { blocked_dates } } with the new list.
+  async blockDates(dates) {
+    if (DEMO_MODE) return { success: true, data: { blocked_dates: [] } };
+    if (!Auth.user) return { success: false, error: 'Not authenticated' };
+    if (!Array.isArray(dates) || dates.length === 0) return { success: false, error: 'No dates' };
+    try {
+      const { data: row, error: readErr } = await _sb.from('artists')
+        .select('blocked_dates')
+        .eq('profile_id', Auth.user.id)
+        .single();
+      if (readErr) return { success: false, error: readErr.message };
+      const current = Array.isArray(row?.blocked_dates) ? row.blocked_dates : [];
+      const merged = Array.from(new Set([...current, ...dates])).sort();
+      const { error } = await _sb.from('artists')
+        .update({ blocked_dates: merged })
+        .eq('profile_id', Auth.user.id);
+      return error ? { success: false, error: error.message } : { success: true, data: { blocked_dates: merged } };
+    } catch (e) { return { success: false, error: String(e) }; }
+  },
+
+  // Remove one or more ISO dates from the current artist's blocked_dates.
+  async unblockDates(dates) {
+    if (DEMO_MODE) return { success: true, data: { blocked_dates: [] } };
+    if (!Auth.user) return { success: false, error: 'Not authenticated' };
+    if (!Array.isArray(dates) || dates.length === 0) return { success: false, error: 'No dates' };
+    try {
+      const { data: row, error: readErr } = await _sb.from('artists')
+        .select('blocked_dates')
+        .eq('profile_id', Auth.user.id)
+        .single();
+      if (readErr) return { success: false, error: readErr.message };
+      const current = Array.isArray(row?.blocked_dates) ? row.blocked_dates : [];
+      const toRemove = new Set(dates);
+      const filtered = current.filter(d => !toRemove.has(d));
+      const { error } = await _sb.from('artists')
+        .update({ blocked_dates: filtered })
+        .eq('profile_id', Auth.user.id);
+      return error ? { success: false, error: error.message } : { success: true, data: { blocked_dates: filtered } };
+    } catch (e) { return { success: false, error: String(e) }; }
+  },
+
+  // Current artist's own blocked-dates list (future dates only, sorted).
+  // Used by the "Quick block" dashboard card to show already-blocked
+  // upcoming dates that the user can unblock with one click.
+  async getMyBlockedDates({ upcomingOnly = true } = {}) {
+    if (DEMO_MODE) return { success: true, data: [] };
+    if (!Auth.user) return { success: false, data: [], error: 'Not authenticated' };
+    try {
+      const { data, error } = await _sb.from('artists')
+        .select('blocked_dates')
+        .eq('profile_id', Auth.user.id)
+        .single();
+      if (error) return { success: false, data: [], error: error.message };
+      const all = Array.isArray(data?.blocked_dates) ? [...data.blocked_dates].sort() : [];
+      if (!upcomingOnly) return { success: true, data: all };
+      const today = new Date().toISOString().slice(0, 10);
+      return { success: true, data: all.filter(d => d >= today) };
+    } catch (e) { return { success: false, data: [], error: String(e) }; }
+  },
+
   async getArtistAvailability(artistId) {
     if (DEMO_MODE) return { success: true, data: { blocked_dates: [], available_from: null, available_to: null } };
     try {
