@@ -416,10 +416,13 @@
       );
 
       if (filteredThreads.length === 0 && filteredDMs.length === 0) {
-        list.innerHTML = `<div style="padding:var(--space-xl);text-align:center;color:var(--text-tertiary);font-size:0.85rem">
-          <p style="margin-bottom:var(--space-sm)">No conversations yet.</p>
-          <a href="directory.html" class="btn btn-ghost btn-sm">Browse the roster</a>
-        </div>`;
+        list.innerHTML = UI.emptyState({
+          icon: 'inbox',
+          title: 'No conversations yet',
+          body: 'Every booking gets its own thread. Reach out to an artist to start.',
+          cta: { label: 'Browse the roster', href: '/directory.html' },
+          compact: true,
+        });
         return;
       }
 

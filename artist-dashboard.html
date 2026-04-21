@@ -246,7 +246,12 @@
     function renderTable(bookings, containerId, showActions, emptyMsg) {
       const el = document.getElementById(containerId);
       if (!bookings.length) {
-        el.innerHTML = `<div class="empty-state" style="padding:var(--space-xl);text-align:center;color:var(--text-tertiary)">${emptyMsg || 'No bookings yet'}</div>`;
+        el.innerHTML = UI.emptyState({
+          icon: 'calendar',
+          title: emptyMsg || 'No bookings yet',
+          body: 'When a promoter sends you a request, it\u2019ll show up here.',
+          compact: true,
+        });
         return;
       }
       el.innerHTML = `<table><thead><tr><th>Date</th><th>Event</th><th>Promoter</th><th>Fee</th><th>${showActions ? 'Actions' : 'Status'}</th></tr></thead><tbody>${bookings.map(b => renderBookingRow(b, showActions)).join('')}</tbody></table>`;
@@ -254,7 +259,15 @@
 
     function renderMessages(msgs) {
       const el = document.getElementById('recent-messages');
-      if (!msgs.length) { el.innerHTML = '<div style="padding:var(--space-xl);text-align:center"><div class="text-tertiary" style="margin-bottom:var(--space-sm)">No messages yet</div><a href="directory.html" class="btn btn-secondary btn-sm">Browse Artists</a></div>'; return; }
+      if (!msgs.length) {
+        el.innerHTML = UI.emptyState({
+          icon: 'inbox',
+          title: 'No messages yet',
+          body: 'Promoters who reach out will appear here.',
+          compact: true,
+        });
+        return;
+      }
       el.innerHTML = msgs.slice(0, 5).map(msg => {
         const name = esc(msg.other_user_name || msg.sender?.display_name || 'Unknown');
         const preview = esc((msg.content || msg.last_message || '').substring(0, 60));
@@ -379,7 +392,7 @@
       const panel = document.getElementById('artist-cal-panel');
       if (!panel) return;
       if (dayBookings.length === 0) {
-        panel.innerHTML = `<div style="padding:var(--space-lg);text-align:center;color:var(--text-tertiary);font-size:0.85rem">${UI.formatDate(dateStr)} — No bookings</div>`;
+        panel.innerHTML = UI.emptyState({ icon: 'calendar', title: UI.formatDate(dateStr), body: 'No bookings on this date.', compact: true });
       } else {
         panel.innerHTML = `<div style="padding:var(--space-md);border-bottom:1px solid var(--border-subtle);font-weight:600;font-size:0.9rem">${UI.formatDate(dateStr)} — ${dayBookings.length} booking${dayBookings.length > 1 ? 's' : ''}</div>` +
           dayBookings.map(b => {
@@ -444,7 +457,12 @@
       const list = document.getElementById('artist-contracts-list');
       if (!list) return;
       if (_contracts.length === 0) {
-        list.innerHTML = '<div class="text-tertiary" style="padding:var(--space-xl);text-align:center;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md)">No contracts yet. Accept a booking request to receive a contract.</div>';
+        list.innerHTML = UI.emptyState({
+          icon: 'fileText',
+          title: 'No contracts yet',
+          body: 'Once you accept a booking request, the contract lands here for signature.',
+          compact: true,
+        });
         return;
       }
       list.innerHTML = _contracts.map(c => {

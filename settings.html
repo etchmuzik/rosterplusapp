@@ -311,7 +311,7 @@
         return;
       }
       if (!res.data || res.data.length === 0) {
-        list.innerHTML = '<div class="text-tertiary" style="font-size:0.85rem">No artists seeded yet.</div>';
+        list.innerHTML = UI.emptyState({ icon: 'music', title: 'No artists yet', body: 'Seed the roster by importing a CSV above.', compact: true });
         return;
       }
       list.innerHTML = res.data.map(a => {

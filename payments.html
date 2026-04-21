@@ -789,7 +789,12 @@
     function renderPaymentHistory() {
       const tbody = document.getElementById('payment-history-body');
       if (paymentsData.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-tertiary);padding:var(--space-xl)">No payments yet</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="padding:0">${UI.emptyState({
+          icon: 'dollar',
+          title: 'No payments yet',
+          body: 'Payments appear here once a booking is confirmed and you record a transfer.',
+          compact: true,
+        })}</td></tr>`;
         return;
       }
       tbody.innerHTML = paymentsData.map(p => {

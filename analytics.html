@@ -73,7 +73,7 @@
       const breakdownEl = document.getElementById('status-breakdown');
       const entries = Object.entries(statuses);
       breakdownEl.innerHTML = entries.length === 0
-        ? '<div class="text-tertiary" style="padding:var(--space-lg)">No bookings yet</div>'
+        ? UI.emptyState({ icon: 'barChart', title: 'No bookings yet', body: 'Status breakdown will populate once you start booking artists.', compact: true })
         : entries.map(([s, c]) =>
             `<div style="flex:1;min-width:120px;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:var(--space-md);text-align:center"><div style="font-size:1.6rem;font-weight:700;color:${colors[s] || 'var(--text-primary)'}">${c}</div><div style="font-size:0.78rem;color:var(--text-tertiary);text-transform:capitalize">${s}</div></div>`
           ).join('');
@@ -84,7 +84,7 @@
       const sorted = Object.entries(artists).sort((a, b) => b[1] - a[1]).slice(0, 5);
       document.getElementById('top-artists').innerHTML = sorted.map(([name, count]) =>
         `<div style="display:flex;align-items:center;gap:var(--space-md);padding:var(--space-md);background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm)">${UI.avatar(name, 36)}<div style="flex:1"><strong>${esc(name)}</strong></div><div style="font-family:var(--font-mono);font-size:0.85rem;color:var(--gold-text)">${count} booking${count > 1 ? 's' : ''}</div></div>`
-      ).join('') || '<div class="text-tertiary" style="padding:var(--space-lg)">No bookings yet</div>';
+      ).join('') || UI.emptyState({ icon: 'users', title: 'No bookings yet', body: 'Your most-booked artists will surface here.', compact: true });
     }
   </script>
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>

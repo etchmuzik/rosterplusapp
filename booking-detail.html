@@ -274,7 +274,7 @@
       }
 
       const rowHtml = rows.length === 0
-        ? `<div class="bd-empty" style="padding:var(--space-md) 0;color:var(--text-tertiary)">No payments yet.</div>`
+        ? UI.emptyState({ icon: 'dollar', title: 'No payments yet', body: 'Record a transfer once the booking is confirmed.', compact: true })
         : rows.map(p => {
             const amount = fmtMoney(p.amount, p.currency);
             const when = p.paid_at ? fmtDateTime(p.paid_at)

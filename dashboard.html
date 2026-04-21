@@ -342,7 +342,13 @@
 
       const root = document.getElementById('inbox-root');
       if (convos.length === 0) {
-        root.innerHTML = '<div style="padding: 12px 0; color: var(--text-tertiary); font-size: 0.85rem">No messages yet.</div>';
+        root.innerHTML = UI.emptyState({
+          icon: 'inbox',
+          title: 'No messages yet',
+          body: 'Reach out to an artist to start a conversation.',
+          cta: { label: 'Browse artists', href: '/directory.html' },
+          compact: true,
+        });
         return;
       }
 

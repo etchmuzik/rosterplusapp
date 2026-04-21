@@ -81,7 +81,7 @@
       const panel = document.getElementById('cal-day-panel');
       if (!panel) return;
       if (dayBookings.length === 0) {
-        panel.innerHTML = `<div style="padding:var(--space-lg);text-align:center;color:var(--text-tertiary);font-size:0.85rem">${UI.formatDate(dateStr)} — No bookings</div>`;
+        panel.innerHTML = UI.emptyState({ icon: 'calendar', title: UI.formatDate(dateStr), body: 'No bookings on this date.', compact: true });
       } else {
         panel.innerHTML = `<div style="padding:var(--space-md);border-bottom:1px solid var(--border-subtle);font-weight:600;font-size:0.9rem">${UI.formatDate(dateStr)} — ${dayBookings.length} booking${dayBookings.length > 1 ? 's' : ''}</div>` +
           dayBookings.map(b => {

@@ -382,6 +382,50 @@ const UI = {
     }, 3000);
   },
 
+  // Reusable empty-state renderer. Used across dashboards, bookings, messages,
+  // contracts, payments, etc. to keep the "nothing here yet" visual language
+  // consistent and always paired with a clear next-action.
+  //
+  // Opts:
+  //   icon:    UI.icon name (default: 'inbox')
+  //   title:   short heading (required)
+  //   body:    1-2 sentence explanation (optional)
+  //   cta:     { label, href } OR { label, onclick } to render a primary button
+  //   compact: boolean — use tight vertical padding (for cards/panels) instead
+  //            of the default spacious dashboard layout
+  emptyState(opts = {}) {
+    const {
+      icon = 'inbox',
+      title = 'Nothing here yet',
+      body = '',
+      cta = null,
+      compact = false,
+    } = opts;
+    const padY = compact ? 'var(--space-xl)' : 'var(--space-4xl)';
+    const iconSize = compact ? 36 : 56;
+    const ctaHtml = (() => {
+      if (!cta || !cta.label) return '';
+      if (cta.href) {
+        return `<a href="${cta.href}" class="btn btn-primary btn-sm" style="margin-top:var(--space-md)">${cta.label}</a>`;
+      }
+      if (cta.onclick) {
+        return `<button class="btn btn-primary btn-sm" style="margin-top:var(--space-md)" onclick="${cta.onclick}">${cta.label}</button>`;
+      }
+      return '';
+    })();
+    const bodyHtml = body
+      ? `<p style="color:var(--text-tertiary);max-width:40ch;margin:0 auto;font-size:0.88rem;line-height:1.55">${body}</p>`
+      : '';
+    return `
+      <div class="ui-empty-state" style="text-align:center;padding:${padY} var(--space-lg)">
+        <div style="color:var(--text-tertiary);opacity:0.28;margin-bottom:var(--space-md);display:flex;justify-content:center">${this.icon(icon, iconSize)}</div>
+        <h3 style="color:var(--text-secondary);margin:0 0 var(--space-xs);font-size:${compact ? '0.95rem' : '1.1rem'};font-weight:600">${title}</h3>
+        ${bodyHtml}
+        ${ctaHtml}
+      </div>
+    `;
+  },
+
   // SVG Icons (inline, no external deps)
   icon(name, size = 18) {
     const icons = {
