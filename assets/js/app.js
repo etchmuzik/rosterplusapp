@@ -626,15 +626,27 @@ const DB = {
   async signContract(contractId, role) {
     if (DEMO_MODE) return { error: null };
 
-    const update = role === 'promoter'
-      ? { promoter_signed: true }
-      : { artist_signed: true };
+    const now = new Date().toISOString();
+    const ua  = (typeof navigator !== 'undefined' && navigator.userAgent) ? navigator.userAgent : '';
 
+    // Read current state so we can (a) decide if both parties have signed
+    // and (b) append to audit_log without clobbering prior entries.
     const { data: contract } = await _sb
       .from('contracts')
-      .select('promoter_signed, artist_signed')
+      .select('promoter_signed, artist_signed, audit_log')
       .eq('id', contractId)
       .single();
+
+    const priorLog = Array.isArray(contract?.audit_log) ? contract.audit_log : [];
+    const auditEntry = {
+      event: role === 'promoter' ? 'signed_by_promoter' : 'signed_by_artist',
+      at: now,
+      ua: ua.slice(0, 400), // cap so a weird UA string can't bloat the row
+    };
+
+    const update = role === 'promoter'
+      ? { promoter_signed: true, promoter_signed_at: now, promoter_signed_ua: ua.slice(0, 400) }
+      : { artist_signed: true,   artist_signed_at:   now, artist_signed_ua:   ua.slice(0, 400) };
 
     const bothSigned = role === 'promoter'
       ? contract?.artist_signed
@@ -642,7 +654,8 @@ const DB = {
 
     const finalUpdate = {
       ...update,
-      ...(bothSigned ? { status: 'signed', signed_at: new Date().toISOString() } : {})
+      audit_log: [...priorLog, auditEntry],
+      ...(bothSigned ? { status: 'signed', signed_at: now } : {}),
     };
 
     const { error } = await _sb

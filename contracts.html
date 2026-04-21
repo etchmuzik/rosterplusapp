@@ -668,7 +668,7 @@
       </div>
       <div class="modal-actions" style="display:flex;gap:var(--space-sm)">
         <button class="btn btn-secondary" onclick="closeViewModal()">Close</button>
-        <button class="btn btn-primary" onclick="downloadContract()">Download PDF</button>
+        <a id="contract-full-view-link" class="btn btn-primary" href="#" target="_blank">Open full view / Save PDF</a>
         <button id="sign-btn" class="btn" style="background:var(--status-confirmed);color:#000" onclick="signContractAsPromoter(currentViewingContract?.id)">Sign as Promoter</button>
       </div>
     </div>
@@ -864,6 +864,10 @@
       currentViewingContract = contract;
       const modal = document.getElementById('view-modal');
       const content = document.getElementById('view-modal-content');
+      // Wire the "full view" link to the standalone contract page that
+      // supports Cmd+P → Save as PDF with a clean print layout.
+      const fullLink = document.getElementById('contract-full-view-link');
+      if (fullLink) fullLink.href = 'contract.html?id=' + encodeURIComponent(contract.id);
 
       // Use booking data from contract
       const booking = contract.booking || null;

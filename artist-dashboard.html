@@ -464,8 +464,8 @@
         else if (promoterSigned) statusBadge = '<span style="color:var(--status-pending);font-size:0.8rem">Awaiting your signature</span>';
         else statusBadge = `<span class="text-tertiary" style="font-size:0.8rem">${esc(c.status)}</span>`;
         const signBtn = !artistSigned
-          ? `<button class="btn btn-primary btn-sm" onclick="artistSignContract('${c.id}')">Sign Contract</button>`
-          : '<button class="btn btn-secondary btn-sm" disabled>Signed ✓</button>';
+          ? `<a class="btn btn-primary btn-sm" href="contract.html?id=${esc(c.id)}">Review &amp; Sign</a>`
+          : `<a class="btn btn-secondary btn-sm" href="contract.html?id=${esc(c.id)}">View &amp; Save PDF</a>`;
         return `
           <div class="card">
             <div class="card-inner" style="display:flex;justify-content:space-between;align-items:center;gap:var(--space-md);flex-wrap:wrap">
