@@ -1948,7 +1948,60 @@ const DB = {
     }
 
     const succeeded = results.filter(r => r.ok).length;
-    return { success: true, results, succeeded, failed: results.length - succeeded };
+    const failed = results.length - succeeded;
+
+    // Fire a grouped audit entry so the log shows "bulk import of 12
+    // artists" as one line rather than 12 individual artist.create rows.
+    // (Those individual rows are still there from the INSERT trigger —
+    // this one links them together with shared context.)
+    try {
+      await this.logAdminAction({
+        action: 'artist.bulk_import',
+        target_type: 'batch',
+        meta: {
+          total:     results.length,
+          succeeded,
+          failed,
+          failures:  results.filter(r => !r.ok).slice(0, 10).map(r => ({ stage_name: r.stage_name, error: r.error })),
+        },
+      });
+    } catch (_) { /* best-effort audit; don't block the import */ }
+
+    return { success: true, results, succeeded, failed };
+  },
+
+  // ── Admin audit log ──
+  // Reads recent audit rows (admin only — RLS enforces). Default limit
+  // 100 keeps payload small for the settings panel; pagination can come
+  // later if needed.
+  async adminListAuditLog({ limit = 100 } = {}) {
+    if (DEMO_MODE) return { success: true, data: [] };
+    if (!Auth.user) return { success: false, data: [] };
+    try {
+      const { data, error } = await _sb.from('admin_audit_log')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      return error ? { success: false, data: [], error: error.message } : { success: true, data: data || [] };
+    } catch (e) { return { success: false, data: [], error: String(e) }; }
+  },
+
+  // Fire a free-form audit entry from the client. Used for actions that
+  // don't map to a single-row trigger (bulk imports, admin notes, etc).
+  // RPC is SECURITY DEFINER and silently no-ops for non-admins, so the
+  // client doesn't need to pre-check is_admin() before calling.
+  async logAdminAction({ action, target_type = null, target_id = null, meta = {} } = {}) {
+    if (DEMO_MODE) return { success: true };
+    if (!Auth.user || !action) return { success: false, error: 'missing args' };
+    try {
+      const { data, error } = await _sb.rpc('log_admin_action', {
+        p_action: action,
+        p_target_type: target_type,
+        p_target_id: target_id,
+        p_meta: meta,
+      });
+      return error ? { success: false, error: error.message } : { success: true, id: data };
+    } catch (e) { return { success: false, error: String(e) }; }
   },
 
   // Check if the current user is an admin. Used client-side to show/hide

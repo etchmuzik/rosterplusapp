@@ -220,6 +220,18 @@
             <div id="admin-csv-results" style="margin-top:var(--space-md);display:none"></div>
           </div>
         </details>
+
+        <!-- ─── Audit log ─── -->
+        <details style="margin-top:var(--space-lg);background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:var(--space-md) var(--space-lg)">
+          <summary style="cursor:pointer;font-size:0.9rem;font-weight:600;color:var(--text-primary)">Audit log <span style="font-size:0.76rem;color:var(--text-tertiary);font-weight:400">— every sensitive admin action</span></summary>
+          <div style="margin-top:var(--space-md)">
+            <div style="display:flex;gap:8px;margin-bottom:var(--space-sm);align-items:center">
+              <div style="font-size:0.78rem;color:var(--text-tertiary)">Latest 100 events</div>
+              <button class="btn btn-ghost btn-sm" style="margin-left:auto;font-size:0.76rem" onclick="refreshAuditLog()">Refresh</button>
+            </div>
+            <div id="admin-audit-log" style="max-height:420px;overflow-y:auto;font-size:0.82rem"></div>
+          </div>
+        </details>
       </div>
 
       <!-- Danger Zone -->
@@ -305,6 +317,77 @@
     // All mutations re-check is_admin() via RLS, so the UI-side guard is
     // just for cleanliness, not security.
 
+    // Audit log: latest 100 admin actions (RLS restricts to admins).
+    // Renders each row with actor email, timestamp, action label, target,
+    // and compact before→after for field changes.
+    async function refreshAuditLog() {
+      const host = document.getElementById('admin-audit-log');
+      if (!host) return;
+      host.innerHTML = '<div class="text-tertiary" style="padding:var(--space-md);font-size:0.82rem">Loading…</div>';
+      const res = await DB.adminListAuditLog({ limit: 100 });
+      if (!res.success) {
+        host.innerHTML = `<div class="text-tertiary" style="padding:var(--space-md);font-size:0.82rem">Failed to load: ${res.error || 'unknown'}</div>`;
+        return;
+      }
+      if (!res.data.length) {
+        host.innerHTML = '<div class="text-tertiary" style="padding:var(--space-md);font-size:0.82rem;text-align:center">No admin actions logged yet.</div>';
+        return;
+      }
+      const actionLabel = {
+        'artist.verify':        'Verified artist',
+        'artist.unverify':      'Un-verified artist',
+        'artist.status_change': 'Changed status',
+        'artist.create':        'Created artist',
+        'artist.claim':         'Linked artist to user',
+        'artist.unclaim':       'Unlinked artist from user',
+        'artist.bulk_import':   'Bulk CSV import',
+      };
+      const fmtVal = (v) => {
+        if (v === null || v === undefined || v === '') return '—';
+        if (typeof v === 'boolean') return v ? 'yes' : 'no';
+        if (typeof v === 'object') return JSON.stringify(v);
+        return String(v);
+      };
+      const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+      host.innerHTML = res.data.map(row => {
+        const when = new Date(row.created_at);
+        const whenStr = when.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+        const label = actionLabel[row.action] || row.action;
+        const stageName = row.meta?.stage_name ? ` · <strong>${esc(row.meta.stage_name)}</strong>` : '';
+
+        // For field changes, render a tiny delta strip.
+        let delta = '';
+        if (row.before_value && row.after_value) {
+          const keys = Object.keys(row.after_value);
+          delta = keys.map(k => {
+            const bef = fmtVal(row.before_value[k]);
+            const aft = fmtVal(row.after_value[k]);
+            return `<span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary)">${esc(k)}: <span style="text-decoration:line-through;opacity:0.7">${esc(bef)}</span> → <span style="color:var(--text-secondary)">${esc(aft)}</span></span>`;
+          }).join('<span style="color:var(--text-tertiary);margin:0 6px">·</span>');
+        } else if (row.action === 'artist.bulk_import' && row.meta) {
+          const m = row.meta;
+          delta = `<span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary)">${m.succeeded || 0} imported · ${m.failed || 0} failed · ${m.total || 0} total</span>`;
+        } else if (row.after_value) {
+          // For inserts, show the key fields succinctly.
+          const parts = Object.entries(row.after_value).map(([k,v]) => `${esc(k)}=${esc(fmtVal(v))}`);
+          delta = `<span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary)">${parts.join(' · ')}</span>`;
+        }
+
+        return `
+          <div style="padding:10px 0;border-bottom:1px solid var(--border-subtle);display:flex;gap:12px;align-items:flex-start">
+            <div style="flex:1;min-width:0">
+              <div style="color:var(--text-primary)"><strong>${esc(label)}</strong>${stageName}</div>
+              ${delta ? `<div style="margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${delta}</div>` : ''}
+              <div style="font-size:0.72rem;color:var(--text-tertiary);margin-top:4px">
+                ${esc(row.actor_email || 'unknown')} · ${whenStr}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    window.refreshAuditLog = refreshAuditLog;
+
     async function renderAdminArtists() {
       const list = document.getElementById('admin-artists-list');
       if (!list) return;
@@ -351,6 +434,7 @@
       if (!res.success) { UI.toast('Failed: ' + (res.error || ''), 'error'); return; }
       UI.toast(`Status → ${status}`, 'success');
       renderAdminArtists();
+      refreshAuditLog().catch(() => {});
     }
 
     async function adminToggleVerified(artistId, verified) {
@@ -358,6 +442,7 @@
       if (!res.success) { UI.toast('Failed: ' + (res.error || ''), 'error'); return; }
       UI.toast(verified ? 'Marked verified' : 'Unverified', 'success');
       renderAdminArtists();
+      refreshAuditLog().catch(() => {});
     }
 
     async function adminCreateArtist() {
@@ -501,6 +586,7 @@
       results.style.display = '';
       UI.toast(`${res.succeeded} imported, ${res.failed} failed`, res.failed === 0 ? 'success' : 'warning');
       renderAdminArtists();
+      refreshAuditLog().catch(() => {});
       if (res.failed === 0) setTimeout(adminResetCsv, 3000);
     }
 
@@ -546,6 +632,7 @@
         document.getElementById('admin-panel').style.display = '';
         renderAdminArtists();
         wireCsvUI();
+        refreshAuditLog().catch(() => {});
       }
 
       // Populate form
