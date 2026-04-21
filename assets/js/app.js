@@ -708,6 +708,120 @@ const DB = {
     return error ? { success: false, error: error.message } : { success: true, data };
   },
 
+  // ── Two-sided manual payment flow ───────────────────────────
+  // Works today with offline bank transfer. The same table rows get
+  // flipped to status='completed' either by (a) an artist confirming
+  // receipt here, or (b) a future Stripe/Tap webhook. One model, two
+  // entry points.
+
+  /**
+   * Promoter clicks "Record payment" on a booking. Creates a payment
+   * row with provider='manual', status='processing', auto-generated
+   * invoice_number, and the bank transfer reference they entered.
+   * Welcome email-style branded notification fires from the edge fn
+   * side for the artist.
+   */
+  async recordPayment({ booking_id, amount, currency, payout_reference, notes, type }) {
+    if (DEMO_MODE) return { success: true, data: { id: 'demo-rec-1' } };
+    if (!Auth.user) return { success: false, error: 'Not authenticated' };
+    if (!booking_id || !amount) return { success: false, error: 'booking_id and amount required' };
+
+    try {
+      // Mint an invoice number server-side so two concurrent promoters
+      // can't clash on the same number.
+      const { data: invData, error: invErr } = await _sb.rpc('generate_invoice_number');
+      if (invErr) return { success: false, error: invErr.message };
+
+      const { data, error } = await _sb.from('payments').insert({
+        booking_id,
+        amount,
+        currency: currency || 'AED',
+        type: type || 'final',
+        status: 'processing',
+        provider: 'manual',
+        payment_method: 'bank_transfer',
+        payout_reference: payout_reference || null,
+        notes: notes || null,
+        invoice_number: invData,
+        promoter_recorded_at: new Date().toISOString(),
+      }).select().single();
+
+      if (error) return { success: false, error: error.message };
+
+      // Notify artist via branded email (fire-and-forget — payment
+      // doesn't depend on email success).
+      this._notifyArtistPaymentRecorded(booking_id, data).catch(() => {});
+
+      return { success: true, data };
+    } catch (e) { return { success: false, error: String(e) }; }
+  },
+
+  /**
+   * Artist clicks "Confirm received" on a payment row. Flips
+   * artist_confirmed_at + status='completed' and sets paid_at.
+   * RLS policy 'Artists can confirm payment received' gates this
+   * server-side — trying to confirm someone else's payment is a
+   * silent 0-row UPDATE.
+   */
+  async confirmPaymentReceived(paymentId) {
+    if (DEMO_MODE) return { success: true };
+    if (!Auth.user) return { success: false, error: 'Not authenticated' };
+    try {
+      const now = new Date().toISOString();
+      const { data, error } = await _sb.from('payments')
+        .update({
+          artist_confirmed_at: now,
+          paid_at: now,
+          status: 'completed',
+        })
+        .eq('id', paymentId)
+        .select();
+      if (error) return { success: false, error: error.message };
+      if (!data || data.length === 0) {
+        return { success: false, error: 'Not allowed or payment not found' };
+      }
+      return { success: true, data: data[0] };
+    } catch (e) { return { success: false, error: String(e) }; }
+  },
+
+  /**
+   * Fetch payments for a specific booking. Used by the booking-detail
+   * page to show the payment block contextually.
+   */
+  async getPaymentsForBooking(bookingId) {
+    if (DEMO_MODE) return { success: true, data: [] };
+    if (!bookingId) return { success: false, error: 'bookingId required' };
+    try {
+      const { data, error } = await _sb.from('payments')
+        .select('*')
+        .eq('booking_id', bookingId)
+        .order('created_at', { ascending: false });
+      return error ? { success: false, error: error.message } : { success: true, data: data || [] };
+    } catch (e) { return { success: false, error: String(e) }; }
+  },
+
+  /**
+   * Internal helper used by recordPayment() to email the artist.
+   * Silently no-ops if we can't find the artist's email.
+   */
+  async _notifyArtistPaymentRecorded(bookingId, payment) {
+    try {
+      const { data } = await _sb.from('bookings')
+        .select('event_name, artists(profiles(email, display_name))')
+        .eq('id', bookingId)
+        .single();
+      const artistEmail = data?.artists?.profiles?.email;
+      if (!artistEmail) return;
+      const amount = `${payment.currency || 'AED'} ${Number(payment.amount).toLocaleString()}`;
+      await Emails.send(artistEmail, 'payment_recorded', {
+        event_name: data.event_name || 'your event',
+        amount,
+        reference: payment.payout_reference || payment.invoice_number || '',
+        booking_url: window.location.origin + '/booking-detail.html?id=' + bookingId,
+      });
+    } catch (_) { /* ignore */ }
+  },
+
   async signContract(contractId, role) {
     if (DEMO_MODE) return { error: null };
 
@@ -1498,6 +1612,7 @@ const Emails = {
   bookingRejected: (to, d) => Emails.send(to, 'booking_rejected', d),
   contractSigned: (to, d) => Emails.send(to, 'contract_signed', d),
   paymentReceived: (to, d) => Emails.send(to, 'payment_received', d),
+  paymentRecorded: (to, d) => Emails.send(to, 'payment_recorded', d),
 };
 
 // ── In-App Notifications ──

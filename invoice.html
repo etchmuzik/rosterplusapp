@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en" data-accent="mono">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#08090b">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <title>Invoice — ROSTR+ GCC</title>
+  <link rel="stylesheet" href="assets/css/system.css">
+  <style>
+    .inv-wrap { max-width: 820px; margin: 0 auto; padding: var(--space-2xl) var(--space-lg); }
+    .inv-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); margin-bottom: var(--space-xl); flex-wrap: wrap; }
+    .inv-paper {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: var(--space-3xl) var(--space-2xl);
+      backdrop-filter: blur(14px);
+    }
+    .inv-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-lg);
+      margin-bottom: var(--space-2xl);
+      padding-bottom: var(--space-lg);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .inv-brand {
+      font-family: var(--font-display);
+      font-size: 1.3rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+    .inv-brand span { color: var(--text-secondary); font-weight: 500; }
+    .inv-brand-sub {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--text-tertiary);
+      margin-top: 4px;
+      letter-spacing: 0.04em;
+    }
+    .inv-meta { text-align: right; }
+    .inv-meta .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-tertiary);
+    }
+    .inv-number {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+    }
+    .inv-issued {
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+    .inv-parties {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-xl);
+      margin-bottom: var(--space-2xl);
+    }
+    .inv-party .label {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-tertiary);
+      margin-bottom: 6px;
+    }
+    .inv-party .name {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+    }
+    .inv-party .detail {
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      margin-top: 2px;
+      line-height: 1.5;
+    }
+    .inv-line-items {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: var(--space-xl);
+    }
+    .inv-line-items th {
+      text-align: left;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-tertiary);
+      font-weight: 500;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .inv-line-items th.num { text-align: right; }
+    .inv-line-items td {
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+    }
+    .inv-line-items td.num {
+      text-align: right;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+    }
+    .inv-totals {
+      margin-left: auto;
+      max-width: 320px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.9rem;
+      margin-bottom: var(--space-xl);
+    }
+    .inv-totals .row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      color: var(--text-secondary);
+    }
+    .inv-totals .row.total {
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 10px;
+      margin-top: 6px;
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+    }
+    .inv-totals .val {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+    }
+    .inv-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .inv-status.paid {
+      background: rgba(142,230,181,0.1);
+      color: var(--status-confirmed);
+      border: 1px solid rgba(142,230,181,0.3);
+    }
+    .inv-status.pending {
+      background: rgba(233,207,146,0.1);
+      color: var(--status-pending);
+      border: 1px solid rgba(233,207,146,0.3);
+    }
+    .inv-notes {
+      margin-top: var(--space-xl);
+      padding-top: var(--space-lg);
+      border-top: 1px solid var(--border-subtle);
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+    .inv-notes .label {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-tertiary);
+      margin-bottom: 8px;
+    }
+    .inv-footer {
+      margin-top: var(--space-2xl);
+      padding-top: var(--space-lg);
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      gap: var(--space-md);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--text-tertiary);
+    }
+    @media (max-width: 640px) {
+      .inv-head, .inv-parties { grid-template-columns: 1fr; }
+      .inv-head { flex-direction: column; }
+      .inv-meta { text-align: left; }
+    }
+    @media print {
+      body { background: #fff !important; color: #1a1a1a !important; }
+      .nav, nav-root, .inv-toolbar { display: none !important; }
+      .inv-paper {
+        background: #fff !important;
+        border: none !important;
+        padding: 0 !important;
+        backdrop-filter: none !important;
+      }
+      .inv-brand, .inv-brand-sub, .inv-meta .eyebrow, .inv-meta .inv-number,
+      .inv-meta .inv-issued, .inv-party .label, .inv-party .name,
+      .inv-party .detail, .inv-line-items th, .inv-line-items td,
+      .inv-totals .row, .inv-totals .row.total, .inv-notes .label,
+      .inv-notes, .inv-footer {
+        color: #1a1a1a !important;
+      }
+      .inv-party .label, .inv-meta .eyebrow, .inv-line-items th,
+      .inv-notes .label, .inv-footer { color: #666 !important; }
+      .inv-line-items th, .inv-line-items td,
+      .inv-head, .inv-totals .row.total, .inv-notes,
+      .inv-footer { border-color: #ccc !important; }
+      .inv-status.paid { background:#e8f7ef !important;color:#1a8a4a !important;border-color:#1a8a4a !important; }
+      .inv-status.pending { background:#fff8e4 !important;color:#8a6d1a !important;border-color:#c5a44c !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+    <nav-root id="nav-root"></nav-root>
+
+    <main class="inv-wrap">
+      <div class="inv-toolbar">
+        <a href="javascript:history.back()" class="btn btn-ghost btn-sm">&larr; Back</a>
+        <button class="btn btn-secondary btn-sm" onclick="window.print()">Save as PDF</button>
+      </div>
+      <div class="inv-paper" id="inv-root">
+        <div style="color:var(--text-tertiary);text-align:center">Loading invoice…</div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/app.js"></script>
+  <script>
+    function fmtMoney(n, currency) {
+      if (n == null) return '—';
+      return (currency || 'AED') + ' ' + Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function fmtDate(iso) {
+      if (!iso) return '—';
+      return new Date(iso).toLocaleDateString('en', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    async function load() {
+      const id = new URLSearchParams(location.search).get('id');
+      if (!id) {
+        document.getElementById('inv-root').innerHTML = '<div style="text-align:center;color:var(--text-tertiary)">No invoice ID</div>';
+        return;
+      }
+
+      // Fetch the payment + the joined booking + both parties. RLS
+      // allows any party to the booking to read the payment (promoter
+      // or artist) so either side can view the invoice.
+      const { data, error } = await _sb.from('payments')
+        .select(`
+          *,
+          bookings(
+            event_name, event_date, venue, venue_name, fee, currency,
+            promoter:profiles!promoter_id(display_name, email, company, city),
+            artists(stage_name, profiles(display_name, email))
+          )
+        `)
+        .eq('id', id)
+        .single();
+
+      if (error || !data) {
+        document.getElementById('inv-root').innerHTML = '<div style="text-align:center;color:var(--text-tertiary)"><h3>Invoice not found</h3><p>It may have been deleted or you don\u2019t have access.</p></div>';
+        return;
+      }
+
+      const booking = data.bookings || {};
+      const promoter = booking.promoter || {};
+      const artistRow = booking.artists || {};
+      const artistProfile = artistRow.profiles || {};
+      const artistName = artistRow.stage_name || artistProfile.display_name || 'Artist';
+      const promoterName = promoter.company || promoter.display_name || 'Promoter';
+
+      const status = data.status === 'completed' ? 'paid' : 'pending';
+      const statusLabel = data.status === 'completed' ? 'Paid' : data.status === 'processing' ? 'Awaiting confirmation' : 'Pending';
+      const issuedAt = data.promoter_recorded_at || data.created_at;
+      const paidAt = data.paid_at || data.artist_confirmed_at;
+
+      const amount = Number(data.amount || 0);
+      // For MVP we treat the platform fee as 0 — real fee logic goes here later.
+      const subtotal = amount;
+      const platformFee = 0;
+      const total = subtotal + platformFee;
+
+      document.getElementById('inv-root').innerHTML = `
+        <div class="inv-head">
+          <div>
+            <div class="inv-brand">ROSTR<span>+</span></div>
+            <div class="inv-brand-sub">Beyond Concierge Events Co. LLC<br>rosterplus.io</div>
+          </div>
+          <div class="inv-meta">
+            <div class="eyebrow">Invoice</div>
+            <div class="inv-number">${esc(data.invoice_number || '—')}</div>
+            <div class="inv-issued">Issued ${fmtDate(issuedAt)}</div>
+            <div style="margin-top:var(--space-sm)">
+              <span class="inv-status ${status}">${esc(statusLabel)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="inv-parties">
+          <div class="inv-party">
+            <div class="label">Billed to</div>
+            <div class="name">${esc(promoterName)}</div>
+            ${promoter.display_name && promoter.company ? `<div class="detail">${esc(promoter.display_name)}</div>` : ''}
+            ${promoter.email ? `<div class="detail">${esc(promoter.email)}</div>` : ''}
+            ${promoter.city ? `<div class="detail">${esc(promoter.city)}</div>` : ''}
+          </div>
+          <div class="inv-party">
+            <div class="label">Paid to</div>
+            <div class="name">${esc(artistName)}</div>
+            ${artistProfile.display_name && artistProfile.display_name !== artistName ? `<div class="detail">${esc(artistProfile.display_name)}</div>` : ''}
+            ${artistProfile.email ? `<div class="detail">${esc(artistProfile.email)}</div>` : ''}
+          </div>
+        </div>
+
+        <table class="inv-line-items">
+          <thead>
+            <tr>
+              <th style="width:60%">Description</th>
+              <th class="num">Qty</th>
+              <th class="num">Rate</th>
+              <th class="num">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div style="font-weight:500">${esc(booking.event_name || 'Performance')}</div>
+                <div style="font-size:0.82rem;color:var(--text-tertiary);margin-top:2px">
+                  ${fmtDate(booking.event_date)}${booking.venue || booking.venue_name ? ' · ' + esc(booking.venue || booking.venue_name) : ''}
+                </div>
+                ${data.type && data.type !== 'final' ? `<div style="font-size:0.78rem;color:var(--text-tertiary);margin-top:4px;font-style:italic">(${esc(data.type)} payment)</div>` : ''}
+              </td>
+              <td class="num">1</td>
+              <td class="num">${fmtMoney(amount, data.currency)}</td>
+              <td class="num">${fmtMoney(amount, data.currency)}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="inv-totals">
+          <div class="row"><span>Subtotal</span><span class="val">${fmtMoney(subtotal, data.currency)}</span></div>
+          ${platformFee > 0 ? `<div class="row"><span>Platform fee</span><span class="val">${fmtMoney(platformFee, data.currency)}</span></div>` : ''}
+          <div class="row total"><span>Total</span><span class="val">${fmtMoney(total, data.currency)}</span></div>
+        </div>
+
+        ${data.payout_reference || data.notes ? `
+          <div class="inv-notes">
+            ${data.payout_reference ? `<div><span class="label">Reference</span><div style="font-family:var(--font-mono);margin-bottom:var(--space-sm)">${esc(data.payout_reference)}</div></div>` : ''}
+            ${data.notes ? `<div><span class="label">Notes</span><div>${esc(data.notes)}</div></div>` : ''}
+          </div>
+        ` : ''}
+
+        <div class="inv-footer">
+          <div>Generated by ROSTR+ GCC · ${fmtDate(new Date().toISOString())}</div>
+          <div>Contract + booking available via rosterplus.io</div>
+        </div>
+      `;
+      document.title = `Invoice ${data.invoice_number || ''} — ROSTR+ GCC`.trim();
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await Auth.ready();
+      if (!Auth.isLoggedIn()) { Auth.require(); return; }
+      const nav = document.getElementById('nav-root');
+      if (nav && typeof renderNav === 'function') nav.innerHTML = renderNav('');
+      if (typeof hydrateIcons === 'function') hydrateIcons();
+      await load();
+    });
+  </script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
+</body>
+</html>
