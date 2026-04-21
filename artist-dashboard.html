@@ -258,7 +258,11 @@
       el.innerHTML = msgs.slice(0, 5).map(msg => {
         const name = esc(msg.other_user_name || msg.sender?.display_name || 'Unknown');
         const preview = esc((msg.content || msg.last_message || '').substring(0, 60));
-        return `<div class="card card--interactive" onclick="window.location.href='messages.html'"><div class="card-inner" style="display:flex;align-items:center;gap:var(--space-md)">${UI.avatar(name, 36)}<div style="flex:1;min-width:0"><strong style="font-size:0.9rem">${name}</strong><p class="text-tertiary" style="font-size:0.82rem;margin:2px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${preview}</p></div></div></div>`;
+        // Booking-scoped message? Deep-link into its thread. Else flat inbox.
+        const href = msg.booking_id
+          ? `messages.html?booking=${encodeURIComponent(msg.booking_id)}`
+          : 'messages.html';
+        return `<div class="card card--interactive" onclick="window.location.href='${href}'"><div class="card-inner" style="display:flex;align-items:center;gap:var(--space-md)">${UI.avatar(name, 36)}<div style="flex:1;min-width:0"><strong style="font-size:0.9rem">${name}</strong><p class="text-tertiary" style="font-size:0.82rem;margin:2px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${preview}</p></div></div></div>`;
       }).join('');
     }
 

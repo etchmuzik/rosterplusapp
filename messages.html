@@ -383,52 +383,141 @@
   </div>
 
   <script>
-    // ── State ──
-    let conversations = [];
-    let activeConvId = null;
+    /* Messages page — now thread-per-booking primary, flat DM fallback.
+       Every conversation is keyed by:
+         { kind: 'booking', bookingId, otherId }   -> booking-scoped
+         { kind: 'dm',      otherId }              -> legacy flat DM
+       The UI treats them uniformly; only send/load call different DB. */
+    let threads = [];              // booking-scoped threads (primary)
+    let legacyDMs = [];            // old one-on-one conversations (fallback)
+    let activeThread = null;       // { kind, bookingId?, otherId }
     let activeMessages = [];
     let realtimeUnsub = null;
 
-    // ── Render Conversations ──
+    function threadKey(t) {
+      return t.kind === 'booking' ? ('b:' + t.bookingId) : ('dm:' + t.otherId);
+    }
+    function isActive(t) {
+      return activeThread && threadKey(t) === threadKey(activeThread);
+    }
+
     function renderConvList(filter = '') {
       const list = document.getElementById('convList');
-      const filtered = conversations.filter(c =>
-        (c.name || c.other_user_name || '').toLowerCase().includes(filter.toLowerCase())
+      const f = filter.toLowerCase();
+
+      // Booking threads come first, legacy DMs (messages with no
+      // booking_id, e.g. pre-booking direct contact) come below.
+      const haystack = (s) => (s || '').toLowerCase().includes(f);
+      const filteredThreads = threads.filter(t =>
+        haystack(t.event_name) || haystack(t.other_user_name) || haystack(t.last_message)
+      );
+      const filteredDMs = legacyDMs.filter(d =>
+        haystack(d.other_user_name) || haystack(d.last_message || d.content)
       );
 
-      if (filtered.length === 0) {
-        list.innerHTML = `<div style="padding:var(--space-xl);text-align:center;color:var(--text-tertiary);font-size:0.85rem">No conversations yet</div>`;
+      if (filteredThreads.length === 0 && filteredDMs.length === 0) {
+        list.innerHTML = `<div style="padding:var(--space-xl);text-align:center;color:var(--text-tertiary);font-size:0.85rem">
+          <p style="margin-bottom:var(--space-sm)">No conversations yet.</p>
+          <a href="directory.html" class="btn btn-ghost btn-sm">Browse the roster</a>
+        </div>`;
         return;
       }
 
-      list.innerHTML = filtered.map(c => {
-        const name = c.name || c.other_user_name || 'Unknown';
-        const preview = c.last_message || c.content || '';
-        const time = c.last_message_time ? new Date(c.last_message_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : '';
-        const isActive = c.other_user_id === activeConvId;
-        return `
-          <div class="conv-item ${isActive ? 'active' : ''}" onclick="openChat('${c.other_user_id}', '${name.replace(/'/g, "\\'")}')">
-            ${UI.avatar(name, 40)}
-            <div class="conv-info">
-              <div class="conv-name">${name}</div>
-              <div class="conv-preview">${preview.substring(0, 60)}</div>
+      const timeFmt = (iso) => iso ? new Date(iso).toLocaleTimeString('en', { hour: 'numeric', minute: '2-digit', hour12: true }) : '';
+
+      let html = '';
+
+      if (filteredThreads.length > 0) {
+        html += `<div style="padding:var(--space-sm) var(--space-md) 4px;font-family:var(--font-mono);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-tertiary)">By booking</div>`;
+        html += filteredThreads.map(t => {
+          const active = isActive({ kind: 'booking', bookingId: t.booking_id, otherId: t.other_user_id }) ? 'active' : '';
+          const unread = t.unread_count > 0;
+          const status = t.booking_status || '';
+          const safeEvent = esc(t.event_name || 'Performance');
+          const safePartner = esc(t.other_user_name || '—');
+          const dateLine = t.event_date
+            ? new Date(t.event_date + 'T00:00:00').toLocaleDateString('en', { month: 'short', day: 'numeric' })
+            : '';
+          return `
+            <div class="conv-item ${active}"
+                 onclick="openBookingThread('${esc(t.booking_id)}','${esc(t.other_user_id)}','${safePartner.replace(/'/g, "\\'")}')">
+              ${UI.avatar(t.other_user_name || '?', 40)}
+              <div class="conv-info">
+                <div class="conv-name" style="display:flex;gap:6px;align-items:center">
+                  <span>${safeEvent}</span>
+                  ${status ? `<span style="font-family:var(--font-mono);font-size:0.62rem;color:var(--text-tertiary);text-transform:uppercase">${esc(status)}</span>` : ''}
+                </div>
+                <div class="conv-preview">${safePartner}${dateLine ? ' · ' + esc(dateLine) : ''} · ${esc((t.last_message || '').slice(0, 40))}</div>
+              </div>
+              <div class="conv-meta">
+                <span class="conv-time">${timeFmt(t.last_message_time)}</span>
+                ${unread ? `<span class="conv-unread" title="${t.unread_count} unread"></span>` : ''}
+              </div>
             </div>
-            <div class="conv-meta">
-              <span class="conv-time">${time}</span>
+          `;
+        }).join('');
+      }
+
+      if (filteredDMs.length > 0) {
+        html += `<div style="padding:var(--space-md) var(--space-md) 4px;font-family:var(--font-mono);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-tertiary)">Direct messages</div>`;
+        html += filteredDMs.map(c => {
+          const active = isActive({ kind: 'dm', otherId: c.other_user_id }) ? 'active' : '';
+          const name = c.other_user_name || 'Unknown';
+          const preview = (c.last_message || c.content || '').slice(0, 60);
+          return `
+            <div class="conv-item ${active}"
+                 onclick="openDMThread('${esc(c.other_user_id)}','${esc(name).replace(/'/g, "\\'")}')">
+              ${UI.avatar(name, 40)}
+              <div class="conv-info">
+                <div class="conv-name">${esc(name)}</div>
+                <div class="conv-preview">${esc(preview)}</div>
+              </div>
+              <div class="conv-meta">
+                <span class="conv-time">${timeFmt(c.last_message_time)}</span>
+                ${c.unread ? `<span class="conv-unread"></span>` : ''}
+              </div>
             </div>
-          </div>
-        `;
-      }).join('');
+          `;
+        }).join('');
+      }
+
+      list.innerHTML = html;
     }
 
-    // ── Open Chat ──
-    async function openChat(otherUserId, name) {
-      activeConvId = otherUserId;
+    // Open a booking-scoped thread. Shows the event name + partner
+    // name in the chat header, and every message we send here carries
+    // booking_id so it threads correctly for both parties.
+    async function openBookingThread(bookingId, otherUserId, partnerName) {
+      activeThread = { kind: 'booking', bookingId, otherId: otherUserId };
+      const threadMeta = threads.find(t => t.booking_id === bookingId);
+      const headerTitle = threadMeta?.event_name || 'Booking';
+      const headerSub = [partnerName, threadMeta?.event_date ? new Date(threadMeta.event_date + 'T00:00:00').toLocaleDateString('en', { month: 'short', day: 'numeric' }) : null].filter(Boolean).join(' · ');
 
+      document.getElementById('chatAvatar').innerHTML = UI.avatar(partnerName || '?', 36);
+      document.getElementById('chatName').textContent = headerTitle;
+      document.getElementById('chatStatus').innerHTML = esc(headerSub) + ` · <a href="booking-detail.html?id=${esc(bookingId)}" style="color:var(--accent-soft)">Open booking</a>`;
+      document.getElementById('messagesArea').innerHTML = `<div style="text-align:center;padding:var(--space-xl);color:var(--text-tertiary)">Loading messages...</div>`;
+      document.getElementById('chatInputBar').style.display = '';
+      document.getElementById('chatLayout').classList.add('chat-open');
+      renderConvList(document.getElementById('convSearch').value);
+
+      const result = await DB.getThreadMessages(bookingId);
+      if (result.success) {
+        activeMessages = result.data;
+        renderMessages(activeMessages);
+      } else {
+        document.getElementById('messagesArea').innerHTML = `<div style="text-align:center;padding:var(--space-xl);color:var(--status-cancelled)">Failed to load messages</div>`;
+      }
+
+      subscribeRealtime();
+      setTimeout(() => document.getElementById('msgInput').focus(), 100);
+    }
+
+    async function openDMThread(otherUserId, name) {
+      activeThread = { kind: 'dm', otherId: otherUserId };
       document.getElementById('chatAvatar').innerHTML = UI.avatar(name, 36);
       document.getElementById('chatName').textContent = name;
-      document.getElementById('chatStatusDot').className = 'status-dot offline';
-      document.getElementById('chatStatus').textContent = 'Loading...';
+      document.getElementById('chatStatus').textContent = 'Direct message';
       document.getElementById('messagesArea').innerHTML = `<div style="text-align:center;padding:var(--space-xl);color:var(--text-tertiary)">Loading messages...</div>`;
       document.getElementById('chatInputBar').style.display = '';
       document.getElementById('chatLayout').classList.add('chat-open');
@@ -438,22 +527,27 @@
       if (result.success) {
         activeMessages = result.data;
         renderMessages(activeMessages);
-        document.getElementById('chatStatus').textContent = '';
       } else {
-        document.getElementById('messagesArea').innerHTML = `<div style="text-align:center;padding:var(--space-xl);color:var(--text-tertiary)">Failed to load messages</div>`;
+        document.getElementById('messagesArea').innerHTML = `<div style="text-align:center;padding:var(--space-xl);color:var(--status-cancelled)">Failed to load messages</div>`;
       }
 
-      // Subscribe to incoming messages for this thread
+      subscribeRealtime();
+      setTimeout(() => document.getElementById('msgInput').focus(), 100);
+    }
+
+    function subscribeRealtime() {
       if (realtimeUnsub) realtimeUnsub();
       realtimeUnsub = Realtime.subscribeToMessages((msg) => {
-        if (msg.sender_id === otherUserId || msg.receiver_id === otherUserId) {
+        const relevant =
+          activeThread?.kind === 'booking'
+            ? msg.booking_id === activeThread.bookingId
+            : (msg.sender_id === activeThread?.otherId || msg.receiver_id === activeThread?.otherId);
+        if (relevant) {
           activeMessages.push(msg);
           renderMessages(activeMessages);
         }
         loadConversations();
       });
-
-      setTimeout(() => document.getElementById('msgInput').focus(), 100);
     }
 
     function renderMessages(msgs) {
@@ -479,18 +573,20 @@
       requestAnimationFrame(() => { area.scrollTop = area.scrollHeight; });
     }
 
-    // ── Send Message ──
     async function sendMessage() {
       const input = document.getElementById('msgInput');
       const text = input.value.trim();
-      if (!text || !activeConvId) return;
+      if (!text || !activeThread) return;
 
       const btn = document.getElementById('sendBtn');
       btn.disabled = true;
       input.value = '';
       input.style.height = '40px';
 
-      const result = await DB.sendMessage(activeConvId, text);
+      // Booking threads stamp booking_id so the receiver sees it in
+      // their booking-scoped view. DMs leave booking_id null.
+      const bookingId = activeThread.kind === 'booking' ? activeThread.bookingId : null;
+      const result = await DB.sendMessage(activeThread.otherId, text, bookingId);
       if (result.success) {
         activeMessages.push(result.data);
         renderMessages(activeMessages);
@@ -525,19 +621,31 @@
 
     function closeChat() {
       document.getElementById('chatLayout').classList.remove('chat-open');
-      activeConvId = null;
+      activeThread = null;
       renderConvList();
     }
 
     async function loadConversations() {
-      const result = await DB.getConversations();
-      if (result.success) {
-        conversations = result.data;
-        renderConvList(document.getElementById('convSearch').value);
-      }
+      // Load both sources in parallel. Booking threads are primary;
+      // legacy DMs are shown below as a fallback for pre-booking
+      // direct contacts.
+      const [threadsRes, dmsRes] = await Promise.all([
+        DB.getBookingThreads(),
+        DB.getConversations(),
+      ]);
+
+      threads = (threadsRes.success && threadsRes.data) ? threadsRes.data : [];
+
+      // Filter legacy DMs to exclude any partner who's already in a
+      // booking thread — avoids showing the same conversation twice.
+      const threadPartners = new Set(threads.map(t => t.other_user_id));
+      legacyDMs = (dmsRes.success && dmsRes.data)
+        ? dmsRes.data.filter(c => !threadPartners.has(c.other_user_id))
+        : [];
+
+      renderConvList(document.getElementById('convSearch').value);
     }
 
-    // ── Init ──
     document.addEventListener('DOMContentLoaded', async () => {
       await Auth.ready();
       if (!Auth.isLoggedIn()) { window.location.href = 'auth.html'; return; }
@@ -549,11 +657,60 @@
 
       await loadConversations();
 
-      // Check URL for pre-opened conversation
+      // Deep-link support.
+      //   ?booking=<uuid>          — open that booking's thread.
+      //     Needs the thread list loaded first so we can pick the
+      //     partner's id + display name from the hydrated metadata.
+      //   ?user=<uuid>&name=<...>  — legacy DM open (kept for back-compat).
       const params = new URLSearchParams(window.location.search);
+      const bookingId = params.get('booking');
       const userId = params.get('user');
       const name = params.get('name');
-      if (userId) openChat(userId, name || 'Artist');
+      if (bookingId) {
+        const t = threads.find(x => x.booking_id === bookingId);
+        if (t) {
+          openBookingThread(bookingId, t.other_user_id, t.other_user_name);
+        } else {
+          // Thread doesn't exist yet — happens when a booking was just
+          // created and no one's sent a message. Fall back to a blank
+          // thread pre-seeded with the booking so the first send works.
+          // We need to fetch booking metadata to know the partner.
+          (async () => {
+            const { data } = await _sb.from('bookings')
+              .select('id, event_name, event_date, promoter_id, artists(profile_id, stage_name, profiles(display_name))')
+              .eq('id', bookingId)
+              .single();
+            if (!data) return;
+            const myId = Auth.user.id;
+            const iAmPromoter = data.promoter_id === myId;
+            const otherId = iAmPromoter
+              ? data.artists?.profile_id
+              : data.promoter_id;
+            const otherName = iAmPromoter
+              ? (data.artists?.stage_name || data.artists?.profiles?.display_name || 'Artist')
+              : 'Promoter';
+            if (!otherId) {
+              UI.toast('This artist hasn\u2019t signed up yet — no inbox to write to.', 'info');
+              return;
+            }
+            // Seed a stub in the threads array so openBookingThread
+            // finds its metadata.
+            threads.unshift({
+              booking_id: bookingId,
+              other_user_id: otherId,
+              other_user_name: otherName,
+              event_name: data.event_name,
+              event_date: data.event_date,
+              last_message: '',
+              last_message_time: new Date().toISOString(),
+              unread_count: 0,
+            });
+            openBookingThread(bookingId, otherId, otherName);
+          })();
+        }
+      } else if (userId) {
+        openDMThread(userId, name || 'Artist');
+      }
     });
   </script>
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>

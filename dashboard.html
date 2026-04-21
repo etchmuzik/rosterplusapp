@@ -353,8 +353,13 @@
         const preview = msg.content || '';
         const time = UI.timeAgo(msg.created_at);
         const unread = !msg.read && !isMe;
+        // If this message is tied to a booking, deep-link into that
+        // thread; otherwise fall through to the flat inbox.
+        const href = msg.booking_id
+          ? `messages.html?booking=${encodeURIComponent(msg.booking_id)}`
+          : 'messages.html';
         return `
-          <div class="row" onclick="window.location.href='messages.html'">
+          <div class="row" onclick="window.location.href='${href}'">
             ${UI.avatar(name, 32)}
             <div class="bubble">
               <div class="head-line">

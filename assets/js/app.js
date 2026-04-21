@@ -1011,6 +1011,134 @@ const DB = {
     return error ? { success: false, error: error.message } : { success: true, data: data || [] };
   },
 
+  // ── Booking-scoped threads ─────────────────────────────────
+  //
+  // Messages carry an optional booking_id. When present, they thread
+  // under that specific booking so a promoter + artist can have
+  // separate conversations for every gig without context collisions.
+  // When absent (legacy / pre-booking DMs), they behave like the old
+  // flat inbox.
+  //
+  // getBookingThreads() lists every booking the caller is party to
+  // that has at least one message, ordered by most-recent activity,
+  // with an unread count per thread.
+  //
+  // getThreadMessages(bookingId) is the thread-view equivalent of
+  // getMessages(otherUserId) — same shape, but scoped to booking_id.
+
+  async getBookingThreads() {
+    if (DEMO_MODE) return { success: true, data: [] };
+    const user = Auth.user;
+    if (!user) return { success: false, error: 'Not authenticated' };
+
+    // RLS already filters messages to ones the caller sent or received.
+    // We group by booking_id client-side — cheaper than a window function
+    // and gives us the flexibility to merge in booking metadata in one pass.
+    const { data: rows, error } = await _sb
+      .from('messages')
+      .select(`
+        id, content, created_at, read, sender_id, receiver_id, booking_id,
+        sender:profiles!sender_id(display_name, avatar_url),
+        receiver:profiles!receiver_id(display_name, avatar_url)
+      `)
+      .not('booking_id', 'is', null)
+      .order('created_at', { ascending: false });
+
+    if (error) return { success: false, error: error.message };
+
+    // Fold rows into per-booking summaries.
+    const threads = new Map();
+    for (const m of (rows || [])) {
+      const id = m.booking_id;
+      if (!threads.has(id)) {
+        const otherProfile = m.sender_id === user.id ? m.receiver : m.sender;
+        threads.set(id, {
+          booking_id: id,
+          other_user_id: m.sender_id === user.id ? m.receiver_id : m.sender_id,
+          other_user_name: otherProfile?.display_name || 'Unknown',
+          other_user_avatar: otherProfile?.avatar_url || null,
+          last_message: m.content,
+          last_message_time: m.created_at,
+          last_message_was_mine: m.sender_id === user.id,
+          unread_count: 0,
+        });
+      }
+      if (!m.read && m.receiver_id === user.id) {
+        threads.get(id).unread_count += 1;
+      }
+    }
+
+    if (threads.size === 0) return { success: true, data: [] };
+
+    // Hydrate booking metadata (event name, date) so the thread list
+    // can show "Event — Artist · Date" instead of just a partner name.
+    const ids = [...threads.keys()];
+    const { data: bookings } = await _sb
+      .from('bookings')
+      .select(`
+        id, event_name, event_date, status,
+        artists(stage_name, profiles(display_name))
+      `)
+      .in('id', ids);
+
+    for (const b of (bookings || [])) {
+      const t = threads.get(b.id);
+      if (!t) continue;
+      t.event_name = b.event_name || 'Performance';
+      t.event_date = b.event_date;
+      t.booking_status = b.status;
+      t.artist_name = b.artists?.stage_name || b.artists?.profiles?.display_name || null;
+    }
+
+    return {
+      success: true,
+      data: [...threads.values()].sort(
+        (a, b) => new Date(b.last_message_time) - new Date(a.last_message_time)
+      ),
+    };
+  },
+
+  async getThreadMessages(bookingId) {
+    if (DEMO_MODE) return { success: true, data: [] };
+    const user = Auth.user;
+    if (!user) return { success: false, error: 'Not authenticated' };
+    if (!bookingId) return { success: false, error: 'bookingId required' };
+
+    const { data, error } = await _sb
+      .from('messages')
+      .select(`
+        id, content, created_at, read, sender_id, receiver_id,
+        sender:profiles!sender_id(display_name, avatar_url)
+      `)
+      .eq('booking_id', bookingId)
+      .order('created_at', { ascending: true });
+
+    if (error) return { success: false, error: error.message };
+
+    // Mark anything in this thread addressed to me as read.
+    await _sb
+      .from('messages')
+      .update({ read: true })
+      .eq('booking_id', bookingId)
+      .eq('receiver_id', user.id)
+      .eq('read', false);
+
+    return { success: true, data: data || [] };
+  },
+
+  // Total unread across every booking thread. Used by nav badges.
+  async getUnreadCount() {
+    if (DEMO_MODE) return 0;
+    const user = Auth.user;
+    if (!user) return 0;
+    const { count, error } = await _sb
+      .from('messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('receiver_id', user.id)
+      .eq('read', false);
+    return error ? 0 : (count || 0);
+  },
+
   async sendMessage(receiverId, content, bookingId = null) {
     if (DEMO_MODE) return { success: true, data: { id: 'demo-' + Date.now(), sender_id: 'demo-1', receiver_id: receiverId, content, created_at: new Date().toISOString() } };
 
