@@ -102,6 +102,48 @@
       text-align: center;
       color: var(--text-tertiary);
     }
+
+    /* Status tag wrapping — sit nicely beside the h1 on any breakpoint. */
+    .bd-head > span.tag { flex-shrink: 0; }
+
+    /* ── Print (Save as PDF) ─────────────────────────────────
+       Same pattern as contract.html / invoice.html — swap to a
+       clean black-on-white layout, hide nav + toolbar, flatten
+       backdrop-filter cards to plain bordered boxes. */
+    @media print {
+      body { background: #fff !important; color: #1a1a1a !important; }
+      .nav, nav-root, #nav-root, .bd-toolbar, .modal-overlay,
+      .btn, .bd-actions { display: none !important; }
+      .bd-wrap { max-width: 100%; padding: 0; }
+      .bd-grid { grid-template-columns: 1.4fr 1fr !important; gap: 24px !important; }
+      .bd-card {
+        background: #fff !important;
+        border: 1px solid #ccc !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        padding: 20px !important;
+        page-break-inside: avoid;
+      }
+      .bd-card h3 { color: #000 !important; }
+      .bd-head h1, .bd-fact .val, .bd-card h3,
+      .bd-timeline-item .what { color: #000 !important; }
+      .bd-fact .label, .bd-eyebrow, .bd-timeline-item .when { color: #555 !important; }
+      .bd-notes { background: #f7f7f7 !important; border-color: #ccc !important; color: #222 !important; }
+      .bd-timeline::before, .bd-timeline-item::before { background: #999 !important; }
+      .bd-timeline-item.current::before {
+        background: #000 !important;
+        box-shadow: 0 0 0 3px rgba(0,0,0,0.15) !important;
+      }
+      /* Status pill — reset accent bg/border to something printable */
+      .tag {
+        background: #eee !important;
+        color: #000 !important;
+        border: 1px solid #999 !important;
+        box-shadow: none !important;
+      }
+      /* Drop the animated reveal so print doesn't miss frames */
+      .lp-anim { animation: none !important; opacity: 1 !important; transform: none !important; }
+    }
   </style>
 </head>
 <body>
@@ -109,7 +151,10 @@
     <nav-root id="nav-root"></nav-root>
 
     <main class="bd-wrap">
-      <a href="javascript:history.back()" class="btn btn-ghost btn-sm" style="margin-bottom: var(--space-md)">&larr; Back</a>
+      <div class="bd-toolbar" style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-md);margin-bottom: var(--space-md);flex-wrap:wrap">
+        <a href="javascript:history.back()" class="btn btn-ghost btn-sm">&larr; Back</a>
+        <button class="btn btn-secondary btn-sm" onclick="window.print()">Save as PDF</button>
+      </div>
       <div id="bd-root" class="bd-empty">Loading booking…</div>
     </main>
   </div>
