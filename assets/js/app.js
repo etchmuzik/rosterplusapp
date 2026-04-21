@@ -2315,6 +2315,49 @@ const DB = {
     } catch(e) { return { success: false, error: String(e) }; }
   },
 
+  // ── Notifications ──
+  // Fetches the current user's notification feed, most recent first.
+  // Default limit of 30 keeps payload small; the nav dropdown only shows
+  // the last 20 anyway.
+  async getNotifications({ limit = 30 } = {}) {
+    if (DEMO_MODE) return { success: true, data: [] };
+    if (!Auth.user) return { success: false, data: [] };
+    try {
+      const { data, error } = await _sb
+        .from('notifications')
+        .select('*')
+        .eq('user_id', Auth.user.id)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      if (error) return { success: false, data: [], error: error.message };
+      return { success: true, data: data || [] };
+    } catch (e) { return { success: false, data: [], error: String(e) }; }
+  },
+
+  async markNotificationRead(id) {
+    if (DEMO_MODE) return { success: true };
+    if (!Auth.user) return { success: false, error: 'Not authenticated' };
+    try {
+      const { error } = await _sb.from('notifications')
+        .update({ read: true })
+        .eq('id', id)
+        .eq('user_id', Auth.user.id);
+      return error ? { success: false, error: error.message } : { success: true };
+    } catch (e) { return { success: false, error: String(e) }; }
+  },
+
+  async markAllNotificationsRead() {
+    if (DEMO_MODE) return { success: true };
+    if (!Auth.user) return { success: false, error: 'Not authenticated' };
+    try {
+      const { error } = await _sb.from('notifications')
+        .update({ read: true })
+        .eq('user_id', Auth.user.id)
+        .eq('read', false);
+      return error ? { success: false, error: error.message } : { success: true };
+    } catch (e) { return { success: false, error: String(e) }; }
+  },
+
   // ── Global search (cmd+K) ──
   // Runs three parallel partial-match queries: artists (stage_name),
   // bookings (event_name/venue), contracts (via joined booking). All
@@ -2602,25 +2645,85 @@ const Emails = {
   paymentRecorded: (to, d) => Emails.send(to, 'payment_recorded', d),
 };
 
-// ── In-App Notifications ──
-const _notifications = [];
+// ══════════════════════════════════════════════════════════
+// In-App Notification feed
+// ══════════════════════════════════════════════════════════
+// Backed by the public.notifications table. Rows written by DB triggers
+// on bookings/contracts/payments/messages so every lifecycle event
+// surfaces in the bell, regardless of which surface initiated the
+// change.
+//
+// On page load: fetch the last 30 notifications, paint the dropdown,
+// show the red dot if any are unread. Then subscribe to Realtime INSERTs
+// on notifications where user_id = me — new rows slide into the list
+// without a refresh, and the bell badge lights up immediately.
+// ──────────────────────────────────────────────────────────
+
+let _notifications = [];
+let _notifUnsub = null;
+
+// Icon per notification type — drives the small badge inside each row.
+const NOTIF_ICON = {
+  booking_request:   'calendar',
+  booking_accepted:  'check',
+  booking_rejected:  'x',
+  booking_cancelled: 'x',
+  contract_sent:     'fileText',
+  contract_signed:   'check',
+  payment_recorded:  'dollar',
+  payment_confirmed: 'check',
+  message:           'inbox',
+};
 
 function toggleNotifications() {
   const dd = document.getElementById('notif-dropdown');
-  if (dd) dd.classList.toggle('hidden');
+  if (!dd) return;
+  const willOpen = dd.classList.contains('hidden');
+  dd.classList.toggle('hidden');
   // Close user menu if open
   const um = document.getElementById('user-menu');
   if (um) um.classList.add('hidden');
+  // Refresh from DB when opening — cheap and keeps us aligned with any
+  // reads that happened in other tabs.
+  if (willOpen) loadNotifications();
 }
 
-function addNotification(text, type = 'info') {
-  _notifications.unshift({ text, type, time: new Date(), read: false });
+async function loadNotifications() {
+  const res = await DB.getNotifications({ limit: 30 });
+  _notifications = res.success ? (res.data || []) : [];
   renderNotifications();
 }
 
-function markAllRead() {
-  _notifications.forEach(n => n.read = true);
-  renderNotifications();
+async function markAllRead() {
+  const res = await DB.markAllNotificationsRead();
+  if (res.success) {
+    _notifications.forEach(n => n.read = true);
+    renderNotifications();
+  }
+}
+window.markAllRead = markAllRead;
+
+async function openNotification(id) {
+  const n = _notifications.find(x => x.id === id);
+  if (!n) return;
+  if (!n.read) {
+    n.read = true;
+    DB.markNotificationRead(id).catch(() => {});
+  }
+  if (n.href) { location.href = n.href; }
+  else { renderNotifications(); }
+}
+window.openNotification = openNotification;
+
+function _relTime(iso) {
+  if (!iso) return '';
+  const then = new Date(iso).getTime();
+  const diff = Math.floor((Date.now() - then) / 1000);
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
+  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
 function renderNotifications() {
@@ -2632,33 +2735,63 @@ function renderNotifications() {
   if (badge) badge.style.display = unread > 0 ? '' : 'none';
 
   if (_notifications.length === 0) {
-    list.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-tertiary);font-size:0.82rem">No notifications yet</div>';
+    list.innerHTML = '<div style="padding:20px 16px;text-align:center;color:var(--text-tertiary);font-size:0.82rem">No notifications yet</div>';
     return;
   }
 
   list.innerHTML = _notifications.slice(0, 20).map(n => {
-    const time = n.time ? new Date(n.time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
-    return `<div style="padding:10px 12px;border-bottom:1px solid var(--border-subtle);font-size:0.85rem;${n.read ? 'opacity:0.6' : ''}">
-      <div>${esc(n.text)}</div>
-      <div style="font-size:0.72rem;color:var(--text-tertiary);margin-top:2px">${time}</div>
-    </div>`;
+    const iconName = NOTIF_ICON[n.type] || 'inbox';
+    const title = String(n.title || '').replace(/[<>&]/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;' }[c]));
+    const body  = n.body ? String(n.body).replace(/[<>&]/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;' }[c])) : '';
+    const rel   = _relTime(n.created_at);
+    const clickable = n.href ? `onclick="openNotification('${n.id}')"` : '';
+    const unreadDot = !n.read
+      ? '<span style="position:absolute;top:12px;right:12px;width:6px;height:6px;border-radius:50%;background:var(--accent)"></span>'
+      : '';
+    return `
+      <div ${clickable} style="position:relative;padding:10px 14px;border-bottom:1px solid var(--border-subtle);display:flex;gap:10px;align-items:flex-start;${n.href ? 'cursor:pointer' : ''};${n.read ? 'opacity:0.7' : ''};transition:background 80ms ease"
+           onmouseover="this.style.background='var(--bg-card)'" onmouseout="this.style.background=''">
+        <div style="width:28px;height:28px;border-radius:8px;background:var(--bg-card);border:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:center;color:var(--text-tertiary);flex-shrink:0;margin-top:2px">${UI.icon(iconName, 14)}</div>
+        <div style="flex:1;min-width:0;padding-right:12px">
+          <div style="font-size:0.86rem;font-weight:${n.read ? '400' : '600'};color:var(--text-primary);line-height:1.3">${title}</div>
+          ${body ? `<div style="font-size:0.76rem;color:var(--text-tertiary);margin-top:2px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${body}</div>` : ''}
+          <div style="font-size:0.68rem;color:var(--text-tertiary);margin-top:4px;font-family:var(--font-mono)">${rel}</div>
+        </div>
+        ${unreadDot}
+      </div>
+    `;
   }).join('');
 }
 
-// Hook into Realtime to push in-app notifications
+// Subscribe to Realtime INSERTs on notifications for this user. New rows
+// get prepended to the local list and the bell badge lights up. Idempotent
+// — previous channel torn down on re-entry so we don't stack subscriptions.
 function setupRealtimeNotifications() {
-  if (!Auth.isLoggedIn()) return;
+  if (!Auth.isLoggedIn() || !_sb) return;
+  if (_notifUnsub) { _notifUnsub(); _notifUnsub = null; }
 
-  Realtime.subscribeToMessages((msg) => {
-    addNotification('New message received', 'message');
-    UI.toast('New message', 'info');
-  });
+  // Initial paint from DB
+  loadNotifications();
 
-  if (Auth.role === 'promoter') {
-    Realtime.subscribeToBookings((updated) => {
-      addNotification('Booking updated: ' + (updated.status || ''), 'booking');
-    });
-  }
+  const userId = Auth.user.id;
+  const channel = _sb
+    .channel(`notifications:${userId}`)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'notifications',
+      filter: `user_id=eq.${userId}`,
+    }, (payload) => {
+      const n = payload.new;
+      if (!n) return;
+      _notifications = [n, ..._notifications].slice(0, 30);
+      renderNotifications();
+      // Subtle toast for immediacy — full details live in the dropdown.
+      if (UI && UI.toast) UI.toast(n.title || 'New notification', 'info');
+    })
+    .subscribe();
+
+  _notifUnsub = () => { channel.unsubscribe(); };
 }
 
 // ── Hydrate static icon placeholders ──
