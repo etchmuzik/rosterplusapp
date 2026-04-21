@@ -420,13 +420,13 @@ function renderNav(activePage = '') {
     <li><a href="/analytics.html" class="${ac('analytics')}">${UI.icon('barChart', 16)} Analytics</a></li>
     <li><a href="/contracts.html" class="${ac('contracts')}">${UI.icon('fileText', 16)} Contracts</a></li>
     <li><a href="/payments.html" class="${ac('payments')}">${UI.icon('dollar', 16)} Payments</a></li>
-    <li><a href="/messages.html" class="${ac('messages')}">${UI.icon('inbox', 16)} Messages</a></li>`;
+    <li><a href="/messages.html" class="${ac('messages')}" style="position:relative">${UI.icon('inbox', 16)} Messages<span class="nav-unread-dot" data-nav-unread style="display:none;position:absolute;top:8px;right:-2px;min-width:8px;height:8px;border-radius:999px;background:var(--accent);box-shadow:0 0 0 2px var(--bg-base)"></span></a></li>`;
 
   const artistLinks = `
     <li><a href="/artist-dashboard.html" class="${ac('artist-dashboard')}">${UI.icon('home', 16)} Dashboard</a></li>
     <li><a href="/artist-profile-edit.html" class="${ac('profile-edit')}">${UI.icon('music', 16)} My Profile</a></li>
     <li><a href="/epk.html" class="${ac('epk')}">${UI.icon('fileText', 16)} My EPK</a></li>
-    <li><a href="/messages.html" class="${ac('messages')}">${UI.icon('inbox', 16)} Messages</a></li>`;
+    <li><a href="/messages.html" class="${ac('messages')}" style="position:relative">${UI.icon('inbox', 16)} Messages<span class="nav-unread-dot" data-nav-unread style="display:none;position:absolute;top:8px;right:-2px;min-width:8px;height:8px;border-radius:999px;background:var(--accent);box-shadow:0 0 0 2px var(--bg-base)"></span></a></li>`;
 
   return `
     <nav class="nav">
@@ -466,7 +466,61 @@ function renderNav(activePage = '') {
       </div>
     </nav>
   `;
+  // Schedule unread-badge wiring after the caller mounts innerHTML. The caller
+  // pattern is `el.innerHTML = renderNav(page)` — by the time this setTimeout
+  // fires, the DOM nodes exist and refreshUnreadBadge() can find them.
+  setTimeout(() => { try { _wireUnreadBadge(); } catch (_) {} }, 0);
 }
+
+// ── Unread-badge helper ──
+// Polls DB.getUnreadCount() and toggles the dot beside the Messages nav link.
+// Called automatically after renderNav() mounts the nav, and again whenever
+// a Realtime INSERT fires on messages for the current user.
+async function refreshUnreadBadge() {
+  try {
+    const dots = document.querySelectorAll('[data-nav-unread]');
+    if (!dots.length) return;
+    if (!Auth.isLoggedIn() || !DB || typeof DB.getUnreadCount !== 'function') {
+      dots.forEach(d => { d.style.display = 'none'; });
+      return;
+    }
+    const count = await DB.getUnreadCount();
+    dots.forEach(d => {
+      if (count > 0) {
+        d.style.display = '';
+        d.title = `${count} unread message${count === 1 ? '' : 's'}`;
+      } else {
+        d.style.display = 'none';
+        d.removeAttribute('title');
+      }
+    });
+  } catch (_) { /* best-effort — never break a page over a badge */ }
+}
+
+// Fire once the nav has had a chance to mount, and wire Realtime so incoming
+// messages refresh the dot without a full page reload. Idempotent — guarded
+// so multiple page scripts calling renderNav() don't stack subscriptions.
+let _unreadBadgeWired = false;
+function _wireUnreadBadge() {
+  // Initial paint
+  setTimeout(refreshUnreadBadge, 0);
+
+  if (_unreadBadgeWired) return;
+  _unreadBadgeWired = true;
+
+  // Refresh when a new message arrives for me
+  try {
+    if (typeof Realtime !== 'undefined' && Realtime.subscribeToMessages) {
+      Realtime.subscribeToMessages(() => { refreshUnreadBadge(); });
+    }
+  } catch (_) { /* no-op */ }
+
+  // Refresh when focus returns to the tab (cheap correctness for mark-read
+  // flows that happened in another tab / on messages.html).
+  window.addEventListener('focus', () => { refreshUnreadBadge(); });
+}
+
+window.refreshUnreadBadge = refreshUnreadBadge;
 
 // ── Password Reset ──
 // Calls our custom send-password-reset edge function rather than
