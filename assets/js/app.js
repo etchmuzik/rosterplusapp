@@ -2077,90 +2077,156 @@ if (document.readyState === 'loading') {
   _rostrInit();
 }
 
-// ── PWA Install Prompt ──
+// ══════════════════════════════════════════════════════════
+// PWA Install Prompt
+// ══════════════════════════════════════════════════════════
+// Shows a tasteful banner on mobile nudging users to install the app.
+//
+// Two code paths:
+//   1. Android/Chromium: listens for `beforeinstallprompt`, stashes the event,
+//      and reveals an "Install" button that fires the native prompt.
+//   2. iOS Safari: no native prompt exists, so we show an instructional
+//      banner ("Tap Share → Add to Home Screen").
+//
+// Gating rules (all must be true to show):
+//   - Not already running in standalone/PWA mode
+//   - Mobile viewport (<= 768px) — PWA on desktop is rare; skip the noise
+//   - At least one successful page visit prior (don't pounce on first landing)
+//   - Not dismissed within the last 14 days
+//   - Not on auth/landing pages (we want them logged in first)
+// ──────────────────────────────────────────────────────────
+
+const PWA_INSTALL_DISMISS_KEY = 'rostr_install_dismissed_at';
+const PWA_INSTALL_VISIT_KEY = 'rostr_visit_count';
+const PWA_INSTALL_DISMISS_DAYS = 14;
+const PWA_INSTALL_MIN_VISITS = 2;
+const PWA_INSTALL_SKIP_PAGES = ['/', '/index.html', '/auth.html', '/terms.html', '/privacy.html', '/claim-profile.html'];
+
 let _deferredInstallPrompt = null;
+
+// Track visit count — used to avoid prompting on the very first pageview.
+try {
+  const n = parseInt(localStorage.getItem(PWA_INSTALL_VISIT_KEY) || '0', 10);
+  localStorage.setItem(PWA_INSTALL_VISIT_KEY, String(n + 1));
+} catch (_) { /* private mode / no storage */ }
 
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   _deferredInstallPrompt = e;
-  showInstallBanner();
+  maybeShowInstallBanner({ ios: false });
 });
 
-function showInstallBanner() {
-  // Don't show if already installed or dismissed recently
-  if (window.matchMedia('(display-mode: standalone)').matches) return;
-  if (localStorage.getItem('rostr_install_dismissed') === 'true') return;
+// Dismissal is a sliding window: "not recently dismissed" means it's been
+// longer than PWA_INSTALL_DISMISS_DAYS since the last "no thanks" tap.
+function _installDismissedRecently() {
+  try {
+    const raw = localStorage.getItem(PWA_INSTALL_DISMISS_KEY);
+    if (!raw) return false;
+    const when = parseInt(raw, 10);
+    if (!Number.isFinite(when)) return false;
+    const days = (Date.now() - when) / (1000 * 60 * 60 * 24);
+    return days < PWA_INSTALL_DISMISS_DAYS;
+  } catch (_) { return false; }
+}
+
+function _canShowInstallBanner() {
+  // Already installed — bail
+  if (window.matchMedia('(display-mode: standalone)').matches) return false;
+  if (window.navigator.standalone === true) return false;
+  // Desktop — bail (PWA on desktop is niche; keep the banner mobile-only)
+  if (window.innerWidth > 768) return false;
+  // Pages where an install prompt is premature
+  const path = location.pathname.replace(/\/+$/, '') || '/';
+  if (PWA_INSTALL_SKIP_PAGES.includes(path) || PWA_INSTALL_SKIP_PAGES.includes(path + '.html')) return false;
+  // Minimum visit count — don't ambush a first-time visitor
+  try {
+    const n = parseInt(localStorage.getItem(PWA_INSTALL_VISIT_KEY) || '0', 10);
+    if (n < PWA_INSTALL_MIN_VISITS) return false;
+  } catch (_) { /* fall through */ }
+  // Recently dismissed
+  if (_installDismissedRecently()) return false;
+  // Banner already on screen
+  if (document.getElementById('install-banner')) return false;
+  return true;
+}
+
+function maybeShowInstallBanner({ ios }) {
+  if (!_canShowInstallBanner()) return;
+
+  const iosHint = ios
+    ? `Tap <strong style="color:var(--accent)">Share</strong>, then <strong style="color:var(--accent)">Add to Home Screen</strong>`
+    : `Add to home screen for the best experience`;
+  const cta = ios
+    ? ''
+    : `<button onclick="triggerInstall()" style="background:var(--accent);color:#0a0a0f;border:none;padding:10px 18px;border-radius:8px;font-weight:600;font-size:0.85rem;cursor:pointer;white-space:nowrap">Install</button>`;
+
+  // Ensure the slideUp keyframes are only injected once per page
+  if (!document.getElementById('install-banner-styles')) {
+    const style = document.createElement('style');
+    style.id = 'install-banner-styles';
+    style.textContent = '@keyframes rostrSlideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}';
+    document.head.appendChild(style);
+  }
 
   const banner = document.createElement('div');
   banner.id = 'install-banner';
+  banner.style.cssText = 'position:fixed;bottom:env(safe-area-inset-bottom,0);left:0;right:0;z-index:9999;padding:14px 16px;background:linear-gradient(135deg,#141418,#0a0a0f);border-top:1px solid var(--accent-dim-20);display:flex;align-items:center;gap:14px;animation:rostrSlideUp .4s ease-out;box-shadow:0 -8px 24px rgba(0,0,0,0.4)';
   banner.innerHTML = `
-    <div style="position:fixed;bottom:0;left:0;right:0;z-index:9999;padding:16px;background:linear-gradient(135deg,#1a1a22,#0a0a0f);border-top:1px solid rgba(201,168,76,0.3);display:flex;align-items:center;gap:16px;animation:slideUp .4s ease-out">
-      <div style="width:48px;height:48px;border-radius:12px;background:rgba(201,168,76,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      </div>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:0.95rem;color:#fff;margin-bottom:2px">Install ROSTR+</div>
-        <div style="font-size:0.78rem;color:rgba(255,255,255,0.5)">Add to home screen for the best experience</div>
-      </div>
-      <button onclick="triggerInstall()" style="background:#c9a84c;color:#000;border:none;padding:10px 20px;border-radius:8px;font-weight:600;font-size:0.85rem;cursor:pointer;white-space:nowrap">Install</button>
-      <button onclick="dismissInstall()" style="background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;padding:8px;font-size:1.2rem">&times;</button>
+    <div style="width:44px;height:44px;border-radius:12px;background:var(--accent-dim-10);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
     </div>
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:600;font-size:0.92rem;color:#fff;margin-bottom:2px">Install ROSTR+</div>
+      <div style="font-size:0.76rem;color:rgba(255,255,255,0.55);line-height:1.4">${iosHint}</div>
+    </div>
+    ${cta}
+    <button onclick="dismissInstall()" aria-label="Dismiss install prompt" style="background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;padding:6px 4px;font-size:1.4rem;line-height:1">&times;</button>
   `;
-
-  // Add slide up animation
-  const style = document.createElement('style');
-  style.textContent = '@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}';
-  document.head.appendChild(style);
-
   document.body.appendChild(banner);
 }
 
 function triggerInstall() {
-  if (_deferredInstallPrompt) {
-    _deferredInstallPrompt.prompt();
-    _deferredInstallPrompt.userChoice.then((choice) => {
-      if (choice.outcome === 'accepted') {
-        UI.toast('App installed!', 'success');
-      }
-      _deferredInstallPrompt = null;
-      dismissInstall();
-    });
-  }
+  if (!_deferredInstallPrompt) { dismissInstall(); return; }
+  _deferredInstallPrompt.prompt();
+  _deferredInstallPrompt.userChoice.then((choice) => {
+    if (choice && choice.outcome === 'accepted') {
+      try { UI.toast('App installed!', 'success'); } catch (_) {}
+      // Clear dismissal so if user uninstalls and comes back later, prompt can show again
+      try { localStorage.removeItem(PWA_INSTALL_DISMISS_KEY); } catch (_) {}
+    } else {
+      // User cancelled at the native prompt — treat as dismissal
+      try { localStorage.setItem(PWA_INSTALL_DISMISS_KEY, String(Date.now())); } catch (_) {}
+    }
+    _deferredInstallPrompt = null;
+    const banner = document.getElementById('install-banner');
+    if (banner) banner.remove();
+  }).catch(() => { dismissInstall(); });
 }
 
 function dismissInstall() {
   const banner = document.getElementById('install-banner');
   if (banner) banner.remove();
-  localStorage.setItem('rostr_install_dismissed', 'true');
+  try { localStorage.setItem(PWA_INSTALL_DISMISS_KEY, String(Date.now())); } catch (_) {}
 }
+window.triggerInstall = triggerInstall;
+window.dismissInstall = dismissInstall;
 
-// iOS Safari install prompt (no beforeinstallprompt event)
-function showIOSInstallHint() {
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-  const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+// If the user accepts the prompt natively via the browser's omnibox (no banner
+// interaction), the `appinstalled` event fires. Clear any dismissal record and
+// hide the banner if we happened to have it up.
+window.addEventListener('appinstalled', () => {
+  try { localStorage.removeItem(PWA_INSTALL_DISMISS_KEY); } catch (_) {}
+  const banner = document.getElementById('install-banner');
+  if (banner) banner.remove();
+});
 
-  if (isIOS && isSafari && !isStandalone && !localStorage.getItem('rostr_install_dismissed')) {
-    const banner = document.createElement('div');
-    banner.id = 'install-banner';
-    banner.innerHTML = `
-      <div style="position:fixed;bottom:0;left:0;right:0;z-index:9999;padding:16px;background:linear-gradient(135deg,#1a1a22,#0a0a0f);border-top:1px solid rgba(201,168,76,0.3);display:flex;align-items:center;gap:12px;animation:slideUp .4s ease-out">
-        <div style="width:48px;height:48px;border-radius:12px;background:rgba(201,168,76,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16,6 12,2 8,6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-        </div>
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:600;font-size:0.95rem;color:#fff;margin-bottom:2px">Install ROSTR+</div>
-          <div style="font-size:0.78rem;color:rgba(255,255,255,0.5)">Tap <strong style="color:#c9a84c">Share</strong> then <strong style="color:#c9a84c">Add to Home Screen</strong></div>
-        </div>
-        <button onclick="dismissInstall()" style="background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;padding:8px;font-size:1.2rem">&times;</button>
-      </div>
-    `;
-    const style = document.createElement('style');
-    style.textContent = '@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}';
-    document.head.appendChild(style);
-    document.body.appendChild(banner);
-  }
+// iOS Safari path — no `beforeinstallprompt` event exists, so poll once on load.
+// Delay slightly so the banner doesn't race with page render / toast setup.
+function _maybeShowIOSInstallHint() {
+  const ua = navigator.userAgent || '';
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|Chrome/.test(ua);
+  if (!isIOS || !isSafari) return;
+  maybeShowInstallBanner({ ios: true });
 }
-
-// Show iOS hint after a short delay
-setTimeout(showIOSInstallHint, 3000);
+setTimeout(_maybeShowIOSInstallHint, 2500);

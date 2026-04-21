@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rostr-v2-golive';
+const CACHE_NAME = 'rostr-v3-pwa-prompt';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
