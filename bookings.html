@@ -197,6 +197,39 @@
       flex-shrink: 0;
     }
 
+    /* ── Row kebab menu ── */
+    .row-kebab-wrap { position: relative; }
+    .row-kebab-btn {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: transparent; border: 1px solid var(--border-subtle);
+      color: var(--text-tertiary); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all var(--duration-fast) var(--ease-out);
+    }
+    .row-kebab-btn:hover { background: var(--bg-card); color: var(--text-primary); border-color: var(--border-medium); }
+    .row-kebab-menu {
+      position: absolute; top: calc(100% + 6px); right: 0;
+      min-width: 180px; padding: 6px;
+      background: var(--bg-raised); border: 1px solid var(--border-medium);
+      border-radius: var(--radius-md); box-shadow: var(--shadow-lg);
+      z-index: 50; display: none;
+      animation: kebabIn 120ms ease-out;
+    }
+    .row-kebab-menu.open { display: block; }
+    @keyframes kebabIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+    .row-kebab-item {
+      display: flex; align-items: center; gap: 10px;
+      width: 100%; padding: 8px 12px;
+      background: none; border: none; text-align: left;
+      font-size: 0.85rem; color: var(--text-secondary);
+      border-radius: var(--radius-sm);
+      cursor: pointer; text-decoration: none;
+    }
+    .row-kebab-item:hover { background: var(--bg-card); color: var(--text-primary); }
+    .row-kebab-item--danger { color: var(--status-cancelled); }
+    .row-kebab-item--danger:hover { background: rgba(248, 113, 113, 0.08); color: var(--status-cancelled); }
+    .row-kebab-sep { height: 1px; background: var(--border-subtle); margin: 4px 2px; }
+
     /* ── Status indicator line ── */
     .booking-card[data-status="confirmed"] { border-left: 3px solid var(--status-confirmed); }
     .booking-card[data-status="pending"] { border-left: 3px solid var(--status-pending); }
@@ -443,6 +476,89 @@
       UI.downloadCSV(`rostr-${label}-${today}.csv`, mapped);
     }
 
+    // Build the kebab menu for a booking row. Returns self-contained HTML:
+    // a button and the menu itself. Open/close is managed by toggleKebab().
+    // Items vary with status + hidden state; never includes Open (it's the
+    // primary action rendered beside the kebab).
+    function rowKebab(b) {
+      const items = [];
+      if (b.status === 'draft') {
+        items.push(`<a class="row-kebab-item" href="booking.html?artist=${b.artist_id}">${UI.icon('fileText', 14)} Edit draft</a>`);
+      }
+      items.push(`<a class="row-kebab-item" href="messages.html?booking=${b.id}">${UI.icon('inbox', 14)} Open messages</a>`);
+      if (['confirmed', 'contracted'].includes(b.status)) {
+        items.push(`<a class="row-kebab-item" href="contracts.html">${UI.icon('fileText', 14)} Go to contracts</a>`);
+      }
+      items.push(`<button class="row-kebab-item" onclick="copyBookingLink('${b.id}')">${UI.icon('copy', 14)} Copy booking link</button>`);
+      items.push(`<button class="row-kebab-item" onclick="exportSingleBooking('${b.id}')">${UI.icon('download', 14)} Export this booking (CSV)</button>`);
+      items.push(`<div class="row-kebab-sep"></div>`);
+      if (b.hidden) {
+        items.push(`<button class="row-kebab-item" onclick="toggleHideBooking('${b.id}', false); closeAllKebabs();">${UI.icon('eye', 14)} Unhide</button>`);
+      } else {
+        items.push(`<button class="row-kebab-item" onclick="toggleHideBooking('${b.id}', true); closeAllKebabs();">${UI.icon('eyeOff', 14)} Hide from my list</button>`);
+      }
+      if (['inquiry', 'pending', 'draft', 'confirmed'].includes(b.status)) {
+        items.push(`<button class="row-kebab-item row-kebab-item--danger" onclick="cancelBooking('${b.id}'); closeAllKebabs();">${UI.icon('trash', 14)} Cancel booking</button>`);
+      }
+      return `
+        <div class="row-kebab-wrap">
+          <button class="row-kebab-btn" aria-label="Row actions" onclick="toggleKebab(event, '${b.id}')">${UI.icon('moreVertical', 18)}</button>
+          <div class="row-kebab-menu" id="kebab-${b.id}" role="menu">${items.join('')}</div>
+        </div>
+      `;
+    }
+
+    function toggleKebab(ev, id) {
+      ev.stopPropagation();
+      const menu = document.getElementById(`kebab-${id}`);
+      if (!menu) return;
+      const wasOpen = menu.classList.contains('open');
+      closeAllKebabs();
+      if (!wasOpen) menu.classList.add('open');
+    }
+
+    function closeAllKebabs() {
+      document.querySelectorAll('.row-kebab-menu.open').forEach(m => m.classList.remove('open'));
+    }
+
+    // Close on outside-click + Escape — registered once at module load
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.row-kebab-wrap')) closeAllKebabs();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeAllKebabs();
+    });
+
+    // Handlers for menu items that aren't already globally defined
+    async function copyBookingLink(id) {
+      const url = `${location.origin}/booking-detail.html?id=${id}`;
+      try {
+        await navigator.clipboard.writeText(url);
+        UI.toast('Link copied', 'success');
+      } catch (_) {
+        UI.toast('Copy failed \u2014 long-press to copy the URL', 'error');
+      }
+    }
+
+    function exportSingleBooking(id) {
+      const b = allBookings.find(x => x.id === id);
+      if (!b) { UI.toast('Booking not found', 'error'); return; }
+      UI.downloadCSV(`rostr-booking-${id.slice(0, 8)}.csv`, [{
+        booking_id:  b.id,
+        date:        b.date || '',
+        time:        b.time || '',
+        artist:      b.artist_name || '',
+        genre:       b.genre || '',
+        venue:       b.venue || '',
+        city:        b.city || '',
+        status:      b.status || '',
+        fee:         b.amount != null ? b.amount : '',
+        currency:    b.currency || '',
+        contract:    b.contract || '',
+        created_at:  b.created || '',
+      }]);
+    }
+
     // ── Render bookings ──
     function renderBookings(bookings) {
       const list = document.getElementById('bookingsList');
@@ -505,13 +621,8 @@
             </div>
 
             <div class="booking-actions">
-              <a href="booking-detail.html?id=${b.id}" class="btn btn-ghost btn-sm">Open</a>
-              ${b.status === 'draft' ? `<a href="booking.html?artist=${b.artist_id}" class="btn btn-secondary btn-sm">Edit</a>` : ''}
-              ${b.status === 'pending' ? `<button class="btn btn-secondary btn-sm" onclick="cancelBooking('${b.id}')">Cancel</button>` : ''}
-              ${b.status === 'confirmed' ? `<a href="messages.html" class="btn btn-secondary btn-sm">Message</a>` : ''}
-              ${b.hidden
-                ? `<button class="btn btn-secondary btn-sm" onclick="toggleHideBooking('${b.id}', false)">Unhide</button>`
-                : `<button class="btn btn-ghost btn-sm" title="Hide from your list" onclick="toggleHideBooking('${b.id}', true)" style="color:var(--text-tertiary)">Hide</button>`}
+              <a href="booking-detail.html?id=${b.id}" class="btn btn-primary btn-sm">Open</a>
+              ${rowKebab(b)}
             </div>
           </div>
         </div>
