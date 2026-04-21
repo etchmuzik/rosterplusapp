@@ -343,17 +343,10 @@
         const b = _bookings.find(x => x.id === _actionBookingId);
         if (b) b.status = _actionType === 'accept' ? 'confirmed' : 'cancelled';
 
-        // Send email notification
-        if (b?.promoter_email) {
-          const emailType = _actionType === 'accept' ? 'booking_accepted' : 'booking_rejected';
-          Emails.send(b.promoter_email, emailType, {
-            artist_name: Auth.user?.display_name || 'Artist',
-            event_name: b.event_name || b.venue_name || '',
-            event_date: b.event_date || b.date || '',
-            booking_url: window.location.origin + '/bookings.html',
-            browse_url: window.location.origin + '/directory.html',
-          });
-        }
+        // Promoter email notification is now fired server-side from
+        // DB.acceptBooking / DB.rejectBooking so every surface (here,
+        // booking-detail, future admin screens) triggers a single
+        // branded email. No longer sent inline.
 
         UI.toast(`Booking ${_actionType === 'accept' ? 'accepted' : 'declined'}`, 'success');
         closeActionModal();

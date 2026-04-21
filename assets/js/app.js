@@ -639,8 +639,48 @@ const DB = {
       const { data, error } = await _sb.from('bookings')
         .insert({ ...bookingData, promoter_id: Auth.user.id })
         .select().single();
-      return error ? { success: false, error: error.message } : { success: true, data };
+      if (error) return { success: false, error: error.message };
+
+      // Notify the artist via branded email. Fire-and-forget — booking
+      // success is not contingent on email delivery, so we don't await
+      // it or let failure bubble up. Runs only when a real artist is
+      // linked (profile_id != null); unclaimed artists have no inbox.
+      this._notifyArtistBookingRequest(data).catch(() => {});
+
+      return { success: true, data };
     } catch(e) { return { success: false, error: String(e) }; }
+  },
+
+  /**
+   * Internal: fire the branded 'booking_request' email to the artist
+   * when a promoter creates a new booking. Loads artist + promoter
+   * details, skips silently if the artist has no linked auth user yet
+   * (pre-seeded unclaimed rows have profile_id = null).
+   */
+  async _notifyArtistBookingRequest(booking) {
+    try {
+      const { data } = await _sb.from('bookings')
+        .select(`
+          event_name, event_date, venue, venue_name, fee, currency,
+          artists(profiles(email, display_name), stage_name),
+          promoter:profiles!promoter_id(display_name, company)
+        `)
+        .eq('id', booking.id)
+        .single();
+      const artistEmail = data?.artists?.profiles?.email;
+      if (!artistEmail) return;
+
+      const promoterName = data.promoter?.company || data.promoter?.display_name || 'A promoter';
+      const fee = booking.fee ? `${booking.currency || 'AED'} ${Number(booking.fee).toLocaleString()}` : 'On request';
+      await Emails.send(artistEmail, 'booking_request', {
+        promoter_name: promoterName,
+        event_name:    data.event_name || 'Performance',
+        event_date:    data.event_date ? new Date(data.event_date + 'T00:00:00').toLocaleDateString('en', { day: 'numeric', month: 'long', year: 'numeric' }) : '—',
+        venue_name:    data.venue || data.venue_name || '—',
+        fee,
+        booking_url:   window.location.origin + '/booking-detail.html?id=' + booking.id,
+      });
+    } catch (_) { /* ignore */ }
   },
 
   async updateBookingStatus(bookingId, status) {
@@ -1234,6 +1274,10 @@ const DB = {
         const { data: booking } = await _sb.from('bookings').select('promoter_id').eq('id', bookingId).single();
         if (booking?.promoter_id) await this.sendMessage(booking.promoter_id, message, bookingId);
       }
+      // Branded promoter notification (fire-and-forget). Centralised
+      // here so every acceptance from any surface — artist dashboard,
+      // booking-detail page, future admin override — triggers one.
+      this._notifyPromoterBookingAccepted(bookingId).catch(() => {});
       return { success: true };
     } catch(e) { return { success: false, error: String(e) }; }
   },
@@ -1248,8 +1292,52 @@ const DB = {
         const { data: booking } = await _sb.from('bookings').select('promoter_id').eq('id', bookingId).single();
         if (booking?.promoter_id) await this.sendMessage(booking.promoter_id, reason, bookingId);
       }
+      this._notifyPromoterBookingRejected(bookingId).catch(() => {});
       return { success: true };
     } catch(e) { return { success: false, error: String(e) }; }
+  },
+
+  async _notifyPromoterBookingAccepted(bookingId) {
+    try {
+      const { data } = await _sb.from('bookings')
+        .select(`
+          event_name, event_date, venue, venue_name, fee, currency,
+          artists(stage_name, profiles(display_name)),
+          promoter:profiles!promoter_id(email, display_name)
+        `)
+        .eq('id', bookingId)
+        .single();
+      const promoterEmail = data?.promoter?.email;
+      if (!promoterEmail) return;
+      const artistName = data?.artists?.stage_name || data?.artists?.profiles?.display_name || 'The artist';
+      await Emails.send(promoterEmail, 'booking_accepted', {
+        artist_name: artistName,
+        event_name:  data.event_name || 'your event',
+        event_date:  data.event_date ? new Date(data.event_date + 'T00:00:00').toLocaleDateString('en', { day: 'numeric', month: 'long', year: 'numeric' }) : '—',
+        venue_name:  data.venue || data.venue_name || '—',
+        fee:         data.fee ? `${data.currency || 'AED'} ${Number(data.fee).toLocaleString()}` : 'As agreed',
+        booking_url: window.location.origin + '/booking-detail.html?id=' + bookingId,
+      });
+    } catch (_) { /* ignore */ }
+  },
+
+  async _notifyPromoterBookingRejected(bookingId) {
+    try {
+      const { data } = await _sb.from('bookings')
+        .select(`
+          artists(stage_name, profiles(display_name)),
+          promoter:profiles!promoter_id(email, display_name)
+        `)
+        .eq('id', bookingId)
+        .single();
+      const promoterEmail = data?.promoter?.email;
+      if (!promoterEmail) return;
+      const artistName = data?.artists?.stage_name || data?.artists?.profiles?.display_name || 'The artist';
+      await Emails.send(promoterEmail, 'booking_rejected', {
+        artist_name: artistName,
+        browse_url:  window.location.origin + '/directory.html',
+      });
+    } catch (_) { /* ignore */ }
   },
 
   async getArtistEarnings() {
