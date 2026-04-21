@@ -298,7 +298,13 @@
           <h1>Bookings</h1>
           <p>Manage all your artist bookings in one place</p>
         </div>
-        <a href="booking.html" class="btn btn-primary" id="newBookingBtn">New Booking</a>
+        <div style="display:flex;gap:var(--space-sm);flex-wrap:wrap">
+          <button class="btn btn-secondary" id="exportCsvBtn" onclick="exportCsv()" title="Export current view as CSV">
+            <span class="js-icon" data-icon="download" data-size="14"></span>
+            Export CSV
+          </button>
+          <a href="booking.html" class="btn btn-primary" id="newBookingBtn">New Booking</a>
+        </div>
       </div>
 
       <!-- Stats summary -->
@@ -386,7 +392,9 @@
     }
 
     // ── Apply filters ──
-    function applyFilters() {
+    // Returns the currently-filtered booking set so exportCsv() can reuse
+    // the same logic without re-implementing it. Also renders.
+    function currentlyFiltered() {
       const search = document.getElementById('searchInput').value.toLowerCase();
       let filtered = allBookings;
 
@@ -402,8 +410,37 @@
           (b.genre || '').toLowerCase().includes(search)
         );
       }
+      return filtered;
+    }
 
-      renderBookings(filtered);
+    function applyFilters() {
+      renderBookings(currentlyFiltered());
+    }
+
+    // Export whatever the user has filtered down to. Respects status tab,
+    // search box, and the "show hidden" toggle. Filename includes the
+    // active filter + today's date for unambiguous archiving.
+    function exportCsv() {
+      const rows = currentlyFiltered();
+      if (rows.length === 0) { UI.toast('Nothing to export', 'info'); return; }
+      const mapped = rows.map(b => ({
+        booking_id:  b.id,
+        date:        b.date || '',
+        time:        b.time || '',
+        artist:      b.artist_name || '',
+        genre:       b.genre || '',
+        venue:       b.venue || '',
+        city:        b.city || '',
+        status:      b.status || '',
+        fee:         (b.amount != null) ? b.amount : '',
+        currency:    b.currency || '',
+        contract:    b.contract || '',
+        hidden:      b.hidden ? 'yes' : 'no',
+        created_at:  b.created || '',
+      }));
+      const today = new Date().toISOString().slice(0, 10);
+      const label = activeFilter === 'all' ? 'bookings' : `bookings-${activeFilter}`;
+      UI.downloadCSV(`rostr-${label}-${today}.csv`, mapped);
     }
 
     // ── Render bookings ──

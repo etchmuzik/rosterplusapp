@@ -627,10 +627,16 @@
         <!-- Page Header -->
         <div class="payments-header">
           <h1>Payments</h1>
-          <button class="btn btn-primary" onclick="openMakePaymentModal()">
-            <span class="js-icon" data-icon="plus" data-size="16"></span>
-            Make Payment
-          </button>
+          <div style="display:flex;gap:var(--space-sm);flex-wrap:wrap">
+            <button class="btn btn-secondary" onclick="exportPaymentsCsv()" title="Export payments as CSV">
+              <span class="js-icon" data-icon="download" data-size="14"></span>
+              Export CSV
+            </button>
+            <button class="btn btn-primary" onclick="openMakePaymentModal()">
+              <span class="js-icon" data-icon="plus" data-size="16"></span>
+              Make Payment
+            </button>
+          </div>
         </div>
 
         <!-- Stats Grid -->
@@ -784,6 +790,31 @@
     let upcomingData = [];
     let liveBookings = [];
     let _currentPaymentId = null;
+
+    // Export all payments as CSV — flat columns suited to accounting
+    // workflows (one row per payment, no nested objects). Filename
+    // includes today's date so multiple exports don't collide.
+    function exportPaymentsCsv() {
+      if (!paymentsData.length) { UI.toast('Nothing to export', 'info'); return; }
+      const mapped = paymentsData.map(p => ({
+        payment_id:     p.id,
+        created_at:     p.created_at || '',
+        paid_at:        p.paid_at || '',
+        artist:         p.bookings?.artists?.profiles?.display_name || p.bookings?.artists?.name || '',
+        event:          p.bookings?.event_name || p.bookings?.venue_name || '',
+        event_date:     p.bookings?.event_date || '',
+        amount:         p.amount != null ? p.amount : '',
+        currency:       p.currency || '',
+        status:         p.status || '',
+        method:         p.payment_method || '',
+        provider:       p.provider || '',
+        reference:      p.payout_reference || '',
+        invoice_number: p.invoice_number || '',
+        notes:          p.notes || '',
+      }));
+      const today = new Date().toISOString().slice(0, 10);
+      UI.downloadCSV(`rostr-payments-${today}.csv`, mapped);
+    }
 
     // ── Render Payment History ──
     function renderPaymentHistory() {

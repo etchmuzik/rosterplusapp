@@ -481,6 +481,45 @@ const UI = {
     catch (_) { return false; }
   },
 
+  // Trigger a browser download of rows as CSV. Inputs:
+  //   filename: string, appended with .csv if missing
+  //   rows: Array<Record<string, any>> \u2014 headers inferred from first row,
+  //         callers can pass a consistent shape so column order is stable
+  //   opts.headers: optional explicit column order (array of keys)
+  // RFC 4180 escaping: wrap fields containing comma/quote/newline in quotes
+  // and double any embedded quote. Prepends a UTF-8 BOM so Excel on Windows
+  // opens it in the right encoding.
+  downloadCSV(filename, rows, opts = {}) {
+    if (!Array.isArray(rows) || rows.length === 0) {
+      this.toast('Nothing to export', 'info');
+      return;
+    }
+    const headers = opts.headers && opts.headers.length
+      ? opts.headers
+      : Object.keys(rows[0]);
+    const esc = (v) => {
+      if (v === null || v === undefined) return '';
+      const s = typeof v === 'object' ? JSON.stringify(v) : String(v);
+      if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+      return s;
+    };
+    const lines = [headers.join(',')];
+    for (const row of rows) {
+      lines.push(headers.map(h => esc(row[h])).join(','));
+    }
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename.endsWith('.csv') ? filename : `${filename}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    this.toast(`Exported ${rows.length} row${rows.length === 1 ? '' : 's'}`, 'success');
+  },
+
   // SVG Icons (inline, no external deps)
   icon(name, size = 18) {
     const icons = {
@@ -498,6 +537,7 @@ const UI = {
       x: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
       chevronRight: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg>`,
       plus: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
+      download: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
       star: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`,
       filter: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"/></svg>`,
       mapPin: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
