@@ -66,6 +66,9 @@
         </div>
       </div>
 
+      <!-- ═══ Action required ═══ -->
+      <div id="action-required-mount" style="margin-bottom: var(--space-xl)"></div>
+
       <!-- ═══ Body: timeline + side column ═══ -->
       <div class="dash-body">
         <!-- Timeline -->
@@ -216,6 +219,127 @@
         heading: `Profile ${c.percent}% complete`,
         dismissId: 'dash',
       });
+    }
+
+    /* ── Action required ──
+       Scans the user's current data for things that need a response:
+         - Pending booking requests from artists (awaiting their accept)
+         - Accepted bookings without a signed contract (promoter must send/chase)
+         - Unpaid confirmed bookings (promoter must record payment)
+         - Contracts sent to the artist that aren't signed yet
+       Renders the top 5 with a clear CTA linking to the right surface.
+       Hidden entirely when there's nothing to do. */
+    async function renderActionItems() {
+      const host = document.getElementById('action-required-mount');
+      if (!host) return;
+
+      const items = [];
+      const now = Date.now();
+
+      // Pending booking requests (promoter waiting on artist)
+      const pending = (_allBookings || []).filter(b => ['pending','inquiry'].includes(b.status));
+      for (const b of pending.slice(0, 3)) {
+        const name = b.artists?.stage_name || b.artists?.profiles?.display_name || 'Artist';
+        items.push({
+          kind: 'pending',
+          icon: 'clock',
+          title: `Waiting on ${esc(name)}`,
+          body: `${esc(b.event_name || b.venue_name || 'Event')} \u2014 ${b.event_date ? UI.formatDate(b.event_date) : ''}`,
+          cta: 'View booking',
+          href: `booking-detail.html?id=${b.id}`,
+        });
+      }
+
+      // Confirmed bookings missing a contract (upcoming only)
+      const confirmedNoContract = (_allBookings || []).filter(b =>
+        b.status === 'confirmed' && !b.contracts?.length &&
+        b.event_date && new Date(b.event_date).getTime() >= now - 86400000
+      );
+      for (const b of confirmedNoContract.slice(0, 2)) {
+        const name = b.artists?.stage_name || b.artists?.profiles?.display_name || 'Artist';
+        items.push({
+          kind: 'contract',
+          icon: 'fileText',
+          title: `Send contract to ${esc(name)}`,
+          body: `${esc(b.event_name || b.venue_name || 'Event')} is confirmed but has no contract yet`,
+          cta: 'Create contract',
+          href: `contracts.html`,
+        });
+      }
+
+      // Fetch contracts + payments in parallel to find outstanding items
+      const [contractsRes, paymentsRes] = await Promise.all([
+        DB.getMyContracts ? DB.getMyContracts().catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
+        DB.getMyPayments ? DB.getMyPayments().catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
+      ]);
+
+      // Contracts sent but not signed (promoter already sent, waiting on artist)
+      const unsignedSent = (contractsRes.data || []).filter(c =>
+        ['sent','pending','awaiting_signature'].includes(c.status)
+      );
+      for (const c of unsignedSent.slice(0, 2)) {
+        const ev = c.bookings?.event_name || c.bookings?.venue_name || 'Event';
+        items.push({
+          kind: 'unsigned',
+          icon: 'fileText',
+          title: `Unsigned contract \u2014 ${esc(ev)}`,
+          body: 'Artist hasn\u2019t signed yet. Nudge them via the booking thread.',
+          cta: 'Open contract',
+          href: `contract.html?id=${c.id}`,
+        });
+      }
+
+      // Confirmed bookings without a recorded payment (past event_date takes priority)
+      const paidBookingIds = new Set((paymentsRes.data || []).map(p => p.booking_id));
+      const unpaid = (_allBookings || []).filter(b =>
+        ['confirmed','contracted','completed'].includes(b.status) &&
+        !paidBookingIds.has(b.id) &&
+        b.event_date
+      ).sort((a, b) => new Date(a.event_date) - new Date(b.event_date));
+      for (const b of unpaid.slice(0, 2)) {
+        const name = b.artists?.stage_name || b.artists?.profiles?.display_name || 'Artist';
+        const past = new Date(b.event_date).getTime() < now;
+        items.push({
+          kind: 'unpaid',
+          icon: 'dollar',
+          title: `${past ? 'Pay' : 'Payment due for'} ${esc(name)}`,
+          body: `${esc(b.event_name || b.venue_name || 'Event')} \u2014 ${UI.formatDate(b.event_date)}${past ? ' \u2014 already played' : ''}`,
+          cta: past ? 'Record payment' : 'View booking',
+          href: `booking-detail.html?id=${b.id}`,
+        });
+      }
+
+      if (items.length === 0) { host.innerHTML = ''; return; }
+
+      // Cap at 5 — keeps the section tight and forces the user to clear
+      // the top items before more surface.
+      const top = items.slice(0, 5);
+      host.innerHTML = `
+        <div class="card" style="border:1px solid var(--accent-dim-20);box-shadow:var(--accent-glow)">
+          <div class="card-inner">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:var(--space-md)">
+              <div style="width:28px;height:28px;border-radius:8px;background:var(--accent-dim-10);display:flex;align-items:center;justify-content:center;color:var(--accent)">${UI.icon('activity', 14)}</div>
+              <div style="flex:1">
+                <div style="font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;font-family:var(--font-mono);color:var(--accent)">Action required</div>
+                <div style="font-size:1rem;font-weight:600;color:var(--text-primary);margin-top:2px">${top.length} item${top.length === 1 ? '' : 's'} need your attention</div>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              ${top.map(it => `
+                <a href="${it.href}" style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);text-decoration:none;color:inherit;transition:border-color 120ms ease"
+                   onmouseover="this.style.borderColor='var(--border-medium)'" onmouseout="this.style.borderColor='var(--border-subtle)'">
+                  <div style="width:32px;height:32px;border-radius:8px;background:var(--bg-raised);border:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:center;color:var(--text-tertiary);flex-shrink:0">${UI.icon(it.icon, 16)}</div>
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:0.88rem;color:var(--text-primary);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${it.title}</div>
+                    <div style="font-size:0.74rem;color:var(--text-tertiary);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${it.body}</div>
+                  </div>
+                  <div style="font-size:0.76rem;color:var(--accent);white-space:nowrap;flex-shrink:0;font-weight:500">${it.cta} \u2192</div>
+                </a>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
     }
 
     /* ── Stats ── */
@@ -477,6 +601,7 @@
       _allMessages = messagesRes.data || [];
 
       renderStats();
+      renderActionItems().catch(() => {});
       renderTimeline();
       renderPipeline();
       renderInbox();
@@ -498,6 +623,7 @@
         if (idx !== -1) _allBookings[idx] = { ..._allBookings[idx], ...updated };
         else _allBookings.unshift(updated);
         renderStats();
+        renderActionItems().catch(() => {});
         renderTimeline();
         renderPipeline();
         UI.toast('Booking updated: ' + updated.status, 'info');
