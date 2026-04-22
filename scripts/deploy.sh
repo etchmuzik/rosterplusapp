@@ -102,6 +102,7 @@ FILES=$(find . \
   ! -name 'DEPLOY.md' ! -name 'README.md' \
   ! -name 'netlify.toml' ! -name 'serve.js' \
   ! -name 'supabase-schema.sql' ! -name '.mcp.json' \
+  ! -name '*.deploy-bak' ! -name '*.tmp' \
   -print | sed 's|^\./||' | sort)
 
 COUNT=$(echo "$FILES" | wc -l | tr -d ' ')
