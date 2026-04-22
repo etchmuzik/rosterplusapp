@@ -728,15 +728,19 @@
             { key: 'social',       label: 'Link a social profile', desc: 'Instagram, SoundCloud, or Spotify \u2014 at least one', href: '/artist-profile-edit.html', done: !isMissing('social') },
           ];
           host.innerHTML = UI.onboardingChecklist(steps, { heading: 'Finish setting up your artist profile', dismissId: 'artist-dash' });
-          return;
+        } else {
+          host.innerHTML = UI.completionMeter(c.percent, {
+            variant: 'banner',
+            missing: c.missing,
+            heading: `Profile ${c.percent}% complete`,
+            dismissId: 'artist-dash',
+          });
         }
-
-        host.innerHTML = UI.completionMeter(c.percent, {
-          variant: 'banner',
-          missing: c.missing,
-          heading: `Profile ${c.percent}% complete`,
-          dismissId: 'artist-dash',
-        });
+        // Welcome-email CTA lands with #setup hash — auto-scroll once
+        // the checklist / banner is mounted.
+        if (location.hash === '#setup') {
+          host.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
       })().catch(() => {});
 
       // Load data (contracts + payouts in parallel with the rest)

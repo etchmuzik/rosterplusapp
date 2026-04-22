@@ -53,6 +53,38 @@ done
 
 cd "$REPO_ROOT"
 
+# ── Stamp the build with current git SHA ──────────────────
+# Each deploy gets a unique cache name + version string so:
+#   1. The service worker's cache key rotates — old clients refetch
+#      on their next navigation instead of serving stale app.js.
+#   2. UI footers can display "Built from <sha>" for support triage.
+#
+# We write the stamped values to sw.js / app.js, deploy them, then
+# restore the originals locally so git diffs stay clean.
+BUILD_SHA=$(git rev-parse --short HEAD 2>/dev/null || date +%s)
+echo "Build SHA: $BUILD_SHA"
+
+cp sw.js sw.js.deploy-bak
+sed -i.tmp "s/^const CACHE_NAME = .*/const CACHE_NAME = 'rostr-$BUILD_SHA';/" sw.js
+rm -f sw.js.tmp
+
+cp assets/js/app.js assets/js/app.js.deploy-bak
+if grep -q '^window.ROSTR_VERSION' assets/js/app.js; then
+  sed -i.tmp "s/^window.ROSTR_VERSION.*/window.ROSTR_VERSION = '$BUILD_SHA';/" assets/js/app.js
+else
+  printf "window.ROSTR_VERSION = '%s';\n%s" "$BUILD_SHA" "$(cat assets/js/app.js)" > assets/js/app.js.tmp
+  mv assets/js/app.js.tmp assets/js/app.js
+fi
+rm -f assets/js/app.js.tmp
+
+# Restore backups on exit so local git state stays clean regardless of
+# whether the deploy succeeded, failed, or was interrupted.
+cleanup_stamps() {
+  mv -f sw.js.deploy-bak sw.js 2>/dev/null || true
+  mv -f assets/js/app.js.deploy-bak assets/js/app.js 2>/dev/null || true
+}
+trap cleanup_stamps EXIT
+
 # ── Build the file list ───────────────────────────────────
 # find with prunes for excluded directory trees, then filter out excluded files.
 # We also skip anything that's not tracked-by-git so we never upload debug

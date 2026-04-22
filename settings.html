@@ -72,7 +72,12 @@
         </div>
         <div class="form-group" style="margin-bottom:var(--space-md)">
           <label class="form-label">Phone</label>
-          <input type="tel" class="form-input" id="phone" placeholder="+971 50 XXX XXXX">
+          <input type="tel" class="form-input" id="phone"
+                 placeholder="+971 50 000 0000"
+                 pattern="^\+?[0-9 ]{7,16}$"
+                 title="Digits and spaces only, 7–16 chars, optional leading +"
+                 inputmode="tel">
+          <div style="font-size:0.72rem;color:var(--text-tertiary);margin-top:4px">International format preferred, e.g. +971 50 000 0000</div>
         </div>
         <div class="form-group">
           <label class="form-label">City</label>

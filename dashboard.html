@@ -590,7 +590,14 @@
       document.getElementById('nav-root').innerHTML = renderNav('dashboard');
       if (typeof hydrateIcons === 'function') hydrateIcons();
       renderWelcome();
-      renderCompletionBanner().catch(() => {});
+      renderCompletionBanner().then(() => {
+        // Welcome-email CTA lands with #setup hash — auto-scroll the
+        // onboarding checklist into view once it's mounted.
+        if (location.hash === '#setup') {
+          const el = document.getElementById('completion-mount');
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }).catch(() => {});
 
       // Load data
       const [bookingsRes, messagesRes] = await Promise.all([

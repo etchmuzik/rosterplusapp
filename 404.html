@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" data-accent="mono">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#08090b">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <title>Page not found — ROSTR+ GCC</title>
+  <meta name="description" content="The page you're looking for doesn't exist on ROSTR+ GCC.">
+  <meta name="robots" content="noindex">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="ROSTR+ GCC">
+  <meta property="og:title" content="Page not found — ROSTR+ GCC">
+  <meta property="og:image" content="https://rosterplus.io/icons/og-default.png">
+  <meta property="og:url" content="https://rosterplus.io/">
+
+  <link rel="stylesheet" href="/assets/css/system.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/assets/js/app.js" defer></script>
+</head>
+<body>
+  <div class="page-shell">
+    <div id="nav-root"></div>
+    <main style="max-width:720px;margin:140px auto 40px;padding:0 var(--space-lg);text-align:center">
+      <div style="font-family:var(--font-mono);font-size:0.82rem;color:var(--text-tertiary);letter-spacing:0.18em;text-transform:uppercase;margin-bottom:var(--space-sm)">
+        Error 404
+      </div>
+      <h1 style="font-family:var(--font-display);font-size:clamp(3rem,8vw,5rem);letter-spacing:-0.04em;line-height:1;margin-bottom:var(--space-md)">
+        This stage is empty.
+      </h1>
+      <p style="color:var(--text-secondary);font-size:1.05rem;max-width:54ch;margin:0 auto var(--space-2xl);line-height:1.6">
+        The page you’re looking for doesn’t exist — or it may have been moved. Try the directory, or head back to the home page.
+      </p>
+      <div style="display:flex;gap:var(--space-sm);justify-content:center;flex-wrap:wrap">
+        <a href="/" class="btn btn-primary">Go home</a>
+        <a href="/directory.html" class="btn btn-secondary">Browse the roster</a>
+      </div>
+
+      <div style="margin-top:var(--space-3xl);padding-top:var(--space-xl);border-top:1px solid var(--border-subtle);text-align:left">
+        <div class="eyebrow" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:var(--space-sm)">
+          Try instead
+        </div>
+        <ul style="list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-sm)">
+          <li><a href="/dashboard.html" style="display:block;padding:var(--space-md);background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);text-decoration:none;color:var(--text-primary)">Dashboard →</a></li>
+          <li><a href="/bookings.html" style="display:block;padding:var(--space-md);background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);text-decoration:none;color:var(--text-primary)">Bookings →</a></li>
+          <li><a href="/messages.html" style="display:block;padding:var(--space-md);background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);text-decoration:none;color:var(--text-primary)">Messages →</a></li>
+          <li><a href="/settings.html" style="display:block;padding:var(--space-md);background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);text-decoration:none;color:var(--text-primary)">Settings →</a></li>
+        </ul>
+      </div>
+    </main>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (typeof Auth !== 'undefined') await Auth.ready();
+      const navRoot = document.getElementById('nav-root');
+      if (navRoot && typeof renderNav === 'function') navRoot.innerHTML = renderNav('');
+      if (typeof hydrateIcons === 'function') hydrateIcons();
+    });
+  </script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
+</body>
+</html>

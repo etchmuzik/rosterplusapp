@@ -742,9 +742,12 @@ function renderNav(activePage = '') {
               <span id="notif-badge" style="display:none;position:absolute;top:-2px;right:-2px;width:8px;height:8px;border-radius:50%;background:var(--status-cancelled)"></span>
             </button>
             <div id="notif-dropdown" class="hidden" style="position:absolute;top:56px;right:70px;background:var(--bg-raised);border:1px solid var(--border-medium);border-radius:var(--radius-md);padding:0;min-width:300px;max-height:400px;overflow-y:auto;box-shadow:var(--shadow-lg);z-index:1001">
-              <div style="padding:12px 16px;font-size:0.82rem;font-weight:600;border-bottom:1px solid var(--border-subtle);display:flex;justify-content:space-between;align-items:center">
+              <div style="padding:12px 16px;font-size:0.82rem;font-weight:600;border-bottom:1px solid var(--border-subtle);display:flex;justify-content:space-between;align-items:center;gap:6px">
                 Notifications
-                <button class="btn btn-ghost" style="font-size:0.72rem;padding:2px 8px" onclick="markAllRead()">Mark all read</button>
+                <div style="display:flex;gap:4px">
+                  <button class="btn btn-ghost" style="font-size:0.72rem;padding:2px 8px" onclick="exportNotificationsCSV()" title="Export as CSV">Export</button>
+                  <button class="btn btn-ghost" style="font-size:0.72rem;padding:2px 8px" onclick="markAllRead()">Mark all read</button>
+                </div>
               </div>
               <div id="notif-list" style="padding:8px"><div style="padding:16px;text-align:center;color:var(--text-tertiary);font-size:0.82rem">No notifications yet</div></div>
             </div>
@@ -2856,9 +2859,24 @@ function toggleNotifications() {
   // Close user menu if open
   const um = document.getElementById('user-menu');
   if (um) um.classList.add('hidden');
-  // Refresh from DB when opening — cheap and keeps us aligned with any
-  // reads that happened in other tabs.
-  if (willOpen) loadNotifications();
+  if (willOpen) {
+    // Refresh from DB first so we're aligned with any reads from other
+    // tabs. Once rendered, auto-clear unread state: if the user opened
+    // the tray they've seen everything. Individual items already mark
+    // read on click; this handles the "I just glanced at the dot" case.
+    loadNotifications().then(_autoMarkSeenNotifications);
+  }
+}
+
+async function _autoMarkSeenNotifications() {
+  const unread = _notifications.filter(n => !n.read);
+  if (!unread.length) return;
+  // Optimistic: clear dot immediately so the nav badge hides. Server
+  // call is fire-and-forget; if it fails, next page load picks up the
+  // real state from the DB.
+  unread.forEach(n => { n.read = true; });
+  renderNotifications();
+  DB.markAllNotificationsRead().catch(() => {});
 }
 
 async function loadNotifications() {
@@ -2875,6 +2893,27 @@ async function markAllRead() {
   }
 }
 window.markAllRead = markAllRead;
+
+// Export notifications as CSV via the existing UI.downloadCSV helper.
+// Uses whatever is in the current loaded list (last 30). If the user
+// needs more, this is a good forcing function to build pagination later.
+function exportNotificationsCSV() {
+  if (!_notifications.length) { UI.toast('Nothing to export', 'info'); return; }
+  const rows = _notifications.map(n => ({
+    created_at:  n.created_at || '',
+    type:        n.type || '',
+    title:       n.title || '',
+    body:        n.body || '',
+    href:        n.href || '',
+    read:        n.read ? 'yes' : 'no',
+    booking_id:  n.booking_id || '',
+    contract_id: n.contract_id || '',
+    payment_id:  n.payment_id || '',
+  }));
+  const today = new Date().toISOString().slice(0, 10);
+  UI.downloadCSV(`rostr-notifications-${today}.csv`, rows);
+}
+window.exportNotificationsCSV = exportNotificationsCSV;
 
 async function openNotification(id) {
   const n = _notifications.find(x => x.id === id);
@@ -2992,9 +3031,24 @@ function hydrateIcons(root) {
   document.head.appendChild(s);
 })();
 
+// Tiny "Built from <sha>" tag in the corner — helps support triage stale
+// caches and verifies the latest deploy landed. Set at deploy time by
+// scripts/deploy.sh; falls back to 'dev' locally.
+function _injectVersionTag() {
+  if (document.getElementById('rostr-version-tag')) return;
+  const ver = (typeof window !== 'undefined' && window.ROSTR_VERSION) || 'dev';
+  const tag = document.createElement('div');
+  tag.id = 'rostr-version-tag';
+  tag.textContent = ver;
+  tag.title = 'ROSTR+ build';
+  tag.style.cssText = 'position:fixed;bottom:8px;left:8px;z-index:40;font-family:var(--font-mono,monospace);font-size:0.62rem;color:rgba(255,255,255,0.18);padding:2px 6px;border-radius:4px;background:rgba(0,0,0,0.25);backdrop-filter:blur(4px);pointer-events:none;user-select:none;letter-spacing:0.04em';
+  document.body.appendChild(tag);
+}
+
 function _rostrInit() {
   Auth.init();
   hydrateIcons();
+  _injectVersionTag();
   // Close dropdowns on outside click
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.nav-avatar') && !e.target.closest('#user-menu')) {

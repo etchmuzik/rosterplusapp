@@ -202,7 +202,17 @@
       document.querySelectorAll('.bk-line').forEach((line, idx) => {
         line.classList.toggle('done', idx + 1 < n);
       });
-      if (n === 2 && _chosen) renderChosen('bk-chosen-2');
+      if (n === 2 && _chosen) {
+        renderChosen('bk-chosen-2');
+        // Pre-fill the event-name field with "Booking — {artist_name}"
+        // so the form feels less daunting. Only fills if the user hasn't
+        // typed anything yet, so we don't clobber edits on step-back.
+        const evName = document.getElementById('eventName');
+        if (evName && !evName.value.trim()) {
+          const name = _chosen.name || _chosen.stage_name || 'Artist';
+          evName.value = `Booking \u2014 ${name}`;
+        }
+      }
       if (n === 3) renderReview();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
