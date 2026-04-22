@@ -1,3 +1,4 @@
+window.ROSTR_VERSION = '2f4f930';
 /* ═══════════════════════════════════════════════════════════
    ROSTR+ GCC — Core Application JS
    Supabase client, auth, router, UI helpers, live data
@@ -90,30 +91,59 @@ const Auth = {
       return;
     }
 
-    // Async path for Supabase — real session overrides demo user
-    _sb.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        this.user = session.user;
-        localStorage.removeItem('rostr_demo_user'); // clear demo if real session
-        return this.loadProfile();
-      }
-    }).then(() => {
+    // Async path for Supabase — real session overrides demo user.
+    //
+    // IMPORTANT: Supabase JS v2 holds an internal auth lock during
+    // getSession() AND during every onAuthStateChange callback. If we
+    // call a PostgREST query (like loadProfile) while that lock is held,
+    // the query waits for the auth lock — which waits for our callback —
+    // creating an infinite deadlock. The symptom is Auth._initialized
+    // staying false forever and every DB query hanging.
+    //
+    // Fix: defer the loadProfile call via setTimeout(…, 0) so it runs on
+    // the next macrotask, after the auth client has released its lock.
+    // Safety net: resolve ready() after 6s regardless so a network stall
+    // can't hang the whole UI indefinitely.
+    const SAFETY_MS = 6000;
+    let didResolveReady = false;
+    const resolveReadyOnce = () => {
+      if (didResolveReady) return;
+      didResolveReady = true;
       this._initialized = true;
       if (this._readyResolve) this._readyResolve();
       this.updateUI();
-    }).catch((err) => {
-      console.error('[ROSTR] Auth init failed:', err);
-      this._initialized = true;
-      if (this._readyResolve) this._readyResolve();
-    });
+    };
+    const safetyTimer = setTimeout(() => {
+      if (!didResolveReady) console.warn('[ROSTR] Auth init safety-timeout fired');
+      resolveReadyOnce();
+    }, SAFETY_MS);
 
-    // Listen for auth changes (skip if demo user is active)
-    _sb.auth.onAuthStateChange(async (event, session) => {
+    _sb.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         this.user = session.user;
         localStorage.removeItem('rostr_demo_user');
-        await this.loadProfile();
-        this.updateUI();
+        // Defer — see note above.
+        return new Promise((r) => setTimeout(() => this.loadProfile().then(r).catch(r), 0));
+      }
+    }).then(() => {
+      clearTimeout(safetyTimer);
+      resolveReadyOnce();
+    }).catch((err) => {
+      console.error('[ROSTR] Auth init failed:', err);
+      clearTimeout(safetyTimer);
+      resolveReadyOnce();
+    });
+
+    // Listen for auth changes (skip if demo user is active). Same
+    // deadlock risk applies here — any sync DB call inside this handler
+    // blocks forever. Defer via setTimeout so the auth lock releases.
+    _sb.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        this.user = session.user;
+        localStorage.removeItem('rostr_demo_user');
+        setTimeout(() => {
+          this.loadProfile().then(() => this.updateUI()).catch(() => this.updateUI());
+        }, 0);
       } else if (!localStorage.getItem('rostr_demo_user')) {
         this.user = null;
         this.role = null;
