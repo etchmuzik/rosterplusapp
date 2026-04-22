@@ -19,12 +19,17 @@
   <meta property="og:title" content="Artist Profile — ROSTR+ GCC">
   <meta property="og:description" content="View detailed artist profile, bookings, and rates.">
   <meta property="og:image" content="https://rosterplus.io/icons/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   <meta property="og:url" content="https://rosterplus.io/profile.html">
 
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Artist Profile — ROSTR+ GCC">
   <meta name="twitter:description" content="View detailed artist profile, bookings, and rates.">
   <meta name="twitter:image" content="https://rosterplus.io/icons/og-default.png">
+
+  <link rel="canonical" href="https://rosterplus.io/profile.html">
+  <script type="application/ld+json" id="artist-ld-json"></script>
 
   <link rel="stylesheet" href="assets/css/system.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -271,19 +276,43 @@
 
     function updateMeta(artist) {
       const name = artist.name || artist.stage_name || 'Artist';
-      const desc = [artist.genre, artist.city].filter(Boolean).join(' — ') || 'Book this artist on ROSTR+ GCC.';
+      const bio = String(artist.bio || '').trim();
+      const desc = bio
+        ? (bio.length > 160 ? bio.slice(0, 157) + '\u2026' : bio)
+        : ([artist.genre, artist.city].filter(Boolean).join(' \u2014 ') + ' \u00b7 Book on ROSTR+ GCC.').trim();
       const img = artist.avatar_url || 'https://rosterplus.io/icons/og-default.png';
       const url = `https://rosterplus.io/profile.html?id=${encodeURIComponent(artist.id)}`;
       const setMeta = (sel, val) => { const el = document.querySelector(sel); if (el) el.setAttribute('content', val); };
-      document.title = `${name} — ROSTR+ GCC`;
-      setMeta('meta[property="og:title"]',        `${name} — ROSTR+ GCC`);
+      document.title = `${name} \u2014 ROSTR+ GCC`;
+      setMeta('meta[property="og:title"]',        `${name} \u2014 ROSTR+ GCC`);
       setMeta('meta[property="og:description"]',  desc);
       setMeta('meta[property="og:image"]',        img);
       setMeta('meta[property="og:url"]',          url);
-      setMeta('meta[name="twitter:title"]',       `${name} — ROSTR+ GCC`);
+      setMeta('meta[name="twitter:title"]',       `${name} \u2014 ROSTR+ GCC`);
       setMeta('meta[name="twitter:description"]', desc);
       setMeta('meta[name="twitter:image"]',       img);
       setMeta('meta[name="description"]',         desc);
+
+      // Canonical — tells search engines the real URL of this page so query
+      // params don't create duplicate content.
+      const canonical = document.querySelector('link[rel="canonical"]');
+      if (canonical) canonical.setAttribute('href', url);
+
+      // JSON-LD MusicGroup schema — gets picked up by Google for rich
+      // results. schema.org/MusicGroup matches both DJs and bands; the
+      // image + url fields work identically to og meta.
+      const ld = {
+        '@context': 'https://schema.org',
+        '@type':    'MusicGroup',
+        name,
+        description: desc,
+        image:       img,
+        url,
+        genre:       Array.isArray(artist.genre) ? artist.genre : (artist.genre ? [artist.genre] : []),
+        address: artist.city ? { '@type': 'PostalAddress', addressLocality: artist.city } : undefined,
+      };
+      const ldEl = document.getElementById('artist-ld-json');
+      if (ldEl) ldEl.textContent = JSON.stringify(ld);
     }
 
     document.addEventListener('DOMContentLoaded', async () => {

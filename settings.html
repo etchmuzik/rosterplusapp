@@ -110,6 +110,19 @@
           <input type="password" class="form-input" id="confirm-password" placeholder="Confirm new password">
         </div>
         <button class="btn btn-secondary" onclick="changePassword()">Update Password</button>
+
+        <!-- Sign out everywhere — invalidates refresh tokens on every
+             device. Useful if a phone was lost or the user shared
+             a browser and wants to reclaim the account. -->
+        <div style="margin-top:var(--space-lg);padding-top:var(--space-lg);border-top:1px solid var(--border-subtle)">
+          <div class="settings-row" style="padding:0;border:none;align-items:flex-start">
+            <div style="flex:1">
+              <div class="settings-label">Sign out everywhere</div>
+              <div class="settings-desc">End your session on every browser and device where you\u2019re logged in. You\u2019ll need to sign in again from scratch.</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="signOutEverywhere()" style="color:var(--status-cancelled)">Sign out everywhere</button>
+          </div>
+        </div>
       </div>
 
       <!-- Notifications Section -->
@@ -295,6 +308,15 @@
         UI.toast('Failed to save: ' + (result.error || ''), 'error');
       }
     }
+
+    // Sign out from every device. Confirms before firing because this
+    // kills all active sessions and forces a full re-auth.
+    async function signOutEverywhere() {
+      if (!confirm('Sign out of all devices? You\u2019ll need to log in again everywhere.')) return;
+      UI.toast('Signing out everywhere\u2026', 'info');
+      await Auth.signOutEverywhere();
+    }
+    window.signOutEverywhere = signOutEverywhere;
 
     async function changePassword() {
       const pw = document.getElementById('new-password').value;

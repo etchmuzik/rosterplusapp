@@ -211,6 +211,37 @@
       else renderList();
     }
 
+    // Read filter state from URL params on first load. Lets promoters
+    // bookmark / share a filtered view and have it restore intact.
+    function loadFiltersFromURL() {
+      const p = new URLSearchParams(location.search);
+      const set = (id, key) => { const v = p.get(key); const el = document.getElementById(id); if (v && el) el.value = v; };
+      set('searchInput',  'q');
+      set('genreFilter',  'genre');
+      set('cityFilter',   'city');
+      set('rateFilter',   'rate');
+      set('dateFilter',   'date');
+      if (p.get('avail') === '1') {
+        const t = document.getElementById('availabilityToggle');
+        if (t) t.checked = true;
+      }
+    }
+
+    // Push current filter state into the URL without reloading. Uses
+    // replaceState so we don't pollute browser history for every keystroke.
+    function syncFiltersToURL({ q, genre, city, rate, date, availOnly }) {
+      const p = new URLSearchParams();
+      if (q)         p.set('q', q);
+      if (genre)     p.set('genre', genre);
+      if (city)      p.set('city', city);
+      if (rate)      p.set('rate', rate);
+      if (date)      p.set('date', date);
+      if (availOnly) p.set('avail', '1');
+      const qs = p.toString();
+      const url = qs ? `${location.pathname}?${qs}` : location.pathname;
+      history.replaceState(null, '', url);
+    }
+
     function applyFilters() {
       const q        = document.getElementById('searchInput').value.trim().toLowerCase();
       const genre    = document.getElementById('genreFilter').value;
@@ -218,6 +249,8 @@
       const rate     = document.getElementById('rateFilter').value;
       const date     = document.getElementById('dateFilter').value;
       const availOnly= document.getElementById('availabilityToggle').checked;
+
+      syncFiltersToURL({ q, genre, city, rate, date, availOnly });
 
       filteredArtists = allArtists.filter(a => {
         const name = (a.name || a.stage_name || '').toLowerCase();
@@ -266,7 +299,9 @@
       filteredArtists = [...allArtists];
       const countEl = document.getElementById('dir-count-hero');
       if (countEl) countEl.textContent = allArtists.length > 0 ? allArtists.length + '+' : '—';
-      render();
+      // applyFilters honors any URL params that populated the form inputs.
+      // Falls through to unfiltered list when none are set.
+      applyFilters();
       if (!res.success) {
         document.getElementById('resultsInfo').textContent = "Couldn't load artists — please refresh.";
       }
@@ -286,7 +321,11 @@
       }
       if (typeof hydrateIcons === 'function') hydrateIcons();
       setupEventListeners();
-      initializeDirectory();
+      loadFiltersFromURL();
+      await initializeDirectory();
+      // applyFilters() runs inside initializeDirectory's render path; the
+      // URL params now populate the form and the initial filter applies
+      // them. No extra call needed.
     });
   </script>
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>

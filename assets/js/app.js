@@ -234,6 +234,30 @@ const Auth = {
     window.location.href = 'index.html';
   },
 
+  // Revokes every active session for this user — on every device, every
+  // browser, every tab. Uses Supabase's global scope which invalidates
+  // the refresh token server-side, so other devices can't silently
+  // refresh back to a valid session.
+  //
+  // Used from the settings "Security" section. Falls back to a local
+  // signOut if the server call fails so the user isn't left in a weird
+  // half-signed-out state.
+  async signOutEverywhere() {
+    localStorage.removeItem('rostr_demo_user');
+    if (!DEMO_MODE) {
+      try {
+        await _sb.auth.signOut({ scope: 'global' });
+      } catch (e) {
+        // Fall through to local signOut so the user ends up logged out
+        // at minimum on this device. They'll have to re-try on others.
+      }
+    }
+    this.user = null;
+    this.role = null;
+    this.updateUI();
+    window.location.href = 'index.html';
+  },
+
   isLoggedIn() {
     return !!this.user;
   },

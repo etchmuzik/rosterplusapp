@@ -19,6 +19,8 @@
   <meta property="og:title" content="Artist EPK — ROSTR+ GCC">
   <meta property="og:description" content="Electronic press kit — bio, tech rider, past performances, and booking info.">
   <meta property="og:image" content="https://rosterplus.io/icons/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   <meta property="og:url" content="https://rosterplus.io/epk.html">
 
   <!-- Twitter / X -->
@@ -26,6 +28,9 @@
   <meta name="twitter:title" content="Artist EPK — ROSTR+ GCC">
   <meta name="twitter:description" content="Electronic press kit — bio, tech rider, past performances, and booking info.">
   <meta name="twitter:image" content="https://rosterplus.io/icons/og-default.png">
+
+  <link rel="canonical" href="https://rosterplus.io/epk.html">
+  <script type="application/ld+json" id="epk-ld-json"></script>
 
   <link rel="stylesheet" href="assets/css/system.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -257,6 +262,22 @@
       setMeta('meta[name="twitter:description"]',desc);
       setMeta('meta[name="twitter:image"]',      img);
       setMeta('meta[name="description"]',        desc);
+
+      const canonical = document.querySelector('link[rel="canonical"]');
+      if (canonical) canonical.setAttribute('href', url);
+
+      const ld = {
+        '@context': 'https://schema.org',
+        '@type':    'MusicGroup',
+        name:        displayName,
+        description: desc,
+        image:       img,
+        url,
+        genre:       Array.isArray(data.genre) ? data.genre : (data.genre ? [data.genre] : []),
+        address:     cityForMeta ? { '@type': 'PostalAddress', addressLocality: cityForMeta } : undefined,
+      };
+      const ldEl = document.getElementById('epk-ld-json');
+      if (ldEl) ldEl.textContent = JSON.stringify(ld);
     }
 
     // Init
