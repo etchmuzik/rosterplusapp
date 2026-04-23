@@ -504,18 +504,51 @@
           delta = `<span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary)">${parts.join(' · ')}</span>`;
         }
 
+        // Only offer Undo on actions where the RPC knows how to reverse
+        // the change, and never on an undo-of-an-undo.
+        const undoable =
+          row.target_type && row.target_id && !row.action.endsWith('.undo') &&
+          ['artist.verify','artist.unverify','artist.status_change',
+           'user.role_change','booking.force_cancel','booking.status_change']
+            .includes(row.action);
+        const undoBtn = undoable
+          ? `<button class="btn btn-ghost btn-sm" style="font-size:0.7rem;margin-top:6px;color:var(--text-tertiary);border:1px dashed var(--border-subtle)" onclick="auditUndo('${esc(row.target_type)}','${esc(row.target_id)}', '${esc(row.action)}')">↶ Undo</button>`
+          : '';
+
         return `
           <div style="padding:10px 0;border-bottom:1px solid var(--border-subtle)">
-            <div style="color:var(--text-primary)"><strong>${esc(label)}</strong>${stageName}</div>
-            ${delta ? `<div style="margin-top:4px">${delta}</div>` : ''}
-            <div style="font-size:0.72rem;color:var(--text-tertiary);margin-top:4px">
-              ${esc(row.actor_email || 'unknown')} · ${whenStr}${reason}
+            <div style="display:flex;align-items:flex-start;gap:var(--space-md)">
+              <div style="flex:1;min-width:0">
+                <div style="color:var(--text-primary)"><strong>${esc(label)}</strong>${stageName}</div>
+                ${delta ? `<div style="margin-top:4px">${delta}</div>` : ''}
+                <div style="font-size:0.72rem;color:var(--text-tertiary);margin-top:4px">
+                  ${esc(row.actor_email || 'unknown')} · ${whenStr}${reason}
+                </div>
+              </div>
+              ${undoBtn}
             </div>
           </div>
         `;
       }).join('');
     }
     window.applyAuditFilters = applyAuditFilters;
+
+    // Reverse the last admin action on (targetType, targetId). The RPC
+    // looks up the latest audit row and flips the live row back. Uses
+    // confirm() because a misfire here is how you lose data.
+    async function auditUndo(targetType, targetId, originalAction) {
+      if (!confirm(`Undo the last "${originalAction}" on this ${targetType}?\n\nThis flips the live row back to its prior state and writes a new '.undo' audit entry. The original audit row stays intact.`)) return;
+      const res = await DB.adminUndoLastAction(targetType, targetId);
+      if (!res.success) { UI.toast('Undo failed: ' + (res.error || ''), 'error'); return; }
+      UI.toast('Action reversed', 'success');
+      refreshAuditLog();
+      // If other tabs are already populated, re-hydrate them so the UI
+      // reflects the restored state.
+      if (targetType === 'artist') renderAdminArtists().catch(() => {});
+      if (targetType === 'user')   renderUsers().catch(() => {});
+      if (targetType === 'booking') renderBookingsMod().catch(() => {});
+    }
+    window.auditUndo = auditUndo;
 
     // ─── Roster ────────────────────────────────────────────
     async function renderAdminArtists() {

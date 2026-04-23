@@ -1,4 +1,3 @@
-window.ROSTR_VERSION = '8cfc208';
 /* ═══════════════════════════════════════════════════════════
    ROSTR+ GCC — Core Application JS
    Supabase client, auth, router, UI helpers, live data
@@ -2166,6 +2165,22 @@ const DB = {
       const body = await res.json().catch(() => ({}));
       if (!res.ok) return { success: false, error: body.error || `HTTP ${res.status}` };
       return { success: true, ...body };
+    } catch (e) { return { success: false, error: String(e) }; }
+  },
+
+  // Undo the most recent audit-logged admin action for a given target.
+  // Server-side in admin_undo_last_action: pulls the latest audit_log
+  // row for (target_type, target_id), applies before_value back to the
+  // live row, appends a new '<action>.undo' audit entry. Supports
+  // artist / booking / user targets.
+  async adminUndoLastAction(targetType, targetId) {
+    if (DEMO_MODE) return { success: false, error: 'Offline' };
+    try {
+      const { data, error } = await _sb.rpc('admin_undo_last_action', {
+        p_target_type: targetType,
+        p_target_id: targetId,
+      });
+      return error ? { success: false, error: error.message } : { success: true, data };
     } catch (e) { return { success: false, error: String(e) }; }
   },
 

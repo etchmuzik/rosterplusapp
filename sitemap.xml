@@ -25,4 +25,9 @@
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
+  <url>
+    <loc>https://rosterplus.io/status.html</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.4</priority>
+  </url>
 </urlset>

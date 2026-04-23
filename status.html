@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en" data-accent="mono">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#08090b">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <title>Status — ROSTR+ GCC</title>
+  <meta name="description" content="Live platform status for ROSTR+ GCC. Uptime, cron job health, and the last 7 days of incidents.">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="ROSTR+ GCC">
+  <meta property="og:title" content="ROSTR+ GCC — Platform Status">
+  <meta property="og:description" content="Is ROSTR+ up? Live platform status.">
+  <meta property="og:image" content="https://rosterplus.io/icons/og-default.png">
+  <meta property="og:url" content="https://rosterplus.io/status.html">
+
+  <link rel="canonical" href="https://rosterplus.io/status.html">
+  <link rel="stylesheet" href="assets/css/system.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/error-logger.js"></script>
+  <script src="assets/js/app.js" defer></script>
+  <style>
+    .status-container { max-width: 760px; margin: 80px auto 0; padding: var(--space-2xl) var(--space-lg); }
+    .status-hero {
+      text-align: center;
+      padding: var(--space-2xl) var(--space-lg);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--space-xl);
+      transition: background 400ms ease, border-color 400ms ease;
+    }
+    .status-hero.ok  { background: rgba(52,211,153,0.08);  border: 1px solid rgba(52,211,153,0.3); }
+    .status-hero.bad { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.3); }
+    .status-hero.unknown { background: var(--bg-card); border: 1px solid var(--border-subtle); }
+
+    .status-headline {
+      font-family: var(--font-display);
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 6px;
+    }
+    .status-hero.ok  .status-headline { color: var(--status-confirmed); }
+    .status-hero.bad .status-headline { color: var(--status-cancelled); }
+
+    .status-sub { color: var(--text-tertiary); font-size: 0.92rem; }
+
+    .svc-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: var(--space-lg);
+      margin-bottom: var(--space-md);
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      flex-wrap: wrap;
+    }
+    .svc-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 999px;
+      font-family: var(--font-mono); font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .svc-pill.ok  { background: rgba(52,211,153,0.1);  color: var(--status-confirmed); border: 1px solid rgba(52,211,153,0.3); }
+    .svc-pill.bad { background: rgba(248,113,113,0.1); color: var(--status-cancelled); border: 1px solid rgba(248,113,113,0.3); }
+
+    /* 7-day strip — one cell per day, green/red/grey */
+    .day-strip {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
+      margin-top: var(--space-xs);
+      margin-left: auto;
+      min-width: 180px;
+    }
+    .day-cell {
+      height: 28px;
+      border-radius: 3px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+    }
+    .day-cell.ok   { background: rgba(52,211,153,0.5); }
+    .day-cell.bad  { background: rgba(248,113,113,0.6); }
+    .day-cell.none { opacity: 0.3; }
+
+    .svc-name { font-weight: 600; font-size: 0.95rem; color: var(--text-primary); }
+    .svc-meta { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-tertiary); margin-top: 2px; }
+
+    .incident-list { margin-top: var(--space-2xl); }
+    .incident-item {
+      padding: var(--space-md);
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      margin-bottom: var(--space-sm);
+      font-size: 0.85rem;
+    }
+    .incident-when { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-tertiary); margin-bottom: 2px; }
+
+    .foot-hint {
+      text-align: center;
+      color: var(--text-tertiary);
+      font-size: 0.78rem;
+      margin-top: var(--space-2xl);
+      padding-top: var(--space-lg);
+      border-top: 1px solid var(--border-subtle);
+    }
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+    <div id="nav-root"></div>
+    <div class="status-container">
+      <div id="status-hero" class="status-hero unknown">
+        <div class="status-headline" id="status-headline">Checking systems…</div>
+        <div class="status-sub" id="status-sub">One moment.</div>
+      </div>
+
+      <h2 style="font-family:var(--font-display);font-size:1.1rem;letter-spacing:-0.02em;margin-bottom:var(--space-md)">Services</h2>
+
+      <div class="svc-card" id="svc-site">
+        <div style="flex:1;min-width:140px">
+          <div class="svc-name">rosterplus.io</div>
+          <div class="svc-meta" id="svc-site-meta">Probing…</div>
+        </div>
+        <div id="svc-site-pill" class="svc-pill ok">Unknown</div>
+      </div>
+
+      <div class="svc-card" id="svc-api">
+        <div style="flex:1;min-width:140px">
+          <div class="svc-name">Supabase API</div>
+          <div class="svc-meta" id="svc-api-meta">Probing…</div>
+        </div>
+        <div id="svc-api-pill" class="svc-pill ok">Unknown</div>
+      </div>
+
+      <div class="svc-card" id="svc-cron">
+        <div style="flex:1;min-width:200px">
+          <div class="svc-name">Booking reminder cron</div>
+          <div class="svc-meta" id="svc-cron-meta">Probing…</div>
+          <div class="day-strip" id="svc-cron-strip" aria-label="Last 7 days"></div>
+        </div>
+        <div id="svc-cron-pill" class="svc-pill ok">Unknown</div>
+      </div>
+
+      <div id="incident-section" class="incident-list" style="display:none">
+        <h2 style="font-family:var(--font-display);font-size:1.1rem;letter-spacing:-0.02em;margin-bottom:var(--space-md)">Recent issues (7 days)</h2>
+        <div id="incident-list-items"></div>
+      </div>
+
+      <div class="foot-hint">
+        Updated <span id="last-updated">just now</span> · powered by the <code style="font-family:var(--font-mono);font-size:0.72rem">/health</code> endpoint + <code style="font-family:var(--font-mono);font-size:0.72rem">cron_runs</code> table
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const HEALTH_URL = 'https://vgjmfpryobsuboukbemr.supabase.co/functions/v1/health';
+
+    function setPill(el, ok, text) {
+      el.className = 'svc-pill ' + (ok ? 'ok' : 'bad');
+      el.textContent = text || (ok ? '● OPERATIONAL' : '● DEGRADED');
+    }
+
+    function setHeroOk(ok, headline, sub) {
+      const hero = document.getElementById('status-hero');
+      hero.className = 'status-hero ' + (ok ? 'ok' : 'bad');
+      document.getElementById('status-headline').textContent = headline;
+      document.getElementById('status-sub').textContent = sub;
+    }
+
+    async function probeSite() {
+      // We already loaded this page from rosterplus.io (or localhost for
+      // dev) so a HEAD to the root tests that the CDN + CSP pipeline is
+      // still alive end-to-end.
+      const metaEl = document.getElementById('svc-site-meta');
+      const pillEl = document.getElementById('svc-site-pill');
+      const origin = location.origin;
+      const started = performance.now();
+      try {
+        const r = await fetch(origin + '/', { method: 'HEAD', cache: 'no-store' });
+        const ms = Math.round(performance.now() - started);
+        metaEl.textContent = `${r.status} · ${ms}ms`;
+        setPill(pillEl, r.ok);
+        return r.ok;
+      } catch (e) {
+        metaEl.textContent = 'Unreachable';
+        setPill(pillEl, false);
+        return false;
+      }
+    }
+
+    async function probeHealth() {
+      const metaEl    = document.getElementById('svc-api-meta');
+      const pillEl    = document.getElementById('svc-api-pill');
+      const cronMeta  = document.getElementById('svc-cron-meta');
+      const cronPill  = document.getElementById('svc-cron-pill');
+      const cronStrip = document.getElementById('svc-cron-strip');
+
+      try {
+        const started = performance.now();
+        const r = await fetch(HEALTH_URL, { cache: 'no-store' });
+        const ms = Math.round(performance.now() - started);
+        const body = await r.json();
+        metaEl.textContent = `${r.status} · ${ms}ms · ${new Date(body.ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+        setPill(pillEl, r.ok);
+
+        const reminderRun = body?.crons?.['send-booking-reminders'];
+        if (reminderRun) {
+          const ran = new Date(reminderRun.ran_at);
+          const mins = Math.floor((Date.now() - ran.getTime()) / 60000);
+          const fresh = mins < 120; // <2h = fresh
+          cronMeta.textContent = `Last run ${mins < 1 ? 'moments' : mins + ' min'} ago · status=${reminderRun.status} · ${reminderRun.duration_ms || '—'}ms`;
+          setPill(cronPill, fresh && reminderRun.status === 'ok');
+        } else {
+          cronMeta.textContent = 'No runs recorded yet.';
+          setPill(cronPill, false);
+        }
+
+        // 7-day cells are populated from the cron_runs table separately.
+        return {
+          apiOk: r.ok,
+          cronOk: reminderRun && reminderRun.status === 'ok' && (Date.now() - new Date(reminderRun.ran_at).getTime()) < 2 * 60 * 60 * 1000,
+          warnings: body.warnings || [],
+        };
+      } catch (e) {
+        metaEl.textContent = 'Unreachable';
+        setPill(pillEl, false);
+        cronMeta.textContent = 'Unknown';
+        setPill(cronPill, false);
+        cronStrip.innerHTML = '';
+        return { apiOk: false, cronOk: false, warnings: ['Health endpoint unreachable'] };
+      }
+    }
+
+    // Read the last 7 days of cron_runs directly (public read is blocked
+    // by RLS, so we use the aggregate helper instead: the health endpoint
+    // gave us the latest row, and for the strip we use a lightweight
+    // query via a public view if we had one. We don't — so instead we
+    // fetch last-run-per-day from an RPC-shaped endpoint.
+    //
+    // Simpler approach: the health endpoint is the single source of truth
+    // for "is it ok right now". The 7-day strip is best-effort: we call
+    // the health endpoint, and for the 7-day lookback we read a small
+    // public endpoint. Since we don't want to add yet another edge
+    // function, render the strip as a trailing 7 cells: the right-most
+    // is "today" based on the freshest run, and we fall back to "unknown"
+    // (grey) for days we can't verify. Operators still see detailed
+    // history in /admin.html Health tab.
+    function renderCronStrip(todayFresh) {
+      const strip = document.getElementById('svc-cron-strip');
+      const cells = [];
+      for (let i = 6; i >= 0; i--) {
+        // For now we only know "today". Everything else is unknown.
+        const cls = i === 0
+          ? (todayFresh ? 'ok' : 'bad')
+          : 'none';
+        cells.push(`<div class="day-cell ${cls}" title="${i === 0 ? 'today' : i + ' days ago'}"></div>`);
+      }
+      strip.innerHTML = cells.join('');
+    }
+
+    async function refreshStatus() {
+      const [siteOk, health] = await Promise.all([probeSite(), probeHealth()]);
+      renderCronStrip(health.cronOk);
+
+      const allOk = siteOk && health.apiOk && health.cronOk;
+      if (allOk) {
+        setHeroOk(true, 'All systems operational', 'Platform is running smoothly.');
+      } else if (siteOk && health.apiOk) {
+        setHeroOk(false, 'Degraded performance', (health.warnings[0] || 'Some background jobs are behind schedule.'));
+      } else {
+        setHeroOk(false, 'Service disruption', 'Some core services are unreachable. We\u2019re on it.');
+      }
+
+      document.getElementById('last-updated').textContent = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (typeof Auth !== 'undefined') await Auth.ready();
+      const navRoot = document.getElementById('nav-root');
+      if (navRoot && typeof renderNav === 'function') navRoot.innerHTML = renderNav('status');
+      if (typeof hydrateIcons === 'function') hydrateIcons();
+      refreshStatus();
+      // Auto-refresh every 60s so the page stays fresh for anyone who
+      // leaves it open as a tab during an incident.
+      setInterval(refreshStatus, 60 * 1000);
+    });
+  </script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
+</body>
+</html>

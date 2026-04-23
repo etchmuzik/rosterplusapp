@@ -1,0 +1,77 @@
+name: CI
+
+# Fires on every push to main + every pull request that targets main.
+# Runs the exact same pre-deploy checks scripts/deploy.sh runs locally:
+#   1. node --check on all JS files
+#   2. HTML well-formed check (every *.html closes </html>)
+#   3. Playwright @smoke tests against a local static server
+#
+# If any step fails, the commit/PR gets a red X. Same gate as the
+# manual FTP deploy on your machine — so a second contributor can't
+# ship a typo that your deploy.sh would have caught.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm install --no-audit --no-fund
+
+      - name: JS syntax check
+        run: |
+          node --check assets/js/app.js
+          node --check assets/js/error-logger.js
+          node --check sw.js
+
+      - name: HTML well-formed check
+        run: |
+          set -e
+          for f in *.html; do
+            if ! grep -q '</html>' "$f"; then
+              echo "::error file=$f::Missing closing </html> tag"
+              exit 1
+            fi
+          done
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Start static server
+        run: |
+          npx http-server . -p 8090 -c-1 -s >/tmp/server.log 2>&1 &
+          # Give it a second to bind.
+          sleep 2
+          curl -sSf http://localhost:8090/ > /dev/null || {
+            echo "::error::http-server failed to start"
+            cat /tmp/server.log
+            exit 1
+          }
+
+      - name: Run Playwright smoke tests
+        run: npx playwright test --config=e2e/playwright.config.js --grep @smoke
+
+      - name: Upload Playwright artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            e2e/results.json
+            e2e/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
