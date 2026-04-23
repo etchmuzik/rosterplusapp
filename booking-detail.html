@@ -330,6 +330,106 @@
     // when the last payment is in a terminal state; artist sees
     // "Confirm received" when a payment is in processing.
 
+    // Post-event review card. Shows only when:
+    //   - The event date is in the past
+    //   - The booking is in a reviewable state
+    //   - The viewer is promoter or the artist user
+    // The actual create_review RPC re-enforces all of this server-side,
+    // so client-side hiding is purely cosmetic.
+    function renderReviewCard(b) {
+      if (!b) return '';
+      if (!['confirmed', 'contracted', 'completed'].includes(b.status)) return '';
+      if (!b.event_date) return '';
+      const today = new Date().toISOString().slice(0, 10);
+      if (b.event_date > today) return ''; // event hasn't happened yet
+      if (_viewerRole !== 'promoter' && _viewerRole !== 'artist') return '';
+
+      const targetLabel = _viewerRole === 'promoter' ? 'the artist' : 'the promoter';
+      return `
+        <div class="bd-card">
+          <h3>How did it go?</h3>
+          <p class="text-secondary" style="font-size:0.88rem;line-height:1.5;margin-bottom:var(--space-md)">
+            Leave a rating for ${targetLabel}. Honest feedback helps the platform work — promoters see artist ratings when booking, artists see promoter ratings before accepting.
+          </p>
+          <div id="review-form" style="display:flex;flex-direction:column;gap:var(--space-md)">
+            <div>
+              <div style="font-size:0.78rem;color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;font-family:var(--font-mono)">Rating</div>
+              <div id="rating-picker" style="display:flex;gap:8px">
+                ${[1,2,3,4,5].map(n => `
+                  <button type="button" class="rating-star" data-rating="${n}"
+                          onclick="setRating(${n})"
+                          style="background:none;border:1px solid var(--border-subtle);border-radius:var(--radius-sm);width:44px;height:44px;cursor:pointer;font-size:1.3rem;color:var(--text-tertiary);transition:all var(--duration-fast)"
+                          aria-label="${n} stars">☆</button>
+                `).join('')}
+              </div>
+            </div>
+            <div>
+              <label class="form-label" style="font-size:0.78rem;color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;font-family:var(--font-mono)">Comment (optional)</label>
+              <textarea id="review-comment" class="form-input" rows="3" maxlength="500" placeholder="What stood out? Set design, professionalism, punctuality…" style="font-size:0.9rem;line-height:1.5;font-family:var(--font-body);resize:vertical"></textarea>
+            </div>
+            <div style="display:flex;align-items:center;gap:var(--space-md)">
+              <button id="review-submit" class="btn btn-primary" onclick="submitReview('${esc(b.id)}')" disabled>Submit review</button>
+              <div id="review-submit-hint" style="font-size:0.78rem;color:var(--text-tertiary)">Pick a rating to submit.</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    let _selectedRating = 0;
+
+    function setRating(n) {
+      _selectedRating = n;
+      // Light up stars up to n
+      document.querySelectorAll('.rating-star').forEach(btn => {
+        const r = parseInt(btn.dataset.rating, 10);
+        if (r <= n) {
+          btn.textContent = '★';
+          btn.style.color = 'var(--accent-soft)';
+          btn.style.borderColor = 'var(--accent-dim-30)';
+          btn.style.background = 'var(--accent-dim-10)';
+        } else {
+          btn.textContent = '☆';
+          btn.style.color = 'var(--text-tertiary)';
+          btn.style.borderColor = 'var(--border-subtle)';
+          btn.style.background = 'none';
+        }
+      });
+      const btn = document.getElementById('review-submit');
+      const hint = document.getElementById('review-submit-hint');
+      if (btn) btn.disabled = false;
+      if (hint) hint.textContent = `${n} star${n === 1 ? '' : 's'}.`;
+    }
+    window.setRating = setRating;
+
+    async function submitReview(bookingId) {
+      if (!_selectedRating) return;
+      const btn = document.getElementById('review-submit');
+      const comment = document.getElementById('review-comment').value.trim();
+      btn.disabled = true;
+      btn.textContent = 'Submitting…';
+      const res = await DB.createReview(bookingId, _selectedRating, comment);
+      if (!res.success) {
+        UI.toast(res.error || 'Could not submit review', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Submit review';
+        return;
+      }
+      UI.toast('Review submitted — thanks for the feedback.', 'success');
+      if (typeof trackEvent === 'function') trackEvent('review_submitted', { rating: String(_selectedRating) });
+      // Swap the form for a quiet "submitted" state so it's clear the
+      // action completed without requiring a full reload.
+      const form = document.getElementById('review-form');
+      if (form) {
+        form.innerHTML = `
+          <div style="padding:var(--space-md);background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.25);border-radius:var(--radius-sm);color:var(--status-confirmed);font-size:0.92rem">
+            ✓ ${_selectedRating}-star review saved. You can edit it from this page anytime.
+          </div>
+        `;
+      }
+    }
+    window.submitReview = submitReview;
+
     function renderPaymentsCard(b) {
       const rows = _payments;
       const hasOpenRow = rows.find(p => p.status === 'processing' && !p.artist_confirmed_at);
@@ -577,6 +677,7 @@
             </div>
 
             ${renderPaymentsCard(b)}
+            ${renderReviewCard(b)}
           </div>
 
           <div>

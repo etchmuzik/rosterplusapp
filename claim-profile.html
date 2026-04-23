@@ -8,17 +8,87 @@
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
   <title>Claim your artist profile — ROSTR+</title>
+  <meta name="robots" content="noindex">
   <link rel="stylesheet" href="assets/css/system.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="assets/js/error-logger.js"></script>
   <script src="assets/js/app.js" defer></script>
   <style>
-    .claim-container { max-width: 640px; margin: 80px auto 0; padding: var(--space-2xl) var(--space-lg); }
-    .claim-card { background: var(--glass-bg); backdrop-filter: blur(var(--glass-blur)); border: 1px solid var(--glass-border); border-radius: var(--radius-lg); padding: var(--space-xl); margin-bottom: var(--space-md); }
-    .match-card { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); padding: var(--space-md); background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); transition: border-color var(--duration-fast); }
-    .match-card:hover { border-color: var(--gold); }
+    .claim-container { max-width: 700px; margin: 80px auto 0; padding: var(--space-2xl) var(--space-lg); }
+
+    /* Step strip — same visual idiom as booking.html progress bar */
+    .step-strip {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-bottom: var(--space-2xl);
+    }
+    .step-pip {
+      display: flex; align-items: center; gap: 8px;
+      color: var(--text-tertiary);
+      font-family: var(--font-mono);
+      font-size: 0.76rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .step-pip .dot {
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 1.5px solid var(--border-medium);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+    }
+    .step-pip.active { color: var(--accent-soft); }
+    .step-pip.active .dot { border-color: var(--accent); background: var(--accent-dim-10); color: var(--accent-soft); }
+    .step-line { flex: 1; height: 1px; background: var(--border-subtle); margin: 0 12px; }
+
+    .claim-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: var(--space-xl);
+      margin-bottom: var(--space-md);
+    }
+
+    /* Welcome value props */
+    .value-list { list-style: none; padding: 0; margin: var(--space-md) 0 0; display: flex; flex-direction: column; gap: 8px; }
+    .value-list li { display: flex; gap: 10px; align-items: flex-start; font-size: 0.9rem; color: var(--text-secondary); }
+    .value-list li::before { content: '→'; color: var(--accent-soft); font-family: var(--font-mono); }
+
+    .match-card {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: var(--space-md);
+      padding: var(--space-md);
+      background: var(--bg-card-hover);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      transition: border-color var(--duration-fast), background var(--duration-fast);
+    }
+    .match-card:hover { border-color: var(--accent-dim-30); background: var(--bg-card); }
     .match-meta { font-size: 0.82rem; color: var(--text-tertiary); margin-top: 2px; }
-    .divider { text-align: center; color: var(--text-tertiary); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.1em; margin: var(--space-xl) 0 var(--space-md); }
+
+    .result-summary {
+      font-size: 0.78rem;
+      color: var(--text-tertiary);
+      font-family: var(--font-mono);
+      margin-bottom: var(--space-sm);
+    }
+
+    .divider {
+      display: flex; align-items: center;
+      color: var(--text-tertiary);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin: var(--space-xl) 0 var(--space-md);
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1; height: 1px;
+      background: var(--border-subtle);
+    }
+    .divider::before { margin-right: 12px; }
+    .divider::after { margin-left: 12px; }
   </style>
 </head>
 <body>
@@ -26,32 +96,59 @@
     <div id="nav-root"></div>
 
     <main class="claim-container">
-      <h1 style="margin-bottom: var(--space-sm)">Claim your artist profile</h1>
-      <p class="text-secondary" style="margin-bottom: var(--space-xl)">
-        If you were added to ROSTR+ by a promoter before you signed up, find your name below and claim it.
-        Your existing bookings, contracts, and history will be linked to your new account.
-      </p>
 
+      <!-- Step strip -->
+      <div class="step-strip">
+        <div class="step-pip"><span class="dot">✓</span><span>Account</span></div>
+        <div class="step-line"></div>
+        <div class="step-pip active"><span class="dot">2</span><span>Profile</span></div>
+        <div class="step-line"></div>
+        <div class="step-pip"><span class="dot">3</span><span>Dashboard</span></div>
+      </div>
+
+      <!-- Welcome / value-prop card -->
+      <div class="claim-card" style="border-color:var(--accent-dim-20);box-shadow:var(--accent-glow)">
+        <div class="eyebrow" style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--accent-soft);margin-bottom:6px">Welcome, artist</div>
+        <h1 style="margin-bottom:8px">Almost there.</h1>
+        <p class="text-secondary" style="font-size:0.95rem;line-height:1.6">
+          Most artists are already on ROSTR+ — added by promoters who've booked them before. If you're one of them, find your name below and claim it to inherit your booking history. Otherwise start fresh and you'll be live in the directory in a few minutes.
+        </p>
+        <ul class="value-list">
+          <li>Promoters can book you with a 60-second form — no more WhatsApp chains.</li>
+          <li>Contracts auto-draft, payments track automatically.</li>
+          <li>Share your EPK link with one tap: a live press kit, not a PDF.</li>
+        </ul>
+      </div>
+
+      <!-- Search claim -->
       <div class="claim-card">
         <div class="form-group" style="margin-bottom: var(--space-md)">
-          <label class="form-label">Search your stage name</label>
+          <label class="form-label">Are you on the roster already? Search your stage name.</label>
           <input type="text" class="form-input" id="search-input"
                  placeholder="e.g. ENAI, Goomgum, Etch EG..."
                  autocomplete="off" autofocus>
         </div>
+        <div id="result-summary" class="result-summary" style="display:none"></div>
         <div id="search-results" style="display: flex; flex-direction: column; gap: var(--space-sm)"></div>
-        <div id="search-empty" class="text-tertiary" style="padding: var(--space-md) 0; font-size: 0.9rem; text-align: center; display: none">
-          No unclaimed profiles match "<span id="search-term"></span>".
+        <div id="search-empty" style="display: none;padding: var(--space-md) 0">
+          <div style="color:var(--text-tertiary);font-size:0.9rem;text-align:center;margin-bottom:var(--space-md)">
+            No unclaimed profiles match "<span id="search-term"></span>".
+          </div>
+          <div style="text-align:center">
+            <a href="artist-profile-edit.html?setup=1" class="btn btn-primary btn-sm">Create a fresh profile instead →</a>
+          </div>
         </div>
       </div>
 
-      <div class="divider">— or —</div>
+      <!-- Divider -->
+      <div class="divider"><span>not on the list?</span></div>
 
+      <!-- Fresh profile card -->
       <div class="claim-card" style="text-align: center">
-        <p class="text-secondary" style="margin-bottom: var(--space-md); font-size: 0.9rem">
-          Don't see your name? That's fine. Create a fresh profile from scratch.
+        <p class="text-secondary" style="margin-bottom: var(--space-md); font-size: 0.9rem;line-height:1.5">
+          Brand new to the scene, or no promoter added you yet? Build your profile from scratch — takes about 3 minutes.
         </p>
-        <a href="artist-profile-edit.html?setup=1" class="btn btn-secondary">Create new profile &rarr;</a>
+        <a href="artist-profile-edit.html?setup=1" class="btn btn-secondary">Create new profile →</a>
       </div>
     </main>
   </div>
@@ -62,27 +159,37 @@
     async function runSearch(query) {
       const resultsEl = document.getElementById('search-results');
       const emptyEl = document.getElementById('search-empty');
+      const summaryEl = document.getElementById('result-summary');
+
       if (!query || query.length < 2) {
         resultsEl.innerHTML = '';
         emptyEl.style.display = 'none';
+        summaryEl.style.display = 'none';
         return;
       }
+
+      summaryEl.textContent = 'Searching…';
+      summaryEl.style.display = '';
 
       const res = await DB.searchUnclaimedArtists(query);
       if (!res.success) {
         resultsEl.innerHTML = '';
+        summaryEl.style.display = 'none';
         UI.toast(res.error || 'Search failed', 'error');
         return;
       }
 
       if (res.data.length === 0) {
         resultsEl.innerHTML = '';
+        summaryEl.style.display = 'none';
         document.getElementById('search-term').textContent = query;
         emptyEl.style.display = 'block';
         return;
       }
 
       emptyEl.style.display = 'none';
+      summaryEl.textContent = `${res.data.length} match${res.data.length === 1 ? '' : 'es'} — tap "This is me" to claim.`;
+      summaryEl.style.display = '';
       resultsEl.innerHTML = res.data.map(a => {
         const genre = Array.isArray(a.genre) ? a.genre.join(', ') : (a.genre || '');
         const cities = Array.isArray(a.cities_active) ? a.cities_active.join(' · ') : '';
@@ -90,10 +197,10 @@
         return `
           <div class="match-card">
             <div style="flex:1; min-width: 0">
-              <div style="font-weight: 600">${esc(a.stage_name)}${a.verified ? ' <span style="color:var(--gold-text)">✓</span>' : ''}</div>
+              <div style="font-weight: 600">${esc(a.stage_name)}${a.verified ? ' <span style="color:var(--accent-soft)" title="Verified">✓</span>' : ''}</div>
               ${meta ? `<div class="match-meta">${esc(meta)}</div>` : ''}
             </div>
-            <button class="btn btn-primary btn-sm" onclick="claim('${a.id}', '${esc(a.stage_name).replace(/'/g, "\\'")}')">
+            <button class="btn btn-primary btn-sm" data-artist-id="${esc(a.id)}" onclick="claim('${a.id}', '${esc(a.stage_name).replace(/'/g, "\\'")}', this)">
               This is me
             </button>
           </div>
@@ -101,23 +208,34 @@
       }).join('');
     }
 
-    async function claim(artistId, stageName) {
-      if (!confirm(`Claim "${stageName}" as your artist profile? This cannot be undone.`)) return;
+    async function claim(artistId, stageName, btn) {
+      if (!confirm(`Claim "${stageName}" as your artist profile?\n\nYour existing bookings, contracts, and history will link to your new account. This cannot be undone.`)) return;
+
+      // Loading state on the button
+      const originalText = btn ? btn.textContent : 'This is me';
+      if (btn) { btn.disabled = true; btn.textContent = 'Claiming…'; }
+
       const res = await DB.claimArtistProfile(artistId);
       if (!res.success) {
+        if (btn) { btn.disabled = false; btn.textContent = originalText; }
         const msg = {
           'already_has_artist_profile': 'You already have an artist profile.',
-          'artist_not_found_or_already_claimed': 'That profile was just claimed by someone else.',
+          'artist_not_found_or_already_claimed': 'That profile was just claimed by someone else — refresh to see live matches.',
           'only_artists_can_claim': 'Only artist accounts can claim profiles.',
           'not_authenticated': 'Please log in first.',
         }[res.error] || res.error || 'Claim failed';
         UI.toast(msg, 'error');
         return;
       }
+
       UI.toast('Profile claimed ✓ Welcome to ROSTR+', 'success');
-      // Mark onboarding complete so dashboard doesn't send them to setup again
+      // Fire the analytics milestone
+      if (typeof trackEvent === 'function') {
+        trackEvent('artist_profile_claimed', { stage_name: stageName });
+      }
+      // Mark onboarding complete so dashboard doesn't bounce them to setup
       await DB.completeOnboarding();
-      setTimeout(() => window.location.href = 'artist-dashboard.html', 900);
+      setTimeout(() => window.location.href = 'artist-dashboard.html?claimed=1', 900);
     }
 
     document.addEventListener('DOMContentLoaded', async () => {

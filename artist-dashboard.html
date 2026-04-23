@@ -690,6 +690,22 @@
         window.location.replace('claim-profile.html');
         return;
       }
+
+      // Just-claimed celebratory moment. Opens the Share popover against
+      // the artist's new public EPK after a beat, so they immediately see
+      // what they can share. One-shot: the param gets stripped on first
+      // load so a refresh doesn't re-trigger.
+      if (new URLSearchParams(location.search).get('claimed') === '1') {
+        history.replaceState({}, '', location.pathname);
+        setTimeout(() => {
+          try {
+            const epkUrl = `https://rosterplus.io/epk.html?id=${myArtistId}`;
+            const name = Auth.user?.display_name || 'My EPK';
+            UI.toast('Your EPK is live — share it anywhere.', 'success');
+            if (UI && UI.openShare) UI.openShare(epkUrl, `${name} — EPK | ROSTR+ GCC`);
+          } catch (_) {}
+        }, 1200);
+      }
       const onboarding = await DB.checkOnboarding();
       if (!onboarding.complete) {
         UI.toast('Complete your artist profile to get started', 'info');

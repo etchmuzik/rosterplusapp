@@ -162,6 +162,7 @@
                   ${avail === 'avail' ? '<span class="pulse-dot"></span>' : ''}
                   ${availLabel}
                 </div>
+                <div id="rating-badge" style="display:none;font-size:0.78rem;color:var(--text-tertiary);font-family:var(--font-mono);display:inline-flex;align-items:center;gap:4px"></div>
               </div>
             </div>
             <div class="ap-actions">
@@ -234,6 +235,13 @@
                 </ul>
               </div>
             </div>
+          </div>
+
+          <!-- Reviews — populated async by loadReviews() -->
+          <div id="reviews-section" style="margin-top:var(--space-2xl);display:none">
+            <div class="eyebrow" style="font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-tertiary)">Reviews</div>
+            <h3 style="font-family: var(--font-display); font-size: 1.3rem; margin-top: 4px; letter-spacing: -0.02em">What promoters say</h3>
+            <div id="reviews-list" style="margin-top:var(--space-md);display:flex;flex-direction:column;gap:var(--space-sm)"></div>
           </div>
 
           ${similar.length > 0 ? `
@@ -344,7 +352,58 @@
       const similar = await getSimilarArtists(artist);
       renderProfile(artist, similar, root);
       updateMeta(artist);
+
+      // Reviews load async — they're server-aggregated, don't block
+      // the critical path. Target is the artist's profile_id (their
+      // auth user id); unclaimed artists have no profile_id so we skip.
+      if (artist.profile_id) {
+        loadReviews(artist.profile_id).catch(() => {});
+      }
     });
+
+    /* Load + render the rating badge and reviews list. Non-fatal —
+       surfaces zero state quietly if nothing is back from the server. */
+    async function loadReviews(userId) {
+      try {
+        const [statsRes, listRes] = await Promise.all([
+          DB.reviewStatsForUser(userId),
+          DB.reviewsForUser(userId, 10),
+        ]);
+
+        // Rating badge next to the availability pill
+        const badge = document.getElementById('rating-badge');
+        if (badge && statsRes.success && Number(statsRes.data?.review_count) > 0) {
+          const avg = Number(statsRes.data.avg_rating).toFixed(1);
+          const count = Number(statsRes.data.review_count);
+          badge.innerHTML = `<span style="color:var(--accent-soft)">★</span> ${avg} <span style="color:var(--text-tertiary)">(${count})</span>`;
+          badge.style.display = 'inline-flex';
+        }
+
+        // Review list
+        const section = document.getElementById('reviews-section');
+        const list = document.getElementById('reviews-list');
+        if (!section || !list) return;
+        if (!listRes.success || !listRes.data.length) return;
+        section.style.display = '';
+        list.innerHTML = listRes.data.map(r => {
+          const stars = '★★★★★'.slice(0, r.rating) + '☆☆☆☆☆'.slice(0, 5 - r.rating);
+          const when = r.created_at ? new Date(r.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+          const eventLine = r.event_name || r.event_date
+            ? `<div style="font-size:0.72rem;color:var(--text-tertiary);margin-top:4px">${esc(r.event_name || '')}${r.event_name && r.event_date ? ' · ' : ''}${r.event_date ? new Date(r.event_date + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}</div>`
+            : '';
+          return `
+            <div style="padding:var(--space-md);background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm)">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-md);flex-wrap:wrap">
+                <div style="color:var(--accent-soft);font-size:0.95rem;letter-spacing:0.04em">${stars}</div>
+                <div style="font-size:0.72rem;color:var(--text-tertiary);font-family:var(--font-mono)">${when}${r.reviewer_name ? ' · ' + esc(r.reviewer_name) : ''}</div>
+              </div>
+              ${r.comment ? `<p style="margin-top:8px;color:var(--text-secondary);font-size:0.92rem;line-height:1.5">${esc(r.comment)}</p>` : ''}
+              ${eventLine}
+            </div>
+          `;
+        }).join('');
+      } catch (_) { /* silent — non-critical */ }
+    }
   </script>
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
 </body>
