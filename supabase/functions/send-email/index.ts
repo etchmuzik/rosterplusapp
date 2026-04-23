@@ -17,7 +17,11 @@ interface EmailPayload {
     | 'payment_received'
     | 'booking_accepted'
     | 'booking_rejected'
-    | 'invitation';
+    | 'invitation'
+    // Artist onboarding drip — fired by send-artist-onboarding-drip cron
+    | 'artist_welcome'
+    | 'artist_profile_nudge_24h'
+    | 'artist_epk_share_72h';
   data: Record<string, string>;
 }
 
@@ -144,6 +148,55 @@ const templates: Record<string, (d: Record<string, string>) => { subject: string
       `You got this because the artist you requested declined. No charge, no hard feelings.`,
     ),
     text: `Booking declined — ${d.artist_name}\n\n${d.artist_name} isn't able to accept this booking. Browse others: ${d.browse_url}\n\n— ROSTER+`,
+  }),
+
+  // ── Artist onboarding drip ────────────────────────────────
+  artist_welcome: (d) => ({
+    subject: `Welcome to ROSTR+, ${d.name}`,
+    html: SHELL(
+      `${h1(`Welcome aboard, ${d.name}.`)}
+       ${lede(`Your account is live. The next step: build out your profile so promoters can find you and book with confidence.`)}
+       ${factCard([
+         ['Profile', d.profile_complete === 'true' ? 'Complete' : 'Missing details'],
+         ['Next step', 'Add bio, rate, rider'],
+         ['Time needed', '~3 minutes'],
+       ])}
+       ${btn(d.profile_url, 'Complete my profile')}`,
+      `You got this because you just created an artist account on ROSTR+.`,
+    ),
+    text: `Welcome to ROSTR+, ${d.name}\n\nYour account is live. Complete your profile to start getting booked.\n\n${d.profile_url}\n\n— ROSTER+`,
+  }),
+
+  artist_profile_nudge_24h: (d) => ({
+    subject: `${d.name}, your ROSTR+ profile is 24 hours old`,
+    html: SHELL(
+      `${h1('A quick nudge.')}
+       ${lede(`Your profile has been up for a day but promoters can't discover you yet. Finish the last few fields and you\u2019ll show up in the directory today.`)}
+       <p style="color:rgba(255,255,255,0.62);font-size:14px;line-height:1.6;margin:0 0 16px">Missing pieces block promoters from sending requests:</p>
+       <ul style="color:rgba(255,255,255,0.78);font-size:14px;line-height:1.8;padding-left:20px;margin:0 0 24px">
+         ${d.missing_bio === 'true' ? '<li>Short bio (2-3 sentences)</li>' : ''}
+         ${d.missing_rate === 'true' ? '<li>Starting fee (we show \"on request\" until you set one)</li>' : ''}
+         ${d.missing_rider === 'true' ? '<li>Technical rider (makes booking conflict-free)</li>' : ''}
+         ${d.missing_avatar === 'true' ? '<li>Profile photo</li>' : ''}
+       </ul>
+       ${btn(d.profile_url, 'Finish my profile')}`,
+      `You got this because your ROSTR+ artist profile has missing fields 24 hours after signup.`,
+    ),
+    text: `${d.name}, your ROSTR+ profile needs finishing.\n\nComplete it here: ${d.profile_url}\n\n— ROSTER+`,
+  }),
+
+  artist_epk_share_72h: (d) => ({
+    subject: `Your ROSTR+ EPK is ready to share, ${d.name}`,
+    html: SHELL(
+      `${h1('Your EPK is live.')}
+       ${lede(`Three days in and your profile is in good shape. Here\u2019s something most artists don\u2019t realise for weeks \u2014 ROSTR+ auto-generates a shareable Electronic Press Kit at a link you can drop into any WhatsApp, email, or Instagram bio.`)}
+       <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:16px 20px;margin:20px 0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;color:rgba(255,255,255,0.78);word-break:break-all">${d.epk_url}</div>
+       ${lede(`Promoters who click it see a clean, updated press kit — not a 6-month-old PDF. Every booking gets more likely.`)}
+       ${btn(d.epk_url, 'Open my EPK')}
+       <p style="color:rgba(255,255,255,0.42);font-size:13px;margin-top:20px;line-height:1.6">Pro tip: replace the link in your Instagram bio with the EPK URL. Every DM becomes a booking request.</p>`,
+      `You got this because your ROSTR+ profile has been live for 72 hours. This is the last automated onboarding email — future emails will be booking-related only.`,
+    ),
+    text: `Your ROSTR+ EPK is ready to share.\n\nOpen: ${d.epk_url}\n\nDrop this link into any WhatsApp, email, or Instagram bio.\n\n— ROSTER+`,
   }),
 
   invitation: (d) => ({

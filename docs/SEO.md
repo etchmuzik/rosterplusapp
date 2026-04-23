@@ -48,6 +48,31 @@ Rich Results Test (no auth required): https://search.google.com/test/rich-result
 
 Schema.org validator: https://validator.schema.org/
 
+## Search Console submission (one-time setup)
+
+1. Go to https://search.google.com/search-console/welcome
+2. Pick "URL prefix" method, enter `https://rosterplus.io`
+3. Pick the "HTML tag" verification option — copy the `<meta name="google-site-verification" content="…">` tag
+4. Add that `<meta>` to `index.html` inside `<head>` (right under the existing `<meta name="description">`)
+5. Deploy, then click **Verify** in Search Console
+6. Once verified: **Sitemaps** → submit `https://rosterplus.io/sitemap.xml`
+
+Bing Webmaster Tools has the same flow at https://www.bing.com/webmasters — it accepts Google's verification automatically, so step 3 is one-tag-for-both.
+
+## Lighthouse CI
+
+CI fires Lighthouse on every pull request against the live-ish local server. Config lives in `.lighthouserc.json`.
+
+Thresholds today:
+- **Accessibility ≥ 0.90** — hard fail (error)
+- **SEO ≥ 0.95** — hard fail (error)
+- **Performance ≥ 0.85** — warn only (perf varies in CI runners)
+- **Best Practices ≥ 0.90** — warn only
+
+URLs audited: homepage, directory, auth. Profile pages skipped in CI because they need live data.
+
+Adjust thresholds in `.lighthouserc.json` as the product matures.
+
 ## Open tasks
 
 - [ ] Submit sitemap to Google Search Console + Bing Webmaster Tools (one-off)

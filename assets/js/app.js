@@ -1064,6 +1064,61 @@ window.addEventListener('keydown', (e) => {
 window.openSearchPalette = openSearchPalette;
 window.closeSearchPalette = closeSearchPalette;
 
+// ── Focus trap for open modals ─────────────────────────────
+// Keeps Tab and Shift+Tab cycling within the currently-visible modal.
+// Without this, tab navigation leaks to the page underneath the overlay
+// — a WCAG 2.4.3 violation and a legitimate confusion vector for
+// keyboard + AT users. Pure-vanilla, one listener, works for every
+// .modal-overlay on the site because they all share the same DOM idiom.
+window.addEventListener('keydown', (e) => {
+  if (e.key !== 'Tab') return;
+  // Find the topmost visible modal-overlay. If there are multiple we
+  // trap in the last one (DOM order = stack order).
+  const overlays = Array.from(document.querySelectorAll('.modal-overlay'));
+  let active = null;
+  for (const ov of overlays) {
+    const visible = ov.offsetParent !== null ||
+      ov.classList.contains('active') ||
+      (ov.style.display && ov.style.display !== 'none' && ov.style.display !== '');
+    if (visible) active = ov;
+  }
+  if (!active) return;
+  // Also trap in the search palette when open
+  const palette = document.getElementById('search-palette');
+  if (palette && palette.classList.contains('active')) active = palette;
+
+  const FOCUSABLE = [
+    'a[href]:not([disabled])',
+    'button:not([disabled])',
+    'input:not([disabled]):not([type="hidden"])',
+    'textarea:not([disabled])',
+    'select:not([disabled])',
+    '[tabindex]:not([tabindex="-1"]):not([disabled])',
+  ].join(',');
+  const nodes = Array.from(active.querySelectorAll(FOCUSABLE))
+    .filter(n => n.offsetParent !== null || n === document.activeElement);
+  if (nodes.length === 0) return;
+
+  const first = nodes[0];
+  const last  = nodes[nodes.length - 1];
+  const onFirst = document.activeElement === first;
+  const onLast  = document.activeElement === last;
+  const outside = !active.contains(document.activeElement);
+
+  if (outside) {
+    e.preventDefault();
+    first.focus();
+    return;
+  }
+  if (e.shiftKey && onFirst) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && onLast) {
+    e.preventDefault();
+    first.focus();
+  }
+});
+
 // ── Password Reset ──
 // Calls our custom send-password-reset edge function rather than
 // _sb.auth.resetPasswordForEmail(). The built-in method depends on
