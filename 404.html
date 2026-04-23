@@ -32,9 +32,14 @@
       <h1 style="font-family:var(--font-display);font-size:clamp(3rem,8vw,5rem);letter-spacing:-0.04em;line-height:1;margin-bottom:var(--space-md)">
         This stage is empty.
       </h1>
-      <p style="color:var(--text-secondary);font-size:1.05rem;max-width:54ch;margin:0 auto var(--space-2xl);line-height:1.6">
+      <p style="color:var(--text-secondary);font-size:1.05rem;max-width:54ch;margin:0 auto var(--space-md);line-height:1.6">
         The page you’re looking for doesn’t exist — or it may have been moved. Try the directory, or head back to the home page.
       </p>
+
+      <!-- Breadcrumb: show the attempted path so the user understands what
+           was missed (common when a share link rots or a typo was made). -->
+      <div id="attempted-path" style="display:none;font-family:var(--font-mono);font-size:0.78rem;color:var(--text-tertiary);background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:8px 12px;max-width:420px;margin:0 auto var(--space-2xl);word-break:break-all"></div>
+
       <div style="display:flex;gap:var(--space-sm);justify-content:center;flex-wrap:wrap">
         <a href="/" class="btn btn-primary">Go home</a>
         <a href="/directory.html" class="btn btn-secondary">Browse the roster</a>
@@ -54,6 +59,35 @@
     </main>
   </div>
   <script>
+    // Show the attempted URL so the user can spot typos or stale share links.
+    (function showAttemptedPath() {
+      try {
+        const path = location.pathname + location.search;
+        // Suppress when served directly at /404.html (no actual miss)
+        if (path === '/404.html' || path === '/404.html/') return;
+        const el = document.getElementById('attempted-path');
+        if (el) {
+          el.innerHTML = '<span style="color:var(--text-tertiary);margin-right:6px">→</span>' +
+            path.replace(/[<>]/g, '');
+          el.style.display = 'block';
+        }
+      } catch (_) { /* non-critical */ }
+    })();
+
+    // Log 404 to the client_errors table so we can spot broken links in the
+    // admin → Errors tab. Throttled once per page load.
+    (function log404() {
+      try {
+        if (!window.logError) return;
+        const path = location.pathname;
+        if (path === '/404.html' || path === '/404.html/') return;
+        window.logError(new Error('404: ' + path + location.search), {
+          kind: 'navigation_404',
+          referrer: document.referrer || null,
+        });
+      } catch (_) { /* non-critical */ }
+    })();
+
     document.addEventListener('DOMContentLoaded', async () => {
       if (typeof Auth !== 'undefined') await Auth.ready();
       const navRoot = document.getElementById('nav-root');
