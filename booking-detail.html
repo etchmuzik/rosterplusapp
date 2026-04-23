@@ -256,8 +256,61 @@
       } else {
         actions.push(`<button class="btn btn-ghost btn-sm" onclick="hideBooking(true)" style="color:var(--text-tertiary)">Hide from my list</button>`);
       }
+
+      // Admin-only actions. Auth.isAdminCached populates a few hundred ms
+      // after loadProfile; we re-render this section once it resolves
+      // (see admin-actions mount below). Actions here hit the same
+      // audited RPCs the Admin console uses.
+      if (Auth.isAdminCached && b.status !== 'cancelled') {
+        actions.push(`<button class="btn btn-ghost btn-sm" style="color:var(--status-cancelled);border-color:rgba(248,113,113,0.3)" onclick="adminForceCancelBooking('${esc(b.id)}','${esc(b.event_name || b.venue_name || 'Event').replace(/'/g,'&#39;')}')">🛡 Force cancel</button>`);
+      }
+      if (Auth.isAdminCached) {
+        actions.push(`<button class="btn btn-ghost btn-sm" onclick="adminChangeBookingStatus('${esc(b.id)}','${esc(b.status || '')}')" style="color:var(--accent-soft)">🛡 Change status</button>`);
+      }
       return actions.join('');
     }
+
+    async function adminForceCancelBooking(bookingId, eventName) {
+      const reason = prompt(`Force-cancel "${eventName}"?\n\nThis overrides the normal rules and is audit-logged.\n\nReason:`);
+      if (reason === null) return;
+      const res = await DB.adminForceCancelBooking(bookingId, reason);
+      if (!res.success) { UI.toast('Failed: ' + (res.error || ''), 'error'); return; }
+      UI.toast('Booking force-cancelled', 'success');
+      setTimeout(() => location.reload(), 600);
+    }
+    window.adminForceCancelBooking = adminForceCancelBooking;
+
+    async function adminChangeBookingStatus(bookingId, currentStatus) {
+      const choices = ['inquiry','pending','confirmed','contracted','completed','cancelled'];
+      const next = prompt(
+        `Change status of this booking.\n\nCurrent: ${currentStatus}\n\nAllowed: ${choices.join(', ')}\n\nNew status:`,
+        currentStatus
+      );
+      if (!next || next === currentStatus) return;
+      if (!choices.includes(next)) { UI.toast('Invalid status: ' + next, 'error'); return; }
+      // Plain update — admins bypass RLS via is_admin() SELECT policy
+      // and the existing "Involved parties can update" is OR'd with the
+      // admin SELECT; we still need an UPDATE policy for admins. Use
+      // the direct update and let RLS answer.
+      try {
+        const { error } = await _sb.from('bookings')
+          .update({ status: next, updated_at: new Date().toISOString() })
+          .eq('id', bookingId);
+        if (error) { UI.toast('Failed: ' + error.message, 'error'); return; }
+        // Hand-roll audit entry since there's no dedicated RPC for this
+        await DB.logAdminAction({
+          action: 'booking.status_change',
+          target_type: 'booking',
+          target_id: bookingId,
+          meta: { from: currentStatus, to: next, source: 'booking-detail' },
+        });
+        UI.toast('Status → ' + next, 'success');
+        setTimeout(() => location.reload(), 600);
+      } catch (e) {
+        UI.toast('Failed: ' + String(e), 'error');
+      }
+    }
+    window.adminChangeBookingStatus = adminChangeBookingStatus;
 
     async function hideBooking(hide) {
       if (hide && !confirm('Hide this booking from your list? You can restore it later from the "Show hidden" toggle on the bookings page.')) return;

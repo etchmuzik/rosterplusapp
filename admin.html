@@ -182,6 +182,7 @@
         <div style="display:flex;gap:8px;margin-bottom:var(--space-sm);align-items:center;flex-wrap:wrap">
           <div style="font-size:0.88rem;color:var(--text-secondary)">All registered accounts. Change role only when you understand the consequences.</div>
           <input type="text" id="user-search" placeholder="Search email or name" oninput="renderUsers()" class="form-input" style="max-width:260px;margin-left:auto;font-size:0.82rem;padding:6px 10px">
+          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" onclick="exportUsersCSV()">↓ CSV</button>
           <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" onclick="renderUsers()">Refresh</button>
         </div>
         <div id="users-list" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);overflow:hidden"></div>
@@ -199,6 +200,7 @@
             <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
           </select>
+          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" onclick="exportBookingsModCSV()">↓ CSV</button>
           <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" onclick="renderBookingsMod()">Refresh</button>
         </div>
         <div id="bookings-mod-list" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);overflow:hidden"></div>
@@ -273,9 +275,36 @@
 
       <!-- ═══ Tab: Audit log ═══ -->
       <section class="admin-panel" data-panel="audit">
-        <div style="display:flex;gap:8px;margin-bottom:var(--space-sm);align-items:center">
-          <div style="font-size:0.88rem;color:var(--text-secondary)">Latest 100 admin actions</div>
-          <button class="btn btn-ghost btn-sm" style="margin-left:auto;font-size:0.76rem" onclick="refreshAuditLog()">Refresh</button>
+        <div style="display:flex;gap:8px;margin-bottom:var(--space-sm);align-items:center;flex-wrap:wrap">
+          <div style="font-size:0.88rem;color:var(--text-secondary)">Admin actions. Up to 500 rows; use filters to narrow.</div>
+          <button class="btn btn-ghost btn-sm" style="margin-left:auto;font-size:0.76rem" onclick="exportAuditLogCSV()">↓ CSV</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" onclick="refreshAuditLog()">Refresh</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:var(--space-sm);flex-wrap:wrap;align-items:center">
+          <input type="text" id="audit-actor" placeholder="Filter by actor email" oninput="applyAuditFilters()" class="form-input" style="max-width:260px;font-size:0.82rem;padding:6px 10px">
+          <select id="audit-action-filter" class="form-select" style="font-size:0.82rem;padding:6px 10px" onchange="applyAuditFilters()">
+            <option value="">All action types</option>
+            <option value="artist.verify">Artist verify</option>
+            <option value="artist.unverify">Artist unverify</option>
+            <option value="artist.status_change">Artist status change</option>
+            <option value="artist.create">Artist create</option>
+            <option value="artist.bulk_import">Artist bulk import</option>
+            <option value="user.role_change">User role change</option>
+            <option value="user.suspend">User suspend</option>
+            <option value="user.unsuspend">User unsuspend</option>
+            <option value="user.impersonate">User impersonate</option>
+            <option value="user.resend_welcome">Resend welcome</option>
+            <option value="booking.force_cancel">Booking force-cancel</option>
+            <option value="booking.status_change">Booking status change</option>
+            <option value="broadcast.sent">Broadcast sent</option>
+          </select>
+          <select id="audit-range" class="form-select" style="font-size:0.82rem;padding:6px 10px" onchange="applyAuditFilters()">
+            <option value="all">All time</option>
+            <option value="24h">Last 24 hours</option>
+            <option value="7d">Last 7 days</option>
+            <option value="30d">Last 30 days</option>
+          </select>
+          <div id="audit-count" style="font-size:0.76rem;color:var(--text-tertiary);font-family:var(--font-mono);margin-left:auto"></div>
         </div>
         <div id="admin-audit-log" style="max-height:600px;overflow-y:auto;font-size:0.82rem;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:var(--space-md) var(--space-lg)"></div>
       </section>
@@ -289,6 +318,7 @@
             <option value="168">Last 7 days</option>
             <option value="720">Last 30 days</option>
           </select>
+          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" onclick="exportEmailsCSV()">↓ CSV</button>
           <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" onclick="renderEmails()">Refresh</button>
         </div>
 
@@ -332,6 +362,7 @@
             <option value="7d">Last 7 days</option>
             <option value="all">All (30-day window)</option>
           </select>
+          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" onclick="exportErrorsCSV()">↓ CSV</button>
           <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" onclick="renderErrors()">Refresh</button>
         </div>
         <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);overflow:hidden">
@@ -349,7 +380,8 @@
       <section class="admin-panel" data-panel="health">
         <div style="display:flex;gap:8px;margin-bottom:var(--space-lg);align-items:center">
           <div style="font-size:0.88rem;color:var(--text-secondary)">Platform health snapshot</div>
-          <button class="btn btn-ghost btn-sm" style="margin-left:auto;font-size:0.76rem" onclick="renderHealth()">Refresh</button>
+          <button class="btn btn-ghost btn-sm" style="margin-left:auto;font-size:0.76rem" onclick="exportCronRunsCSV()">↓ CSV</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" onclick="renderHealth()">Refresh</button>
         </div>
 
         <div id="health-summary" class="health-card">Loading…</div>
@@ -380,27 +412,66 @@
     window.switchAdminTab = switchAdminTab;
 
     // ─── Audit log ─────────────────────────────────────────
+    let _auditRows = [];
     async function refreshAuditLog() {
       const host = document.getElementById('admin-audit-log');
       if (!host) return;
       host.innerHTML = '<div class="text-tertiary" style="padding:var(--space-md);font-size:0.82rem">Loading…</div>';
-      const res = await DB.adminListAuditLog({ limit: 100 });
+      const res = await DB.adminListAuditLog({ limit: 500 });
       if (!res.success) {
         host.innerHTML = `<div class="text-tertiary" style="padding:var(--space-md);font-size:0.82rem">Failed to load: ${res.error || 'unknown'}</div>`;
         return;
       }
-      if (!res.data.length) {
-        host.innerHTML = '<div class="text-tertiary" style="padding:var(--space-md);font-size:0.82rem;text-align:center">No admin actions logged yet.</div>';
+      _auditRows = res.data || [];
+      applyAuditFilters();
+    }
+    window.refreshAuditLog = refreshAuditLog;
+
+    // Client-side audit filter pass. Keeps the fetched cache intact,
+    // just hides rows that don't match the three filter inputs.
+    function applyAuditFilters() {
+      const host = document.getElementById('admin-audit-log');
+      const countEl = document.getElementById('audit-count');
+      if (!host) return;
+
+      const actor = (document.getElementById('audit-actor')?.value || '').trim().toLowerCase();
+      const actionF = document.getElementById('audit-action-filter')?.value || '';
+      const range = document.getElementById('audit-range')?.value || 'all';
+
+      let sinceMs = 0;
+      if (range === '24h') sinceMs = Date.now() - 24 * 60 * 60 * 1000;
+      else if (range === '7d')  sinceMs = Date.now() - 7  * 24 * 60 * 60 * 1000;
+      else if (range === '30d') sinceMs = Date.now() - 30 * 24 * 60 * 60 * 1000;
+
+      const rows = _auditRows.filter(r => {
+        if (actor && !(r.actor_email || '').toLowerCase().includes(actor)) return false;
+        if (actionF && r.action !== actionF) return false;
+        if (sinceMs && new Date(r.created_at).getTime() < sinceMs) return false;
+        return true;
+      });
+
+      if (countEl) countEl.textContent = `${rows.length} of ${_auditRows.length}`;
+
+      if (rows.length === 0) {
+        host.innerHTML = '<div class="text-tertiary" style="padding:var(--space-md);font-size:0.82rem;text-align:center">No matching events.</div>';
         return;
       }
       const actionLabel = {
-        'artist.verify':        'Verified artist',
-        'artist.unverify':      'Un-verified artist',
-        'artist.status_change': 'Changed status',
-        'artist.create':        'Created artist',
-        'artist.claim':         'Linked artist to user',
-        'artist.unclaim':       'Unlinked artist from user',
-        'artist.bulk_import':   'Bulk CSV import',
+        'artist.verify':          'Verified artist',
+        'artist.unverify':        'Un-verified artist',
+        'artist.status_change':   'Changed artist status',
+        'artist.create':          'Created artist',
+        'artist.claim':           'Linked artist to user',
+        'artist.unclaim':         'Unlinked artist from user',
+        'artist.bulk_import':     'Bulk CSV import',
+        'user.role_change':       'Changed user role',
+        'user.suspend':           'Suspended user',
+        'user.unsuspend':         'Un-suspended user',
+        'user.impersonate':       'Impersonated user',
+        'user.resend_welcome':    'Re-sent welcome email',
+        'booking.force_cancel':   'Force-cancelled booking',
+        'booking.status_change':  'Changed booking status',
+        'broadcast.sent':         'Broadcast sent',
       };
       const fmtVal = (v) => {
         if (v === null || v === undefined || v === '') return '—';
@@ -408,14 +479,15 @@
         if (typeof v === 'object') return JSON.stringify(v);
         return String(v);
       };
-      host.innerHTML = res.data.map(row => {
+      host.innerHTML = rows.map(row => {
         const when = new Date(row.created_at);
         const whenStr = when.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
         const label = actionLabel[row.action] || row.action;
         const stageName = row.meta?.stage_name ? ` · <strong>${esc(row.meta.stage_name)}</strong>` : '';
+        const reason = row.meta?.reason ? ` · reason: ${esc(row.meta.reason)}` : '';
 
         let delta = '';
-        if (row.before_value && row.after_value) {
+        if (row.before_value && row.after_value && Object.keys(row.after_value).length) {
           const keys = Object.keys(row.after_value);
           delta = keys.map(k => {
             const bef = fmtVal(row.before_value[k]);
@@ -425,7 +497,9 @@
         } else if (row.action === 'artist.bulk_import' && row.meta) {
           const m = row.meta;
           delta = `<span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary)">${m.succeeded || 0} imported · ${m.failed || 0} failed · ${m.total || 0} total</span>`;
-        } else if (row.after_value) {
+        } else if (row.action === 'broadcast.sent' && row.after_value) {
+          delta = `<span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary)">${row.after_value.recipients || 0} recipients · "${esc((row.meta?.title || '').slice(0, 60))}"${row.meta?.role_filter ? ' · role=' + esc(row.meta.role_filter) : ''}</span>`;
+        } else if (row.after_value && Object.keys(row.after_value).length) {
           const parts = Object.entries(row.after_value).map(([k,v]) => `${esc(k)}=${esc(fmtVal(v))}`);
           delta = `<span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary)">${parts.join(' · ')}</span>`;
         }
@@ -435,13 +509,13 @@
             <div style="color:var(--text-primary)"><strong>${esc(label)}</strong>${stageName}</div>
             ${delta ? `<div style="margin-top:4px">${delta}</div>` : ''}
             <div style="font-size:0.72rem;color:var(--text-tertiary);margin-top:4px">
-              ${esc(row.actor_email || 'unknown')} · ${whenStr}
+              ${esc(row.actor_email || 'unknown')} · ${whenStr}${reason}
             </div>
           </div>
         `;
       }).join('');
     }
-    window.refreshAuditLog = refreshAuditLog;
+    window.applyAuditFilters = applyAuditFilters;
 
     // ─── Roster ────────────────────────────────────────────
     async function renderAdminArtists() {
@@ -1095,6 +1169,133 @@
       }).join('');
     }
     window.renderEmails = renderEmails;
+
+    // ─── CSV exports ──────────────────────────────────────
+    // One per tab. Uses UI.downloadCSV (RFC-4180 + BOM). Filenames
+    // include the date so multiple exports don't collide.
+    function todayStr() { return new Date().toISOString().slice(0, 10); }
+
+    function exportUsersCSV() {
+      if (!_allUsers || !_allUsers.length) { UI.toast('No users to export', 'info'); return; }
+      const rows = _allUsers.map(u => ({
+        id: u.id,
+        email: u.email || '',
+        display_name: u.display_name || '',
+        role: u.role || '',
+        city: u.city || '',
+        onboarding_complete: u.onboarding_complete ? 'yes' : 'no',
+        created_at: u.created_at || '',
+        last_sign_in_at: u.last_sign_in_at || '',
+      }));
+      UI.downloadCSV(`rostr-users-${todayStr()}.csv`, rows);
+    }
+    window.exportUsersCSV = exportUsersCSV;
+
+    function exportBookingsModCSV() {
+      if (!_allModBookings || !_allModBookings.length) { UI.toast('No bookings to export', 'info'); return; }
+      const rows = _allModBookings.map(b => ({
+        id: b.id,
+        event_name: b.event_name || '',
+        event_date: b.event_date || '',
+        event_time: b.event_time || '',
+        venue_name: b.venue_name || '',
+        artist: b.artists?.stage_name || b.artists?.profiles?.display_name || '',
+        promoter: b.promoter?.display_name || b.promoter?.email || '',
+        promoter_email: b.promoter?.email || '',
+        fee: b.fee != null ? b.fee : '',
+        currency: b.currency || '',
+        status: b.status || '',
+        created_at: b.created_at || '',
+      }));
+      UI.downloadCSV(`rostr-bookings-${todayStr()}.csv`, rows);
+    }
+    window.exportBookingsModCSV = exportBookingsModCSV;
+
+    async function exportAuditLogCSV() {
+      // Re-fetch so we get a fresh snapshot at export time (not whatever
+      // was last rendered). Bigger payload — use a wider limit.
+      const res = await DB.adminListAuditLog({ limit: 500 });
+      if (!res.success || !res.data.length) { UI.toast('Nothing to export', 'info'); return; }
+      const rows = res.data.map(r => ({
+        id: r.id,
+        created_at: r.created_at || '',
+        actor_email: r.actor_email || '',
+        action: r.action || '',
+        target_type: r.target_type || '',
+        target_id: r.target_id || '',
+        before_value: r.before_value ? JSON.stringify(r.before_value) : '',
+        after_value: r.after_value ? JSON.stringify(r.after_value) : '',
+        meta: r.meta ? JSON.stringify(r.meta) : '',
+      }));
+      UI.downloadCSV(`rostr-audit-${todayStr()}.csv`, rows);
+    }
+    window.exportAuditLogCSV = exportAuditLogCSV;
+
+    async function exportErrorsCSV() {
+      const range = document.getElementById('err-range')?.value || '24h';
+      let sinceHours = 24;
+      if (range === '7d') sinceHours = 24 * 7;
+      if (range === 'all') sinceHours = 24 * 30;
+      const since = new Date(Date.now() - sinceHours * 60 * 60 * 1000).toISOString();
+      try {
+        const { data, error } = await _sb.from('client_errors')
+          .select('id, user_id, url, user_agent, build, message, stack, context, created_at')
+          .gt('created_at', since)
+          .order('created_at', { ascending: false })
+          .limit(1000);
+        if (error || !data || !data.length) { UI.toast('Nothing to export', 'info'); return; }
+        const rows = data.map(r => ({
+          id: r.id,
+          created_at: r.created_at || '',
+          user_id: r.user_id || '',
+          url: r.url || '',
+          build: r.build || '',
+          message: r.message || '',
+          stack: r.stack || '',
+          user_agent: r.user_agent || '',
+          context: r.context ? JSON.stringify(r.context) : '',
+        }));
+        UI.downloadCSV(`rostr-errors-${todayStr()}.csv`, rows);
+      } catch (e) { UI.toast('Export failed: ' + String(e), 'error'); }
+    }
+    window.exportErrorsCSV = exportErrorsCSV;
+
+    async function exportEmailsCSV() {
+      const typeFilter = document.getElementById('email-type-filter')?.value || null;
+      const res = await DB.adminListEmailEvents({ limit: 1000, typeFilter });
+      if (!res.success || !res.data.length) { UI.toast('Nothing to export', 'info'); return; }
+      const rows = res.data.map(r => ({
+        id: r.id,
+        created_at: r.created_at || '',
+        type: r.type || '',
+        to_email: r.to_email || '',
+        subject: r.subject || '',
+        resend_id: r.resend_id || '',
+      }));
+      UI.downloadCSV(`rostr-emails-${todayStr()}.csv`, rows);
+    }
+    window.exportEmailsCSV = exportEmailsCSV;
+
+    async function exportCronRunsCSV() {
+      try {
+        const { data, error } = await _sb.from('cron_runs')
+          .select('id, job, status, duration_ms, error, meta, ran_at')
+          .order('ran_at', { ascending: false })
+          .limit(500);
+        if (error || !data || !data.length) { UI.toast('Nothing to export', 'info'); return; }
+        const rows = data.map(r => ({
+          id: r.id,
+          ran_at: r.ran_at || '',
+          job: r.job || '',
+          status: r.status || '',
+          duration_ms: r.duration_ms != null ? r.duration_ms : '',
+          error: r.error || '',
+          meta: r.meta ? JSON.stringify(r.meta) : '',
+        }));
+        UI.downloadCSV(`rostr-cron-runs-${todayStr()}.csv`, rows);
+      } catch (e) { UI.toast('Export failed: ' + String(e), 'error'); }
+    }
+    window.exportCronRunsCSV = exportCronRunsCSV;
 
     // ─── Init ──────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', async function() {
