@@ -136,6 +136,7 @@
         <button class="admin-tab" data-tab="import" onclick="switchAdminTab('import')">Bulk import</button>
         <button class="admin-tab" data-tab="broadcast" onclick="switchAdminTab('broadcast')">Broadcast</button>
         <button class="admin-tab" data-tab="audit" onclick="switchAdminTab('audit')">Audit log</button>
+        <button class="admin-tab" data-tab="emails" onclick="switchAdminTab('emails')">Emails</button>
         <button class="admin-tab" data-tab="errors" onclick="switchAdminTab('errors')">Errors</button>
         <button class="admin-tab" data-tab="health" onclick="switchAdminTab('health')">Health</button>
       </div>
@@ -279,6 +280,49 @@
         <div id="admin-audit-log" style="max-height:600px;overflow-y:auto;font-size:0.82rem;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:var(--space-md) var(--space-lg)"></div>
       </section>
 
+      <!-- ═══ Tab: Emails ═══ -->
+      <section class="admin-panel" data-panel="emails">
+        <div style="display:flex;gap:8px;margin-bottom:var(--space-sm);align-items:center;flex-wrap:wrap">
+          <div style="font-size:0.88rem;color:var(--text-secondary)">Resend webhook events. Deliverability at a glance.</div>
+          <select id="email-window" class="form-select" style="margin-left:auto;font-size:0.82rem;padding:6px 10px" onchange="renderEmails()">
+            <option value="24">Last 24 hours</option>
+            <option value="168">Last 7 days</option>
+            <option value="720">Last 30 days</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" onclick="renderEmails()">Refresh</button>
+        </div>
+
+        <div id="email-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:var(--space-lg)"></div>
+
+        <div style="display:flex;gap:8px;margin-bottom:var(--space-sm);align-items:center">
+          <div style="font-size:0.82rem;color:var(--text-secondary)">Recent events</div>
+          <select id="email-type-filter" class="form-select" style="margin-left:auto;font-size:0.78rem;padding:4px 8px" onchange="renderEmails()">
+            <option value="">All event types</option>
+            <option value="email.sent">Sent</option>
+            <option value="email.delivered">Delivered</option>
+            <option value="email.bounced">Bounced</option>
+            <option value="email.complained">Complained</option>
+            <option value="email.delivery_delayed">Delayed</option>
+            <option value="email.opened">Opened</option>
+            <option value="email.clicked">Clicked</option>
+          </select>
+        </div>
+        <div id="email-events-list" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);overflow:hidden"></div>
+
+        <details style="margin-top:var(--space-lg);padding:var(--space-md);background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm)">
+          <summary style="cursor:pointer;font-size:0.82rem;color:var(--text-secondary)">Setup instructions</summary>
+          <div style="margin-top:var(--space-sm);font-size:0.82rem;color:var(--text-secondary);line-height:1.6">
+            <ol style="margin-left:var(--space-md)">
+              <li>In Resend dashboard → Webhooks → Add Endpoint.</li>
+              <li>URL: <code style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-primary)">https://vgjmfpryobsuboukbemr.supabase.co/functions/v1/resend-webhook</code></li>
+              <li>Events: email.sent, email.delivered, email.bounced, email.complained, email.opened, email.clicked, email.delivery_delayed</li>
+              <li>Copy the signing secret into Supabase → Edge Functions → Secrets as <code style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-primary)">RESEND_WEBHOOK_SECRET</code>.</li>
+              <li>Until the secret is set, events still land here but with a <code>webhook_secret_not_configured</code> warning in edge logs.</li>
+            </ol>
+          </div>
+        </details>
+      </section>
+
       <!-- ═══ Tab: Errors ═══ -->
       <section class="admin-panel" data-panel="errors">
         <div style="display:flex;gap:8px;margin-bottom:var(--space-sm);align-items:center;flex-wrap:wrap">
@@ -331,6 +375,7 @@
       if (name === 'audit')        refreshAuditLog().catch(() => {});
       if (name === 'users')        renderUsers().catch(() => {});
       if (name === 'bookings-mod') renderBookingsMod().catch(() => {});
+      if (name === 'emails')       renderEmails().catch(() => {});
     }
     window.switchAdminTab = switchAdminTab;
 
@@ -801,21 +846,25 @@
         return;
       }
       const header = `
-        <div style="display:grid;grid-template-columns:1fr 1fr 100px 100px 130px 150px;gap:var(--space-md);padding:8px 12px;background:var(--bg-raised);font-family:var(--font-mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary)">
+        <div style="display:grid;grid-template-columns:1fr 1fr 90px 90px 110px 320px;gap:var(--space-md);padding:8px 12px;background:var(--bg-raised);font-family:var(--font-mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary)">
           <div>Email</div><div>Name</div><div>Role</div><div>City</div><div>Last seen</div><div>Actions</div>
         </div>
       `;
       host.innerHTML = header + filtered.map(u => {
         const lastSeen = u.last_sign_in_at ? timeAgo(u.last_sign_in_at) : '—';
+        const flip = u.role === 'artist' ? 'promoter' : 'artist';
         return `
-          <div style="display:grid;grid-template-columns:1fr 1fr 100px 100px 130px 150px;gap:var(--space-md);padding:10px 12px;border-bottom:1px solid var(--border-subtle);font-size:0.82rem;align-items:center">
+          <div style="display:grid;grid-template-columns:1fr 1fr 90px 90px 110px 320px;gap:var(--space-md);padding:10px 12px;border-bottom:1px solid var(--border-subtle);font-size:0.82rem;align-items:center">
             <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(u.email || '')}</div>
             <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(u.display_name || '')}</div>
             <div><span style="font-family:var(--font-mono);font-size:0.7rem;padding:2px 8px;border-radius:999px;background:var(--bg-card);border:1px solid var(--border-subtle);color:${u.role === 'artist' ? 'var(--status-info)' : 'var(--accent-soft)'}">${esc(u.role || '—')}</span></div>
             <div style="color:var(--text-tertiary);font-size:0.78rem">${esc(u.city || '—')}</div>
             <div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary)">${lastSeen}</div>
-            <div style="display:flex;gap:4px">
-              <button class="btn btn-ghost btn-sm" style="font-size:0.72rem" onclick="userToggleRole('${esc(u.id)}','${u.role === 'artist' ? 'promoter' : 'artist'}', '${esc(u.email||'')}')">Make ${u.role === 'artist' ? 'promoter' : 'artist'}</button>
+            <div style="display:flex;gap:4px;flex-wrap:wrap">
+              <button class="btn btn-ghost btn-sm" style="font-size:0.7rem" onclick="userToggleRole('${esc(u.id)}','${flip}', '${esc(u.email||'')}')">Make ${flip}</button>
+              <button class="btn btn-ghost btn-sm" style="font-size:0.7rem" onclick="userImpersonate('${esc(u.id)}', '${esc(u.email||'')}')">Impersonate</button>
+              <button class="btn btn-ghost btn-sm" style="font-size:0.7rem" onclick="userResendWelcome('${esc(u.id)}', '${esc(u.email||'')}')">Re-send welcome</button>
+              <button class="btn btn-ghost btn-sm" style="font-size:0.7rem;color:var(--status-cancelled)" onclick="userSuspend('${esc(u.id)}', '${esc(u.email||'')}')">Suspend</button>
             </div>
           </div>
         `;
@@ -830,6 +879,53 @@
       renderUsers();
     }
     window.userToggleRole = userToggleRole;
+
+    async function userSuspend(userId, email) {
+      const reason = prompt(`Suspend ${email}?\n\nThe user will be unable to sign in until explicitly un-suspended. This is audited.\n\nReason:`);
+      if (reason === null) return;
+      const res = await DB.adminUserAction({ action: 'suspend', userId, reason });
+      if (!res.success) { UI.toast('Failed: ' + (res.error || ''), 'error'); return; }
+      UI.toast(`Suspended ${email}`, 'success');
+      renderUsers();
+    }
+    window.userSuspend = userSuspend;
+
+    async function userUnsuspend(userId, email) {
+      if (!confirm(`Re-enable ${email}?`)) return;
+      const res = await DB.adminUserAction({ action: 'unsuspend', userId });
+      if (!res.success) { UI.toast('Failed: ' + (res.error || ''), 'error'); return; }
+      UI.toast(`Un-suspended ${email}`, 'success');
+      renderUsers();
+    }
+    window.userUnsuspend = userUnsuspend;
+
+    async function userImpersonate(userId, email) {
+      if (!confirm(`Log in as ${email}?\n\nYou'll be signed out of your admin session and signed in as the target. A banner across the top of every page will remind you. Use only for debugging user-reported issues.\n\nThis is audited.`)) return;
+      const reason = prompt('Reason for impersonation (shown in audit log):', 'Debugging user-reported issue');
+      if (reason === null) return;
+      const res = await DB.adminUserAction({ action: 'impersonate', userId, reason });
+      if (!res.success) { UI.toast('Failed: ' + (res.error || ''), 'error'); return; }
+      if (res.link) {
+        // Mark the browser so every page can show the "impersonating" banner.
+        try { localStorage.setItem('rostr_impersonating', JSON.stringify({ email: res.target_email, startedAt: Date.now() })); } catch (_) {}
+        UI.toast('Redirecting\u2026', 'info');
+        // The magic link is one-shot. Signing out first ensures the
+        // current admin session doesn't collide with the target's.
+        await Auth.signOut();
+        location.href = res.link;
+      } else {
+        UI.toast('No link returned', 'error');
+      }
+    }
+    window.userImpersonate = userImpersonate;
+
+    async function userResendWelcome(userId, email) {
+      if (!confirm(`Re-send the welcome email to ${email}?`)) return;
+      const res = await DB.adminUserAction({ action: 'resend_welcome', userId });
+      if (!res.success) { UI.toast('Failed: ' + (res.error || ''), 'error'); return; }
+      UI.toast(`Welcome email re-sent to ${email}`, 'success');
+    }
+    window.userResendWelcome = userResendWelcome;
 
     // ─── Bookings moderation ──────────────────────────────
     let _allModBookings = [];
@@ -923,6 +1019,82 @@
       UI.toast(`Broadcast to ${res.recipients} user${res.recipients === 1 ? '' : 's'}`, 'success');
     }
     window.broadcastSend = broadcastSend;
+
+    // ─── Emails tab ────────────────────────────────────────
+    async function renderEmails() {
+      const statsHost = document.getElementById('email-stats');
+      const listHost  = document.getElementById('email-events-list');
+      if (!statsHost || !listHost) return;
+
+      const hours = parseInt(document.getElementById('email-window').value, 10) || 24;
+      const typeFilter = document.getElementById('email-type-filter').value || null;
+
+      statsHost.innerHTML = '<div style="color:var(--text-tertiary);font-size:0.82rem;padding:var(--space-sm)">Loading\u2026</div>';
+      listHost.innerHTML  = '<div style="padding:var(--space-md);color:var(--text-tertiary);font-size:0.82rem">Loading\u2026</div>';
+
+      // Stats
+      const statsRes = await DB.adminEmailStats(hours);
+      if (!statsRes.success) {
+        statsHost.innerHTML = `<div style="color:var(--status-cancelled);font-size:0.82rem;padding:var(--space-sm)">Failed: ${esc(statsRes.error || '')}</div>`;
+      } else {
+        const d = statsRes.data || {};
+        const sent = d.sent || 0;
+        const delivered = d.delivered || 0;
+        const bounced = d.bounced || 0;
+        const failed = d.failed || 0;
+        const deliveryRate = sent > 0 ? Math.round((delivered / sent) * 100) : null;
+        const card = (label, value, sub, clr) => `
+          <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:10px 14px">
+            <div style="font-family:var(--font-mono);font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-tertiary)">${label}</div>
+            <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:700;color:${clr || 'var(--text-primary)'};margin-top:2px">${value}</div>
+            ${sub ? `<div style="font-size:0.68rem;color:var(--text-tertiary);margin-top:2px">${sub}</div>` : ''}
+          </div>
+        `;
+        statsHost.innerHTML =
+          card('Sent', sent, `last ${hours}h`) +
+          card('Delivered', delivered, deliveryRate != null ? `${deliveryRate}% rate` : null, 'var(--status-confirmed)') +
+          card('Bounced', bounced, null, bounced > 0 ? 'var(--status-cancelled)' : null) +
+          card('Complaints', d.complained || 0, null, (d.complained || 0) > 0 ? 'var(--status-cancelled)' : null) +
+          card('Failed', failed, 'bounces + complaints + delayed', failed > 0 ? 'var(--status-pending)' : null) +
+          card('Opened', d.opened || 0, null) +
+          card('Clicked', d.clicked || 0, null);
+      }
+
+      // Event list
+      const res = await DB.adminListEmailEvents({ limit: 100, typeFilter });
+      if (!res.success) {
+        listHost.innerHTML = `<div style="padding:var(--space-md);color:var(--status-cancelled);font-size:0.82rem">Failed: ${esc(res.error || '')}</div>`;
+        return;
+      }
+      if (!res.data || res.data.length === 0) {
+        listHost.innerHTML = UI.emptyState({ icon: 'inbox', title: 'No email events yet', body: 'Once Resend\u2019s webhook is pointed at this endpoint, events start flowing. See setup instructions below.', compact: true });
+        return;
+      }
+      const typeClr = {
+        'email.sent':           'var(--text-tertiary)',
+        'email.delivered':      'var(--status-confirmed)',
+        'email.bounced':        'var(--status-cancelled)',
+        'email.complained':     'var(--status-cancelled)',
+        'email.delivery_delayed':'var(--status-pending)',
+        'email.opened':         'var(--status-info)',
+        'email.clicked':        'var(--accent)',
+      };
+      listHost.innerHTML = res.data.map(ev => {
+        const when = new Date(ev.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+        const clr = typeClr[ev.type] || 'var(--text-secondary)';
+        const short = ev.type.replace('email.', '');
+        return `
+          <div style="display:grid;grid-template-columns:140px 120px 1fr 1fr 150px;gap:var(--space-md);padding:8px 12px;border-bottom:1px solid var(--border-subtle);font-size:0.82rem;align-items:center">
+            <div style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-tertiary)">${when}</div>
+            <div><span style="font-family:var(--font-mono);font-size:0.68rem;padding:2px 8px;border-radius:999px;border:1px solid ${clr};color:${clr}">${esc(short)}</span></div>
+            <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(ev.to_email || '')}</div>
+            <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-tertiary)">${esc(ev.subject || '')}</div>
+            <div style="font-family:var(--font-mono);font-size:0.68rem;color:var(--text-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc((ev.resend_id || '').slice(0, 12))}</div>
+          </div>
+        `;
+      }).join('');
+    }
+    window.renderEmails = renderEmails;
 
     // ─── Init ──────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', async function() {

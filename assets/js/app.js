@@ -1,4 +1,4 @@
-window.ROSTR_VERSION = '6f3f650';
+window.ROSTR_VERSION = '8cfc208';
 /* ═══════════════════════════════════════════════════════════
    ROSTR+ GCC — Core Application JS
    Supabase client, auth, router, UI helpers, live data
@@ -2144,6 +2144,53 @@ const DB = {
     } catch (e) { return { success: false, data: [], error: String(e) }; }
   },
 
+  // Admin user actions (suspend, unsuspend, impersonate, resend welcome)
+  // route through the admin-user-action edge function. We pass the user's
+  // JWT so the function can verify admin status server-side.
+  async adminUserAction({ action, userId, reason }) {
+    if (DEMO_MODE) return { success: false, error: 'Offline' };
+    if (!action || !userId) return { success: false, error: 'missing args' };
+    try {
+      const { data: sess } = await _sb.auth.getSession();
+      const token = sess?.session?.access_token;
+      if (!token) return { success: false, error: 'no session' };
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/admin-user-action`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'apikey': SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ action, user_id: userId, reason: reason || null }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) return { success: false, error: body.error || `HTTP ${res.status}` };
+      return { success: true, ...body };
+    } catch (e) { return { success: false, error: String(e) }; }
+  },
+
+  // Email deliverability rollup for the Admin Emails tab.
+  async adminEmailStats(sinceHours = 24) {
+    if (DEMO_MODE) return { success: false, error: 'Offline' };
+    try {
+      const { data, error } = await _sb.rpc('admin_email_stats', { p_since_hours: sinceHours });
+      return error ? { success: false, error: error.message } : { success: true, data };
+    } catch (e) { return { success: false, error: String(e) }; }
+  },
+
+  async adminListEmailEvents({ limit = 100, typeFilter = null } = {}) {
+    if (DEMO_MODE) return { success: true, data: [] };
+    try {
+      let q = _sb.from('email_events')
+        .select('id, resend_id, type, to_email, subject, created_at')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      if (typeFilter) q = q.eq('type', typeFilter);
+      const { data, error } = await q;
+      return error ? { success: false, data: [], error: error.message } : { success: true, data: data || [] };
+    } catch (e) { return { success: false, data: [], error: String(e) }; }
+  },
+
   async adminBroadcast({ title, body, href, role }) {
     if (DEMO_MODE) return { success: false, error: 'Offline' };
     if (!title) return { success: false, error: 'Title required' };
@@ -3157,6 +3204,42 @@ function hydrateIcons(root) {
   document.head.appendChild(s);
 })();
 
+// Impersonation banner. When an admin runs the "Log in as this user"
+// action from /admin.html, we stash a flag in localStorage. This banner
+// shows on every page until the admin clicks Exit — which clears the
+// flag + signs the session out, returning them to /auth.html.
+//
+// Safety net: the flag is just a UI hint. The actual session is whatever
+// the magic-link gave us. Even if the flag is tampered with the user
+// can't elevate privileges from it.
+function _injectImpersonationBanner() {
+  try {
+    const raw = localStorage.getItem('rostr_impersonating');
+    if (!raw) return;
+    const info = JSON.parse(raw);
+    if (!info || !info.email) return;
+    if (document.getElementById('rostr-impersonation-banner')) return;
+    const bar = document.createElement('div');
+    bar.id = 'rostr-impersonation-banner';
+    bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9000;background:#f3a03f;color:#0a0a0f;padding:8px 16px;font-size:0.82rem;font-weight:600;display:flex;align-items:center;gap:var(--space-md);box-shadow:0 2px 8px rgba(0,0,0,0.35)';
+    bar.innerHTML =
+      '<span>You are viewing as <strong>' + String(info.email).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])) + '</strong> (impersonation session).</span>' +
+      '<button style="margin-left:auto;background:#0a0a0f;color:#fff;border:none;padding:4px 12px;border-radius:6px;font-weight:600;cursor:pointer;font-size:0.78rem" onclick="_exitImpersonation()">Exit impersonation</button>';
+    document.body.appendChild(bar);
+    // Push content down so the banner doesn't cover fixed navs.
+    document.body.style.paddingTop = (parseFloat(document.body.style.paddingTop || '0') + 36) + 'px';
+  } catch (_) { /* best-effort */ }
+}
+
+async function _exitImpersonation() {
+  try { localStorage.removeItem('rostr_impersonating'); } catch (_) {}
+  await Auth.signOut();
+  // Auth.signOut already redirects to index; ensure the banner is gone.
+  const bar = document.getElementById('rostr-impersonation-banner');
+  if (bar) bar.remove();
+}
+window._exitImpersonation = _exitImpersonation;
+
 // Tiny "Built from <sha>" tag in the corner — helps support triage stale
 // caches and verifies the latest deploy landed. Set at deploy time by
 // scripts/deploy.sh; falls back to 'dev' locally.
@@ -3175,6 +3258,7 @@ function _rostrInit() {
   Auth.init();
   hydrateIcons();
   _injectVersionTag();
+  _injectImpersonationBanner();
   // Close dropdowns on outside click
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.nav-avatar') && !e.target.closest('#user-menu')) {
