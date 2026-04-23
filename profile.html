@@ -293,14 +293,24 @@
       `;
     }
 
-    function updateMeta(artist) {
-      const name = artist.name || artist.stage_name || 'Artist';
-      const bio = String(artist.bio || '').trim();
+    // Cache the last artist so loadReviews() can re-run updateMeta with
+    // AggregateRating once the stats RPC returns.
+    let _lastArtist = null;
+    let _lastStats = null;
+
+    function updateMeta(artist, stats) {
+      if (artist) _lastArtist = artist;
+      if (stats !== undefined) _lastStats = stats;
+      const a = _lastArtist;
+      if (!a) return;
+
+      const name = a.name || a.stage_name || 'Artist';
+      const bio = String(a.bio || '').trim();
       const desc = bio
         ? (bio.length > 160 ? bio.slice(0, 157) + '\u2026' : bio)
-        : ([artist.genre, artist.city].filter(Boolean).join(' \u2014 ') + ' \u00b7 Book on ROSTR+ GCC.').trim();
-      const img = artist.avatar_url || 'https://rosterplus.io/icons/og-default.png';
-      const url = `https://rosterplus.io/profile.html?id=${encodeURIComponent(artist.id)}`;
+        : ([a.genre, a.city].filter(Boolean).join(' \u2014 ') + ' \u00b7 Book on ROSTR+ GCC.').trim();
+      const img = a.avatar_url || 'https://rosterplus.io/icons/og-default.png';
+      const url = `https://rosterplus.io/profile.html?id=${encodeURIComponent(a.id)}`;
       const setMeta = (sel, val) => { const el = document.querySelector(sel); if (el) el.setAttribute('content', val); };
       document.title = `${name} \u2014 ROSTR+ GCC`;
       setMeta('meta[property="og:title"]',        `${name} \u2014 ROSTR+ GCC`);
@@ -320,6 +330,17 @@
       // JSON-LD MusicGroup schema — gets picked up by Google for rich
       // results. schema.org/MusicGroup matches both DJs and bands; the
       // image + url fields work identically to og meta.
+      //
+      // Social profiles in `sameAs` let search engines consolidate the
+      // artist's presence across platforms. AggregateRating, when present,
+      // unlocks the star-rating rich snippet in search results.
+      const sameAs = [];
+      const social = a.social_links || {};
+      ['instagram', 'soundcloud', 'spotify', 'youtube', 'tiktok'].forEach(k => {
+        const v = social[k];
+        if (typeof v === 'string' && v.startsWith('http')) sameAs.push(v);
+      });
+
       const ld = {
         '@context': 'https://schema.org',
         '@type':    'MusicGroup',
@@ -327,9 +348,21 @@
         description: desc,
         image:       img,
         url,
-        genre:       Array.isArray(artist.genre) ? artist.genre : (artist.genre ? [artist.genre] : []),
-        address: artist.city ? { '@type': 'PostalAddress', addressLocality: artist.city } : undefined,
+        genre:       Array.isArray(a.genre) ? a.genre : (a.genre ? [a.genre] : []),
+        address:     a.city ? { '@type': 'PostalAddress', addressLocality: a.city } : undefined,
+        sameAs:      sameAs.length ? sameAs : undefined,
       };
+
+      if (_lastStats && Number(_lastStats.review_count) > 0) {
+        ld.aggregateRating = {
+          '@type':     'AggregateRating',
+          ratingValue: Number(_lastStats.avg_rating).toFixed(2),
+          reviewCount: Number(_lastStats.review_count),
+          bestRating:  5,
+          worstRating: 1,
+        };
+      }
+
       const ldEl = document.getElementById('artist-ld-json');
       if (ldEl) ldEl.textContent = JSON.stringify(ld);
     }
@@ -377,6 +410,13 @@
           const count = Number(statsRes.data.review_count);
           badge.innerHTML = `<span style="color:var(--accent-soft)">★</span> ${avg} <span style="color:var(--text-tertiary)">(${count})</span>`;
           badge.style.display = 'inline-flex';
+        }
+
+        // Re-stamp the JSON-LD with AggregateRating so Google picks up
+        // star ratings in search results. Safe to call with null artist —
+        // updateMeta caches the last artist for exactly this purpose.
+        if (statsRes.success && statsRes.data) {
+          updateMeta(null, statsRes.data);
         }
 
         // Review list

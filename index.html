@@ -31,15 +31,58 @@
 
   <link rel="canonical" href="https://rosterplus.io/">
 
+  <!-- JSON-LD knowledge graph — Organization + WebSite with SearchAction
+       so Google can show a sitelinks search box for branded queries. -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "Organization",
-    "name": "ROSTR+ GCC",
-    "url": "https://rosterplus.io",
-    "logo": "https://rosterplus.io/icons/icon-512.png",
-    "description": "Artist booking platform for Dubai, Riyadh, Abu Dhabi, and the GCC.",
-    "areaServed": ["Dubai", "Abu Dhabi", "Riyadh", "Jeddah", "Doha", "Kuwait City", "Manama", "Muscat"]
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://rosterplus.io/#organization",
+        "name": "ROSTR+ GCC",
+        "alternateName": "ROSTER+",
+        "url": "https://rosterplus.io",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://rosterplus.io/icons/icon-512.png",
+          "width": 512,
+          "height": 512
+        },
+        "description": "Artist booking platform for Dubai, Riyadh, Abu Dhabi, and the GCC.",
+        "areaServed": [
+          { "@type": "City", "name": "Dubai" },
+          { "@type": "City", "name": "Abu Dhabi" },
+          { "@type": "City", "name": "Riyadh" },
+          { "@type": "City", "name": "Jeddah" },
+          { "@type": "City", "name": "Doha" },
+          { "@type": "City", "name": "Kuwait City" },
+          { "@type": "City", "name": "Manama" },
+          { "@type": "City", "name": "Muscat" }
+        ],
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "email": "book@rosterplus.io",
+          "contactType": "customer service",
+          "availableLanguage": ["en", "ar"]
+        }
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://rosterplus.io/#website",
+        "url": "https://rosterplus.io",
+        "name": "ROSTR+ GCC",
+        "publisher": { "@id": "https://rosterplus.io/#organization" },
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://rosterplus.io/directory.html?q={search_term_string}"
+          },
+          "query-input": "required name=search_term_string"
+        }
+      }
+    ]
   }
   </script>
 
