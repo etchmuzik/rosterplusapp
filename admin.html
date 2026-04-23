@@ -125,10 +125,16 @@
         <div id="admin-who" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary);text-align:right"></div>
       </div>
 
+      <!-- Stats strip -->
+      <div id="admin-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:var(--space-lg)"></div>
+
       <!-- Tabs -->
       <div class="admin-tabs" role="tablist">
-        <button class="admin-tab active" data-tab="roster" onclick="switchAdminTab('roster')">${'' /* icon injected in JS init */}Roster</button>
+        <button class="admin-tab active" data-tab="roster" onclick="switchAdminTab('roster')">Roster</button>
+        <button class="admin-tab" data-tab="users" onclick="switchAdminTab('users')">Users</button>
+        <button class="admin-tab" data-tab="bookings-mod" onclick="switchAdminTab('bookings-mod')">Bookings</button>
         <button class="admin-tab" data-tab="import" onclick="switchAdminTab('import')">Bulk import</button>
+        <button class="admin-tab" data-tab="broadcast" onclick="switchAdminTab('broadcast')">Broadcast</button>
         <button class="admin-tab" data-tab="audit" onclick="switchAdminTab('audit')">Audit log</button>
         <button class="admin-tab" data-tab="errors" onclick="switchAdminTab('errors')">Errors</button>
         <button class="admin-tab" data-tab="health" onclick="switchAdminTab('health')">Health</button>
@@ -170,6 +176,33 @@
         </details>
       </section>
 
+      <!-- ═══ Tab: Users ═══ -->
+      <section class="admin-panel" data-panel="users">
+        <div style="display:flex;gap:8px;margin-bottom:var(--space-sm);align-items:center;flex-wrap:wrap">
+          <div style="font-size:0.88rem;color:var(--text-secondary)">All registered accounts. Change role only when you understand the consequences.</div>
+          <input type="text" id="user-search" placeholder="Search email or name" oninput="renderUsers()" class="form-input" style="max-width:260px;margin-left:auto;font-size:0.82rem;padding:6px 10px">
+          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" onclick="renderUsers()">Refresh</button>
+        </div>
+        <div id="users-list" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);overflow:hidden"></div>
+      </section>
+
+      <!-- ═══ Tab: Bookings moderation ═══ -->
+      <section class="admin-panel" data-panel="bookings-mod">
+        <div style="display:flex;gap:8px;margin-bottom:var(--space-sm);align-items:center;flex-wrap:wrap">
+          <div style="font-size:0.88rem;color:var(--text-secondary)">All bookings across the platform. Force-cancel is audited.</div>
+          <select id="bookings-mod-filter" class="form-select" style="margin-left:auto;font-size:0.82rem;padding:6px 10px" onchange="renderBookingsMod()">
+            <option value="all">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="contracted">Contracted</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" onclick="renderBookingsMod()">Refresh</button>
+        </div>
+        <div id="bookings-mod-list" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);overflow:hidden"></div>
+      </section>
+
       <!-- ═══ Tab: Bulk import ═══ -->
       <section class="admin-panel" data-panel="import">
         <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:var(--space-md);line-height:1.6">
@@ -199,6 +232,42 @@
         </div>
 
         <div id="admin-csv-results" style="margin-top:var(--space-md);display:none"></div>
+      </section>
+
+      <!-- ═══ Tab: Broadcast ═══ -->
+      <section class="admin-panel" data-panel="broadcast">
+        <div style="max-width:640px">
+          <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:var(--space-md);line-height:1.6">
+            Send a one-shot notification to every user or just one role. This writes a notifications row for each recipient — they see it on next page load + Realtime tray. It does NOT send email; for that, add to the <code style="font-family:var(--font-mono);font-size:0.78rem">send-email</code> edge function.
+          </p>
+          <div class="form-group" style="margin-bottom:var(--space-md)">
+            <label class="form-label">Title <span style="color:var(--text-tertiary);font-weight:400">(max 200 chars)</span></label>
+            <input type="text" class="form-input" id="bc-title" placeholder="Scheduled maintenance tonight" maxlength="200">
+          </div>
+          <div class="form-group" style="margin-bottom:var(--space-md)">
+            <label class="form-label">Body <span style="color:var(--text-tertiary);font-weight:400">(optional, max 1000 chars)</span></label>
+            <textarea class="form-input" id="bc-body" rows="3" maxlength="1000" placeholder="The platform will be unreachable from 02:00\u201302:30 UTC while we apply database migrations."></textarea>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-md);margin-bottom:var(--space-md)">
+            <div class="form-group">
+              <label class="form-label">Link (optional href)</label>
+              <input type="text" class="form-input" id="bc-href" placeholder="/dashboard.html">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Audience</label>
+              <select class="form-select" id="bc-role">
+                <option value="">Everyone</option>
+                <option value="promoter">Promoters only</option>
+                <option value="artist">Artists only</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:var(--space-md);margin-top:var(--space-lg)">
+            <button class="btn btn-primary" id="bc-send-btn" onclick="broadcastSend()">Send broadcast</button>
+            <div id="bc-preview-count" style="font-size:0.78rem;color:var(--text-tertiary)"></div>
+          </div>
+          <div id="bc-result" style="margin-top:var(--space-md);display:none"></div>
+        </div>
       </section>
 
       <!-- ═══ Tab: Audit log ═══ -->
@@ -257,9 +326,11 @@
         p.classList.toggle('active', p.dataset.panel === name);
       });
       // Lazy-load tabs that want fresh data each visit.
-      if (name === 'errors') renderErrors().catch(() => {});
-      if (name === 'health') renderHealth().catch(() => {});
-      if (name === 'audit')  refreshAuditLog().catch(() => {});
+      if (name === 'errors')       renderErrors().catch(() => {});
+      if (name === 'health')       renderHealth().catch(() => {});
+      if (name === 'audit')        refreshAuditLog().catch(() => {});
+      if (name === 'users')        renderUsers().catch(() => {});
+      if (name === 'bookings-mod') renderBookingsMod().catch(() => {});
     }
     window.switchAdminTab = switchAdminTab;
 
@@ -676,6 +747,183 @@
       } catch (_) { return '—'; }
     }
 
+    // ─── Stats strip ──────────────────────────────────────
+    async function renderStats() {
+      const host = document.getElementById('admin-stats');
+      if (!host) return;
+      const res = await DB.adminStats();
+      if (!res.success || !res.data) {
+        host.innerHTML = '';
+        return;
+      }
+      const d = res.data;
+      const card = (label, value, sub) => `
+        <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:10px 14px">
+          <div style="font-family:var(--font-mono);font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-tertiary)">${label}</div>
+          <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:700;color:var(--text-primary);margin-top:2px">${value}</div>
+          ${sub ? `<div style="font-size:0.68rem;color:var(--text-tertiary);margin-top:2px">${sub}</div>` : ''}
+        </div>
+      `;
+      host.innerHTML =
+        card('Users', d.users_total, `${d.users_promoters}P · ${d.users_artists}A`) +
+        card('Artists', d.artists_total, `${d.artists_verified} verified · ${d.artists_unclaimed} unclaimed`) +
+        card('Bookings', d.bookings_total, `${d.bookings_confirmed} locked in`) +
+        card('This month', d.bookings_this_month, d.gmv_this_month > 0 ? `AED ${Number(d.gmv_this_month).toLocaleString()}` : 'AED —') +
+        card('GMV all-time', d.gmv_all_time > 0 ? `AED ${Number(d.gmv_all_time).toLocaleString()}` : 'AED —', null) +
+        card('Errors 24h', d.errors_24h, d.errors_24h > 0 ? 'see Errors tab' : 'clean');
+    }
+    window.renderStats = renderStats;
+
+    // ─── Users tab ────────────────────────────────────────
+    let _allUsers = [];
+    async function renderUsers() {
+      const host = document.getElementById('users-list');
+      if (!host) return;
+      host.innerHTML = '<div style="padding:var(--space-md);color:var(--text-tertiary);font-size:0.82rem">Loading…</div>';
+      const res = await DB.adminListUsers();
+      if (!res.success) {
+        host.innerHTML = `<div style="padding:var(--space-md);color:var(--status-cancelled);font-size:0.82rem">Failed: ${esc(res.error || '')}</div>`;
+        return;
+      }
+      _allUsers = res.data || [];
+      renderUsersFiltered();
+    }
+    window.renderUsers = renderUsers;
+
+    function renderUsersFiltered() {
+      const host = document.getElementById('users-list');
+      const q = (document.getElementById('user-search')?.value || '').toLowerCase().trim();
+      const filtered = q
+        ? _allUsers.filter(u => (u.email || '').toLowerCase().includes(q) || (u.display_name || '').toLowerCase().includes(q))
+        : _allUsers;
+      if (filtered.length === 0) {
+        host.innerHTML = UI.emptyState({ icon: 'users', title: q ? 'No users match' : 'No users yet', compact: true });
+        return;
+      }
+      const header = `
+        <div style="display:grid;grid-template-columns:1fr 1fr 100px 100px 130px 150px;gap:var(--space-md);padding:8px 12px;background:var(--bg-raised);font-family:var(--font-mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary)">
+          <div>Email</div><div>Name</div><div>Role</div><div>City</div><div>Last seen</div><div>Actions</div>
+        </div>
+      `;
+      host.innerHTML = header + filtered.map(u => {
+        const lastSeen = u.last_sign_in_at ? timeAgo(u.last_sign_in_at) : '—';
+        return `
+          <div style="display:grid;grid-template-columns:1fr 1fr 100px 100px 130px 150px;gap:var(--space-md);padding:10px 12px;border-bottom:1px solid var(--border-subtle);font-size:0.82rem;align-items:center">
+            <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(u.email || '')}</div>
+            <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(u.display_name || '')}</div>
+            <div><span style="font-family:var(--font-mono);font-size:0.7rem;padding:2px 8px;border-radius:999px;background:var(--bg-card);border:1px solid var(--border-subtle);color:${u.role === 'artist' ? 'var(--status-info)' : 'var(--accent-soft)'}">${esc(u.role || '—')}</span></div>
+            <div style="color:var(--text-tertiary);font-size:0.78rem">${esc(u.city || '—')}</div>
+            <div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary)">${lastSeen}</div>
+            <div style="display:flex;gap:4px">
+              <button class="btn btn-ghost btn-sm" style="font-size:0.72rem" onclick="userToggleRole('${esc(u.id)}','${u.role === 'artist' ? 'promoter' : 'artist'}', '${esc(u.email||'')}')">Make ${u.role === 'artist' ? 'promoter' : 'artist'}</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function userToggleRole(userId, newRole, email) {
+      if (!confirm(`Change ${email} to ${newRole}? This takes effect immediately.`)) return;
+      const res = await DB.adminUpdateUserRole(userId, newRole);
+      if (!res.success) { UI.toast('Failed: ' + (res.error || ''), 'error'); return; }
+      UI.toast(`Role updated to ${newRole}`, 'success');
+      renderUsers();
+    }
+    window.userToggleRole = userToggleRole;
+
+    // ─── Bookings moderation ──────────────────────────────
+    let _allModBookings = [];
+    async function renderBookingsMod() {
+      const host = document.getElementById('bookings-mod-list');
+      if (!host) return;
+      host.innerHTML = '<div style="padding:var(--space-md);color:var(--text-tertiary);font-size:0.82rem">Loading…</div>';
+      const res = await DB.adminListAllBookings({ limit: 200 });
+      if (!res.success) {
+        host.innerHTML = `<div style="padding:var(--space-md);color:var(--status-cancelled);font-size:0.82rem">Failed: ${esc(res.error || '')}</div>`;
+        return;
+      }
+      _allModBookings = res.data || [];
+      renderBookingsModFiltered();
+    }
+    window.renderBookingsMod = renderBookingsMod;
+
+    function renderBookingsModFiltered() {
+      const host = document.getElementById('bookings-mod-list');
+      const filter = document.getElementById('bookings-mod-filter').value;
+      const rows = filter === 'all' ? _allModBookings : _allModBookings.filter(b => b.status === filter);
+      if (rows.length === 0) {
+        host.innerHTML = UI.emptyState({ icon: 'calendar', title: 'No bookings match', compact: true });
+        return;
+      }
+      const header = `
+        <div style="display:grid;grid-template-columns:100px 1fr 1fr 100px 100px 110px 100px;gap:var(--space-md);padding:8px 12px;background:var(--bg-raised);font-family:var(--font-mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary)">
+          <div>Date</div><div>Event</div><div>Artist</div><div>Promoter</div><div>Fee</div><div>Status</div><div>Actions</div>
+        </div>
+      `;
+      host.innerHTML = header + rows.map(b => {
+        const artist = b.artists?.stage_name || b.artists?.profiles?.display_name || '—';
+        const promoter = b.promoter?.display_name || b.promoter?.email || '—';
+        const fee = b.fee ? `${b.currency || 'AED'} ${Number(b.fee).toLocaleString()}` : '—';
+        const date = b.event_date ? new Date(b.event_date + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—';
+        const isCancelled = b.status === 'cancelled';
+        const statusClr = {
+          confirmed: 'var(--status-confirmed)',
+          pending: 'var(--status-pending)',
+          cancelled: 'var(--status-cancelled)',
+          contracted: 'var(--status-info)',
+          completed: 'var(--accent)',
+        }[b.status] || 'var(--text-tertiary)';
+        return `
+          <div style="display:grid;grid-template-columns:100px 1fr 1fr 100px 100px 110px 100px;gap:var(--space-md);padding:10px 12px;border-bottom:1px solid var(--border-subtle);font-size:0.82rem;align-items:center">
+            <div style="font-family:var(--font-mono);font-size:0.76rem">${date}</div>
+            <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><a href="/booking-detail.html?id=${esc(b.id)}" style="color:var(--text-primary);text-decoration:none">${esc(b.event_name || b.venue_name || 'Event')}</a></div>
+            <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-secondary)">${esc(artist)}</div>
+            <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-secondary);font-size:0.76rem">${esc(promoter)}</div>
+            <div style="font-family:var(--font-mono);font-size:0.76rem">${fee}</div>
+            <div><span style="font-family:var(--font-mono);font-size:0.68rem;padding:2px 8px;border-radius:999px;border:1px solid ${statusClr};color:${statusClr}">${esc(b.status || '—')}</span></div>
+            <div>${isCancelled ? '<span style="font-size:0.72rem;color:var(--text-tertiary)">—</span>' : `<button class="btn btn-ghost btn-sm" style="font-size:0.72rem;color:var(--status-cancelled)" onclick="bookingForceCancel('${esc(b.id)}','${esc(b.event_name || 'Event').replace(/'/g,'&#39;')}')">Force cancel</button>`}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function bookingForceCancel(bookingId, eventName) {
+      const reason = prompt(`Force-cancel "${eventName}"?\n\nThis overrides the normal cancellation rules and is logged to the audit trail.\n\nReason (shown in audit log):`);
+      if (reason === null) return; // user hit Cancel
+      const res = await DB.adminForceCancelBooking(bookingId, reason);
+      if (!res.success) { UI.toast('Failed: ' + (res.error || ''), 'error'); return; }
+      UI.toast('Booking force-cancelled', 'success');
+      renderBookingsMod();
+    }
+    window.bookingForceCancel = bookingForceCancel;
+
+    // ─── Broadcast ────────────────────────────────────────
+    async function broadcastSend() {
+      const title = document.getElementById('bc-title').value.trim();
+      const body  = document.getElementById('bc-body').value.trim();
+      const href  = document.getElementById('bc-href').value.trim();
+      const role  = document.getElementById('bc-role').value;
+      if (!title) { UI.toast('Title required', 'warning'); return; }
+      const audience = role ? `every ${role}` : 'everyone';
+      if (!confirm(`Send "${title}" to ${audience}? This cannot be undone.`)) return;
+      const btn = document.getElementById('bc-send-btn');
+      btn.disabled = true; btn.textContent = 'Sending\u2026';
+      const res = await DB.adminBroadcast({ title, body, href, role });
+      btn.disabled = false; btn.textContent = 'Send broadcast';
+      const result = document.getElementById('bc-result');
+      result.style.display = '';
+      if (!res.success) {
+        result.innerHTML = `<div style="padding:var(--space-md);background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.3);border-radius:var(--radius-sm);color:var(--status-cancelled);font-size:0.82rem">Failed: ${esc(res.error || '')}</div>`;
+        return;
+      }
+      result.innerHTML = `<div style="padding:var(--space-md);background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.3);border-radius:var(--radius-sm);color:var(--status-confirmed);font-size:0.88rem">\u2713 Sent to <strong>${res.recipients}</strong> recipient${res.recipients === 1 ? '' : 's'}.</div>`;
+      document.getElementById('bc-title').value = '';
+      document.getElementById('bc-body').value = '';
+      document.getElementById('bc-href').value = '';
+      UI.toast(`Broadcast to ${res.recipients} user${res.recipients === 1 ? '' : 's'}`, 'success');
+    }
+    window.broadcastSend = broadcastSend;
+
     // ─── Init ──────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', async function() {
       await Auth.ready();
@@ -695,6 +943,9 @@
 
       document.getElementById('admin-who').innerHTML =
         esc(Auth.user?.email || 'admin') + ' · build ' + esc(window.ROSTR_VERSION || 'dev');
+
+      // Stats strip — always visible above tabs. Cheap: one RPC.
+      renderStats().catch(() => {});
 
       renderAdminArtists();
       wireCsvUI();

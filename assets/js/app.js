@@ -1,4 +1,4 @@
-window.ROSTR_VERSION = 'ea9a5be';
+window.ROSTR_VERSION = '6f3f650';
 /* ═══════════════════════════════════════════════════════════
    ROSTR+ GCC — Core Application JS
    Supabase client, auth, router, UI helpers, live data
@@ -2094,10 +2094,73 @@ const DB = {
     } catch (e) { return { success: false, error: String(e) }; }
   },
 
+  // ── Admin Phase 2 RPCs ──
+  // All admin-gated at function level via is_admin(). Client errors out
+  // for non-admins; no client-side check required beyond UX.
+
+  async adminStats() {
+    if (DEMO_MODE) return { success: false, error: 'Offline' };
+    try {
+      const { data, error } = await _sb.rpc('admin_stats');
+      return error ? { success: false, error: error.message } : { success: true, data };
+    } catch (e) { return { success: false, error: String(e) }; }
+  },
+
+  async adminListUsers() {
+    if (DEMO_MODE) return { success: true, data: [] };
+    try {
+      const { data, error } = await _sb.rpc('admin_list_users');
+      return error ? { success: false, data: [], error: error.message } : { success: true, data: data || [] };
+    } catch (e) { return { success: false, data: [], error: String(e) }; }
+  },
+
+  async adminUpdateUserRole(userId, role) {
+    if (DEMO_MODE) return { success: true };
+    try {
+      const { error } = await _sb.rpc('admin_update_user_role', { p_user_id: userId, p_role: role });
+      return error ? { success: false, error: error.message } : { success: true };
+    } catch (e) { return { success: false, error: String(e) }; }
+  },
+
+  async adminForceCancelBooking(bookingId, reason) {
+    if (DEMO_MODE) return { success: true };
+    try {
+      const { error } = await _sb.rpc('admin_force_cancel_booking', {
+        p_booking_id: bookingId,
+        p_reason: reason || null,
+      });
+      return error ? { success: false, error: error.message } : { success: true };
+    } catch (e) { return { success: false, error: String(e) }; }
+  },
+
+  async adminListAllBookings({ limit = 100 } = {}) {
+    if (DEMO_MODE) return { success: true, data: [] };
+    try {
+      const { data, error } = await _sb.from('bookings')
+        .select('*, artists(stage_name, profiles(display_name)), promoter:profiles!promoter_id(display_name, email)')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      return error ? { success: false, data: [], error: error.message } : { success: true, data: data || [] };
+    } catch (e) { return { success: false, data: [], error: String(e) }; }
+  },
+
+  async adminBroadcast({ title, body, href, role }) {
+    if (DEMO_MODE) return { success: false, error: 'Offline' };
+    if (!title) return { success: false, error: 'Title required' };
+    try {
+      const { data, error } = await _sb.rpc('admin_broadcast_notification', {
+        p_title: title,
+        p_body: body || null,
+        p_href: href || null,
+        p_filter_role: role || null,
+      });
+      return error ? { success: false, error: error.message } : { success: true, recipients: data };
+    } catch (e) { return { success: false, error: String(e) }; }
+  },
+
   // Check if the current user is an admin. Used client-side to show/hide
-  // the admin panel in settings.html. Server-side every mutation is still
-  // re-checked via RLS, so spoofing this flag doesn't actually grant
-  // any powers.
+  // the admin panel. Server-side every mutation is still re-checked via
+  // RLS / is_admin() in RPC, so spoofing this flag doesn't grant powers.
   async isAdmin() {
     if (DEMO_MODE) return false;
     if (!Auth.user) return false;
