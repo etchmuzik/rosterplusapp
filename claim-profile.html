@@ -42,6 +42,16 @@
     .step-pip.active .dot { border-color: var(--accent); background: var(--accent-dim-10); color: var(--accent-soft); }
     .step-line { flex: 1; height: 1px; background: var(--border-subtle); margin: 0 12px; }
 
+    /* Mobile: drop the word labels, keep the progress dots — at 375px the
+       three "Account / Profile / Dashboard" labels fight for width and
+       overflow to a second line. Dots + connecting lines still carry the
+       progression meaning. */
+    @media (max-width: 480px) {
+      .step-strip { margin-bottom: var(--space-xl); }
+      .step-pip span:not(.dot) { display: none; }
+      .step-line { margin: 0 8px; }
+    }
+
     .claim-card {
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);

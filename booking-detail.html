@@ -354,11 +354,11 @@
           <div id="review-form" style="display:flex;flex-direction:column;gap:var(--space-md)">
             <div>
               <div style="font-size:0.78rem;color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;font-family:var(--font-mono)">Rating</div>
-              <div id="rating-picker" style="display:flex;gap:8px">
+              <div id="rating-picker" style="display:flex;gap:8px;flex-wrap:wrap">
                 ${[1,2,3,4,5].map(n => `
                   <button type="button" class="rating-star" data-rating="${n}"
                           onclick="setRating(${n})"
-                          style="background:none;border:1px solid var(--border-subtle);border-radius:var(--radius-sm);width:44px;height:44px;cursor:pointer;font-size:1.3rem;color:var(--text-tertiary);transition:all var(--duration-fast)"
+                          style="background:none;border:1px solid var(--border-subtle);border-radius:var(--radius-sm);width:44px;height:44px;min-width:44px;cursor:pointer;font-size:1.3rem;color:var(--text-tertiary);transition:all var(--duration-fast);flex:0 0 auto"
                           aria-label="${n} stars">☆</button>
                 `).join('')}
               </div>
@@ -367,9 +367,9 @@
               <label class="form-label" style="font-size:0.78rem;color:var(--text-tertiary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;font-family:var(--font-mono)">Comment (optional)</label>
               <textarea id="review-comment" class="form-input" rows="3" maxlength="500" placeholder="What stood out? Set design, professionalism, punctuality…" style="font-size:0.9rem;line-height:1.5;font-family:var(--font-body);resize:vertical"></textarea>
             </div>
-            <div style="display:flex;align-items:center;gap:var(--space-md)">
+            <div style="display:flex;align-items:center;gap:var(--space-md);flex-wrap:wrap">
               <button id="review-submit" class="btn btn-primary" onclick="submitReview('${esc(b.id)}')" disabled>Submit review</button>
-              <div id="review-submit-hint" style="font-size:0.78rem;color:var(--text-tertiary)">Pick a rating to submit.</div>
+              <div id="review-submit-hint" style="font-size:0.78rem;color:var(--text-tertiary);flex:1 1 200px">Pick a rating to submit.</div>
             </div>
           </div>
         </div>
