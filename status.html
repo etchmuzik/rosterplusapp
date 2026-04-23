@@ -236,36 +236,41 @@
       }
     }
 
-    // Read the last 7 days of cron_runs directly (public read is blocked
-    // by RLS, so we use the aggregate helper instead: the health endpoint
-    // gave us the latest row, and for the strip we use a lightweight
-    // query via a public view if we had one. We don't — so instead we
-    // fetch last-run-per-day from an RPC-shaped endpoint.
-    //
-    // Simpler approach: the health endpoint is the single source of truth
-    // for "is it ok right now". The 7-day strip is best-effort: we call
-    // the health endpoint, and for the 7-day lookback we read a small
-    // public endpoint. Since we don't want to add yet another edge
-    // function, render the strip as a trailing 7 cells: the right-most
-    // is "today" based on the freshest run, and we fall back to "unknown"
-    // (grey) for days we can't verify. Operators still see detailed
-    // history in /admin.html Health tab.
-    function renderCronStrip(todayFresh) {
+    // Render the 7-day strip from public.cron_history_7d RPC.
+    // Each cell reflects a day: green = at least one ok run + zero errors,
+    // red = any errors that day, grey = no runs recorded. "Today" is the
+    // right-most cell.
+    async function renderCronStrip() {
       const strip = document.getElementById('svc-cron-strip');
-      const cells = [];
-      for (let i = 6; i >= 0; i--) {
-        // For now we only know "today". Everything else is unknown.
-        const cls = i === 0
-          ? (todayFresh ? 'ok' : 'bad')
-          : 'none';
-        cells.push(`<div class="day-cell ${cls}" title="${i === 0 ? 'today' : i + ' days ago'}"></div>`);
+      if (!strip) return;
+      try {
+        const { data, error } = await _sb.rpc('cron_history_7d', { p_job: 'send-booking-reminders' });
+        if (error || !Array.isArray(data)) {
+          strip.innerHTML = '';
+          return;
+        }
+        strip.innerHTML = data.map(r => {
+          const total = Number(r.total_runs || 0);
+          const errs  = Number(r.error_runs || 0);
+          let cls = 'none';
+          if (total > 0 && errs === 0) cls = 'ok';
+          else if (errs > 0) cls = 'bad';
+          const dayLabel = new Date(r.day + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' });
+          const title = total === 0
+            ? `${dayLabel} — no runs recorded`
+            : errs > 0
+              ? `${dayLabel} — ${errs}/${total} failed`
+              : `${dayLabel} — ${total} ok`;
+          return `<div class="day-cell ${cls}" title="${title}"></div>`;
+        }).join('');
+      } catch (_) {
+        strip.innerHTML = '';
       }
-      strip.innerHTML = cells.join('');
     }
 
     async function refreshStatus() {
       const [siteOk, health] = await Promise.all([probeSite(), probeHealth()]);
-      renderCronStrip(health.cronOk);
+      renderCronStrip().catch(() => {});
 
       const allOk = siteOk && health.apiOk && health.cronOk;
       if (allOk) {

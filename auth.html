@@ -349,10 +349,13 @@
         document.getElementById('role-icon-artist').innerHTML = UI.icon('music', 18);
       } catch(e) { console.warn('Icon render skipped:', e); }
 
-      // Check URL for pre-selected role or invite token
+      // Check URL for pre-selected role, invite token, or email hint
+      // (used when returning from an impersonation session).
       const params = new URLSearchParams(window.location.search);
       const roleParam = params.get('role');
       const inviteToken = params.get('invite');
+      const emailHint = params.get('email');
+      const redirectTarget = params.get('redirect');
 
       if (roleParam === 'promoter' || roleParam === 'artist' || inviteToken) {
         switchTab('signup');
@@ -363,6 +366,23 @@
           document.getElementById('signup-role').value = 'artist';
           selectedRole = 'artist';
         }
+      }
+
+      // Pre-fill email if provided via ?email= (from impersonation exit).
+      // Targets the sign-in form primarily (most common re-entry path).
+      if (emailHint) {
+        const loginEmail = document.getElementById('login-email');
+        if (loginEmail) loginEmail.value = emailHint;
+      }
+
+      // If returning from an admin impersonation, show a small pill so
+      // the admin knows what's happening and why their session ended.
+      if (redirectTarget === '/admin.html') {
+        const hint = document.createElement('div');
+        hint.style.cssText = 'max-width:420px;margin:0 auto var(--space-md);padding:10px 14px;background:rgba(243,160,63,0.1);border:1px solid rgba(243,160,63,0.4);border-radius:var(--radius-sm);color:#f3a03f;font-size:0.82rem;text-align:center';
+        hint.textContent = 'Exited impersonation. Sign back in to return to the admin console.';
+        const form = document.querySelector('.auth-card') || document.body.firstElementChild;
+        if (form && form.parentNode) form.parentNode.insertBefore(hint, form);
       }
 
       // Store invite token for post-signup acceptance

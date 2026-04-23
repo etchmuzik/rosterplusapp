@@ -1014,7 +1014,13 @@
       if (!res.success) { UI.toast('Failed: ' + (res.error || ''), 'error'); return; }
       if (res.link) {
         // Mark the browser so every page can show the "impersonating" banner.
-        try { localStorage.setItem('rostr_impersonating', JSON.stringify({ email: res.target_email, startedAt: Date.now() })); } catch (_) {}
+        try {
+          localStorage.setItem('rostr_impersonating', JSON.stringify({
+            email: res.target_email,
+            adminEmail: Auth.user?.email || null,
+            startedAt: Date.now(),
+          }));
+        } catch (_) {}
         UI.toast('Redirecting\u2026', 'info');
         // The magic link is one-shot. Signing out first ensures the
         // current admin session doesn't collide with the target's.

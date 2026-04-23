@@ -609,9 +609,12 @@ const UI = {
   // WhatsApp share, and native Web Share API (mobile). Used on artist
   // profile + EPK + artist dashboard. Returns HTML string for inline
   // placement; the open/close is wired via UI.openShare(url, title).
-  shareButton({ label = 'Share', variant = 'ghost', size = 'sm' } = {}) {
+  shareButton({ label = 'Share', variant = 'ghost', size = 'sm', url = null, title = null } = {}) {
     const btnClass = `btn btn-${variant}${size ? ' btn-' + size : ''}`;
-    return `<button class="${btnClass}" onclick="UI.openShare(location.href, document.title)">${this.icon('send', 14)} ${label}</button>`;
+    // Escape single quotes so the onclick template literal stays valid.
+    const urlArg   = url   ? `'${String(url).replace(/'/g, '%27')}'`     : 'location.href';
+    const titleArg = title ? `'${String(title).replace(/'/g, '&#39;')}'` : 'document.title';
+    return `<button class="${btnClass}" onclick="UI.openShare(${urlArg}, ${titleArg})">${this.icon('send', 14)} ${label}</button>`;
   },
 
   // Open the share popover. Mounted lazily on body, hidden by default.
@@ -3106,12 +3109,18 @@ window.exportNotificationsCSV = exportNotificationsCSV;
 async function openNotification(id) {
   const n = _notifications.find(x => x.id === id);
   if (!n) return;
-  if (!n.read) {
+  const wasUnread = !n.read;
+  if (wasUnread) {
     n.read = true;
     DB.markNotificationRead(id).catch(() => {});
   }
-  if (n.href) { location.href = n.href; }
-  else { renderNotifications(); }
+  // Navigate only for notifications that have a deep-link. Otherwise
+  // just re-render so the unread dot disappears — no navigation.
+  if (n.href) {
+    location.href = n.href;
+  } else {
+    renderNotifications();
+  }
 }
 window.openNotification = openNotification;
 
@@ -3144,24 +3153,43 @@ function renderNotifications() {
     const title = String(n.title || '').replace(/[<>&]/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;' }[c]));
     const body  = n.body ? String(n.body).replace(/[<>&]/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;' }[c])) : '';
     const rel   = _relTime(n.created_at);
-    const clickable = n.href ? `onclick="openNotification('${n.id}')"` : '';
+    // Every row is click-actionable — either navigates (if href) or
+    // just flips read state. Keeps the interaction consistent.
     const unreadDot = !n.read
-      ? '<span style="position:absolute;top:12px;right:12px;width:6px;height:6px;border-radius:50%;background:var(--accent)"></span>'
+      ? '<span style="position:absolute;top:12px;right:12px;width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px var(--bg-raised)"></span>'
+      : '';
+    // Separate explicit "mark read" affordance for keyboard users and for
+    // notifications that don't have a deep-link href.
+    const markReadBtn = !n.read
+      ? `<button title="Mark read" aria-label="Mark read" onclick="event.stopPropagation(); markNotificationRead('${n.id}')" style="position:absolute;bottom:8px;right:12px;background:none;border:none;color:var(--text-tertiary);cursor:pointer;font-size:0.68rem;padding:2px 6px;font-family:var(--font-mono)">mark read</button>`
       : '';
     return `
-      <div ${clickable} style="position:relative;padding:10px 14px;border-bottom:1px solid var(--border-subtle);display:flex;gap:10px;align-items:flex-start;${n.href ? 'cursor:pointer' : ''};${n.read ? 'opacity:0.7' : ''};transition:background 80ms ease"
+      <div onclick="openNotification('${n.id}')" style="position:relative;padding:10px 14px;border-bottom:1px solid var(--border-subtle);display:flex;gap:10px;align-items:flex-start;cursor:pointer;${n.read ? 'opacity:0.7' : ''};transition:background 80ms ease"
            onmouseover="this.style.background='var(--bg-card)'" onmouseout="this.style.background=''">
         <div style="width:28px;height:28px;border-radius:8px;background:var(--bg-card);border:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:center;color:var(--text-tertiary);flex-shrink:0;margin-top:2px">${UI.icon(iconName, 14)}</div>
-        <div style="flex:1;min-width:0;padding-right:12px">
+        <div style="flex:1;min-width:0;padding-right:20px">
           <div style="font-size:0.86rem;font-weight:${n.read ? '400' : '600'};color:var(--text-primary);line-height:1.3">${title}</div>
           ${body ? `<div style="font-size:0.76rem;color:var(--text-tertiary);margin-top:2px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${body}</div>` : ''}
           <div style="font-size:0.68rem;color:var(--text-tertiary);margin-top:4px;font-family:var(--font-mono)">${rel}</div>
         </div>
         ${unreadDot}
+        ${markReadBtn}
       </div>
     `;
   }).join('');
 }
+
+// Standalone mark-read for href-less notifications (or when the user
+// explicitly clicks the "mark read" button). Updates local state
+// optimistically + fires the server write; re-paints the dropdown.
+async function markNotificationRead(id) {
+  const n = _notifications.find(x => x.id === id);
+  if (!n || n.read) return;
+  n.read = true;
+  renderNotifications();
+  try { await DB.markNotificationRead(id); } catch (_) { /* optimistic */ }
+}
+window.markNotificationRead = markNotificationRead;
 
 // Subscribe to Realtime INSERTs on notifications for this user. New rows
 // get prepended to the local list and the bell badge lights up. Idempotent
@@ -3247,11 +3275,37 @@ function _injectImpersonationBanner() {
 }
 
 async function _exitImpersonation() {
+  // Preserve the admin's original email (if we stashed it at impersonate
+  // time) so auth.html can pre-fill the sign-in form. Also pass a
+  // redirect=/admin.html hint so after re-auth the admin lands back
+  // where they started.
+  let stashedAdminEmail = null;
+  try {
+    const raw = localStorage.getItem('rostr_impersonating');
+    if (raw) stashedAdminEmail = JSON.parse(raw).adminEmail || null;
+  } catch (_) {}
+
   try { localStorage.removeItem('rostr_impersonating'); } catch (_) {}
-  await Auth.signOut();
-  // Auth.signOut already redirects to index; ensure the banner is gone.
+
+  // Sign out the magic-link session. We can't call Auth.signOut directly
+  // because it hard-redirects to index.html; we need control over the
+  // landing page.
+  try {
+    if (_sb && _sb.auth && _sb.auth.signOut) {
+      await _sb.auth.signOut();
+    }
+  } catch (_) { /* no-op */ }
+  Auth.user = null;
+  Auth.role = null;
+  Auth.isAdminCached = false;
+
   const bar = document.getElementById('rostr-impersonation-banner');
   if (bar) bar.remove();
+
+  const params = new URLSearchParams();
+  params.set('redirect', '/admin.html');
+  if (stashedAdminEmail) params.set('email', stashedAdminEmail);
+  window.location.href = '/auth.html?' + params.toString();
 }
 window._exitImpersonation = _exitImpersonation;
 
