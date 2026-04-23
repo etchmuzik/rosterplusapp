@@ -53,6 +53,64 @@ done
 
 cd "$REPO_ROOT"
 
+# ── Pre-deploy checks ─────────────────────────────────────
+# Cheap guardrail: fail fast on obvious breakage before we FTP
+# anything. Catches typos, truncated files, malformed HTML — the
+# class of 1am site-down incidents. Skip with --skip-checks if you
+# absolutely must (emergency hotfix, etc).
+SKIP_CHECKS=0
+for arg in "$@"; do
+  case "$arg" in --skip-checks) SKIP_CHECKS=1 ;; esac
+done
+
+if (( ! SKIP_CHECKS )); then
+  echo "=== Pre-deploy checks ==="
+
+  # JavaScript syntax
+  for js in assets/js/app.js assets/js/error-logger.js sw.js; do
+    if [[ -f "$js" ]]; then
+      node --check "$js" || { echo "❌ SYNTAX ERROR: $js"; exit 1; }
+    fi
+  done
+
+  # Every HTML page must close </html>. Truncated uploads sometimes
+  # slip through and render blank.
+  for f in *.html; do
+    if ! grep -q '</html>' "$f"; then
+      echo "❌ MALFORMED HTML (missing </html>): $f"
+      exit 1
+    fi
+  done
+
+  # Playwright smoke suite — only runs if playwright is installed.
+  # We don't gate on "is playwright installed" because the first
+  # deploy from a fresh clone shouldn't be blocked until someone runs
+  # `npm install && npx playwright install chromium`.
+  if command -v npx >/dev/null 2>&1 && [[ -d node_modules/@playwright ]]; then
+    echo "── running smoke tests ──"
+    # Start local server in the background so tests have something to hit.
+    npx http-server . -p 8090 -c-1 -s >/tmp/rostr-serve.log 2>&1 &
+    SERVE_PID=$!
+    # Give the server a second to bind. SIGTERM it regardless of test outcome.
+    sleep 1
+    trap '
+      kill $SERVE_PID 2>/dev/null || true
+      mv -f sw.js.deploy-bak sw.js 2>/dev/null || true
+      mv -f assets/js/app.js.deploy-bak assets/js/app.js 2>/dev/null || true
+    ' EXIT
+    if ! npx playwright test --config=e2e/playwright.config.js --grep @smoke; then
+      echo "❌ Smoke tests failed — aborting deploy"
+      exit 1
+    fi
+    kill $SERVE_PID 2>/dev/null || true
+  else
+    echo "(smoke tests skipped — run \`npm install\` once to enable)"
+  fi
+
+  echo "=== Pre-deploy checks passed ==="
+  echo
+fi
+
 # ── Stamp the build with current git SHA ──────────────────
 # Each deploy gets a unique cache name + version string so:
 #   1. The service worker's cache key rotates — old clients refetch

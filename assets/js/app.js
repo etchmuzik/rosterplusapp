@@ -1,4 +1,3 @@
-window.ROSTR_VERSION = '2f4f930';
 /* ═══════════════════════════════════════════════════════════
    ROSTR+ GCC — Core Application JS
    Supabase client, auth, router, UI helpers, live data

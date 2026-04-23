@@ -6,6 +6,12 @@
   "scripts": {
     "deploy": "bash scripts/deploy.sh",
     "deploy:dry": "bash scripts/deploy.sh --dry",
-    "deploy:full": "bash scripts/deploy.sh --full"
+    "deploy:full": "bash scripts/deploy.sh --full",
+    "test:e2e": "playwright test --config=e2e/playwright.config.js",
+    "test:smoke": "playwright test --config=e2e/playwright.config.js --grep @smoke",
+    "serve": "npx http-server . -p 8090 -c-1 -s"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.47.0"
   }
 }
