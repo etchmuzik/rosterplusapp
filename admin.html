@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en" data-accent="mono">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#08090b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ROSTR+">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <title>Admin — ROSTR+ GCC</title>
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="assets/css/system.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/error-logger.js"></script>
+  <script src="assets/js/app.js" defer></script>
+  <style>
+    .admin-container { max-width: 1100px; margin: 80px auto 0; padding: var(--space-2xl) var(--space-lg); }
+    .admin-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-md); margin-bottom: var(--space-lg); flex-wrap: wrap; }
+    .admin-head h1 { margin: 0; font-family: var(--font-display); font-size: 2rem; letter-spacing: -0.03em; }
+    .admin-head p { margin-top: 4px; color: var(--text-tertiary); font-size: 0.88rem; }
+
+    /* Tab strip — same visual idiom as the bookings.html status filter */
+    .admin-tabs {
+      display: flex;
+      gap: 2px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 3px;
+      margin-bottom: var(--space-lg);
+      overflow-x: auto;
+    }
+    .admin-tab {
+      padding: 7px 14px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      font-family: var(--font-body);
+      color: var(--text-secondary);
+      background: none;
+      border: none;
+      border-radius: calc(var(--radius-sm) - 2px);
+      cursor: pointer;
+      transition: all var(--duration-fast) var(--ease-out);
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .admin-tab.active {
+      background: var(--bg-raised);
+      color: var(--text-primary);
+      box-shadow: var(--shadow-sm);
+    }
+    .admin-tab:hover:not(.active) { color: var(--text-primary); }
+
+    .admin-panel { display: none; }
+    .admin-panel.active { display: block; animation: fadeIn 200ms var(--ease-out); }
+
+    /* Errors tab — subtle table */
+    .err-row {
+      display: grid;
+      grid-template-columns: 160px 70px 1fr 240px;
+      gap: var(--space-md);
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: background 80ms ease;
+    }
+    .err-row:hover { background: var(--bg-card); }
+    .err-row .when { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-tertiary); }
+    .err-row .build { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-tertiary); }
+    .err-row .msg { color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .err-row .url { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .err-detail {
+      display: none;
+      padding: var(--space-md);
+      background: var(--bg-1);
+      border-left: 3px solid var(--accent);
+      font-family: var(--font-mono);
+      font-size: 0.76rem;
+      color: var(--text-secondary);
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin-bottom: 8px;
+    }
+    .err-detail.open { display: block; }
+
+    /* Health tab */
+    .health-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: var(--space-lg);
+      margin-bottom: var(--space-lg);
+    }
+    .health-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 999px;
+      font-family: var(--font-mono); font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .health-pill--ok { background: rgba(52,211,153,0.1); color: var(--status-confirmed); border: 1px solid rgba(52,211,153,0.3); }
+    .health-pill--bad { background: rgba(248,113,113,0.1); color: var(--status-cancelled); border: 1px solid rgba(248,113,113,0.3); }
+
+    @media (max-width: 780px) {
+      .err-row { grid-template-columns: 1fr; gap: 4px; }
+      .err-row .url, .err-row .build { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+    <div id="nav-root"></div>
+    <div class="admin-container">
+      <div class="admin-head">
+        <div>
+          <div style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--accent-soft);margin-bottom:6px">Admin console</div>
+          <h1>Operate ROSTR+</h1>
+          <p>Roster, imports, audit log, errors, cron health. Visible only to platform admins.</p>
+        </div>
+        <div id="admin-who" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary);text-align:right"></div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="admin-tabs" role="tablist">
+        <button class="admin-tab active" data-tab="roster" onclick="switchAdminTab('roster')">${'' /* icon injected in JS init */}Roster</button>
+        <button class="admin-tab" data-tab="import" onclick="switchAdminTab('import')">Bulk import</button>
+        <button class="admin-tab" data-tab="audit" onclick="switchAdminTab('audit')">Audit log</button>
+        <button class="admin-tab" data-tab="errors" onclick="switchAdminTab('errors')">Errors</button>
+        <button class="admin-tab" data-tab="health" onclick="switchAdminTab('health')">Health</button>
+      </div>
+
+      <!-- ═══ Tab: Roster ═══ -->
+      <section class="admin-panel active" data-panel="roster">
+        <p class="text-secondary" style="font-size:0.88rem;margin-bottom:var(--space-md)">
+          Promote pending artists, deactivate, or toggle verified status. All actions are audited.
+        </p>
+        <div id="admin-artists-list" style="display:flex;flex-direction:column;gap:var(--space-sm);margin-bottom:var(--space-md)"></div>
+
+        <details style="margin-top:var(--space-md)">
+          <summary style="cursor:pointer;color:var(--text-secondary);font-size:0.88rem">+ Add new unclaimed artist</summary>
+          <div style="padding:var(--space-md);background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);margin-top:var(--space-sm)">
+            <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-md);margin-bottom:var(--space-sm)">
+              <div class="form-group">
+                <label class="form-label">Stage Name</label>
+                <input type="text" class="form-input" id="admin-new-name" placeholder="e.g. DJ ETCH">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Primary Genre</label>
+                <input type="text" class="form-input" id="admin-new-genre" placeholder="Tech House">
+              </div>
+              <div class="form-group">
+                <label class="form-label">City</label>
+                <input type="text" class="form-input" id="admin-new-city" placeholder="Dubai">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Status</label>
+                <select class="form-select" id="admin-new-status">
+                  <option value="pending">Pending (hidden)</option>
+                  <option value="active">Active (public)</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="adminCreateArtist()">Create unclaimed artist</button>
+          </div>
+        </details>
+      </section>
+
+      <!-- ═══ Tab: Bulk import ═══ -->
+      <section class="admin-panel" data-panel="import">
+        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:var(--space-md);line-height:1.6">
+          Drop a CSV with artists to add them all as unclaimed rows. Columns:
+          <code style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-primary)">stage_name</code> (required) +
+          <code style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-primary)">genre, city, instagram, soundcloud, spotify, status, verified, base_fee</code> (optional).
+        </p>
+        <p style="font-size:0.82rem;margin-bottom:var(--space-md)">
+          <a href="assets/artist-import-template.csv" download style="color:var(--accent-soft)">Download template CSV →</a>
+        </p>
+
+        <input type="file" id="admin-csv-file" accept=".csv,text/csv" style="display:none">
+        <div id="admin-csv-drop" style="padding:var(--space-lg);border:1px dashed var(--border-medium);border-radius:var(--radius-sm);text-align:center;cursor:pointer;background:var(--bg-card-hover);transition:border-color var(--duration-fast)">
+          <div style="color:var(--text-secondary);font-size:0.88rem">Drop CSV here, or click to pick a file</div>
+          <div id="admin-csv-filename" style="color:var(--text-tertiary);font-size:0.75rem;margin-top:4px;font-family:var(--font-mono)"></div>
+        </div>
+
+        <div id="admin-csv-preview" style="margin-top:var(--space-md);display:none">
+          <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:var(--space-sm)">
+            <span id="admin-csv-count">0</span> row<span id="admin-csv-plural">s</span> ready. Review below, then import.
+          </div>
+          <div id="admin-csv-preview-table" style="max-height:240px;overflow:auto;background:var(--bg-1);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:var(--space-sm);font-family:var(--font-mono);font-size:0.78rem"></div>
+          <div style="display:flex;gap:var(--space-sm);margin-top:var(--space-md)">
+            <button class="btn btn-primary btn-sm" id="admin-csv-import">Import <span id="admin-csv-import-count">0</span> artists</button>
+            <button class="btn btn-ghost btn-sm" onclick="adminResetCsv()">Clear</button>
+          </div>
+        </div>
+
+        <div id="admin-csv-results" style="margin-top:var(--space-md);display:none"></div>
+      </section>
+
+      <!-- ═══ Tab: Audit log ═══ -->
+      <section class="admin-panel" data-panel="audit">
+        <div style="display:flex;gap:8px;margin-bottom:var(--space-sm);align-items:center">
+          <div style="font-size:0.88rem;color:var(--text-secondary)">Latest 100 admin actions</div>
+          <button class="btn btn-ghost btn-sm" style="margin-left:auto;font-size:0.76rem" onclick="refreshAuditLog()">Refresh</button>
+        </div>
+        <div id="admin-audit-log" style="max-height:600px;overflow-y:auto;font-size:0.82rem;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:var(--space-md) var(--space-lg)"></div>
+      </section>
+
+      <!-- ═══ Tab: Errors ═══ -->
+      <section class="admin-panel" data-panel="errors">
+        <div style="display:flex;gap:8px;margin-bottom:var(--space-sm);align-items:center;flex-wrap:wrap">
+          <div style="font-size:0.88rem;color:var(--text-secondary)">Client errors captured by the browser logger</div>
+          <select id="err-range" class="form-select" style="margin-left:auto;font-size:0.78rem;padding:4px 8px" onchange="renderErrors()">
+            <option value="24h" selected>Last 24 hours</option>
+            <option value="7d">Last 7 days</option>
+            <option value="all">All (30-day window)</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" onclick="renderErrors()">Refresh</button>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);overflow:hidden">
+          <div class="err-row" style="background:var(--bg-raised);font-family:var(--font-mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);cursor:default">
+            <div>Time</div>
+            <div>Build</div>
+            <div>Message</div>
+            <div>URL</div>
+          </div>
+          <div id="err-list"></div>
+        </div>
+      </section>
+
+      <!-- ═══ Tab: Health ═══ -->
+      <section class="admin-panel" data-panel="health">
+        <div style="display:flex;gap:8px;margin-bottom:var(--space-lg);align-items:center">
+          <div style="font-size:0.88rem;color:var(--text-secondary)">Platform health snapshot</div>
+          <button class="btn btn-ghost btn-sm" style="margin-left:auto;font-size:0.76rem" onclick="renderHealth()">Refresh</button>
+        </div>
+
+        <div id="health-summary" class="health-card">Loading…</div>
+
+        <h3 style="font-size:1rem;margin-bottom:var(--space-sm)">Last 20 cron runs</h3>
+        <div id="cron-runs-list" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);overflow:hidden"></div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    // ─── Tabs ──────────────────────────────────────────────
+    function switchAdminTab(name) {
+      document.querySelectorAll('.admin-tab').forEach(b => {
+        b.classList.toggle('active', b.dataset.tab === name);
+      });
+      document.querySelectorAll('.admin-panel').forEach(p => {
+        p.classList.toggle('active', p.dataset.panel === name);
+      });
+      // Lazy-load tabs that want fresh data each visit.
+      if (name === 'errors') renderErrors().catch(() => {});
+      if (name === 'health') renderHealth().catch(() => {});
+      if (name === 'audit')  refreshAuditLog().catch(() => {});
+    }
+    window.switchAdminTab = switchAdminTab;
+
+    // ─── Audit log ─────────────────────────────────────────
+    async function refreshAuditLog() {
+      const host = document.getElementById('admin-audit-log');
+      if (!host) return;
+      host.innerHTML = '<div class="text-tertiary" style="padding:var(--space-md);font-size:0.82rem">Loading…</div>';
+      const res = await DB.adminListAuditLog({ limit: 100 });
+      if (!res.success) {
+        host.innerHTML = `<div class="text-tertiary" style="padding:var(--space-md);font-size:0.82rem">Failed to load: ${res.error || 'unknown'}</div>`;
+        return;
+      }
+      if (!res.data.length) {
+        host.innerHTML = '<div class="text-tertiary" style="padding:var(--space-md);font-size:0.82rem;text-align:center">No admin actions logged yet.</div>';
+        return;
+      }
+      const actionLabel = {
+        'artist.verify':        'Verified artist',
+        'artist.unverify':      'Un-verified artist',
+        'artist.status_change': 'Changed status',
+        'artist.create':        'Created artist',
+        'artist.claim':         'Linked artist to user',
+        'artist.unclaim':       'Unlinked artist from user',
+        'artist.bulk_import':   'Bulk CSV import',
+      };
+      const fmtVal = (v) => {
+        if (v === null || v === undefined || v === '') return '—';
+        if (typeof v === 'boolean') return v ? 'yes' : 'no';
+        if (typeof v === 'object') return JSON.stringify(v);
+        return String(v);
+      };
+      host.innerHTML = res.data.map(row => {
+        const when = new Date(row.created_at);
+        const whenStr = when.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+        const label = actionLabel[row.action] || row.action;
+        const stageName = row.meta?.stage_name ? ` · <strong>${esc(row.meta.stage_name)}</strong>` : '';
+
+        let delta = '';
+        if (row.before_value && row.after_value) {
+          const keys = Object.keys(row.after_value);
+          delta = keys.map(k => {
+            const bef = fmtVal(row.before_value[k]);
+            const aft = fmtVal(row.after_value[k]);
+            return `<span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary)">${esc(k)}: <span style="text-decoration:line-through;opacity:0.7">${esc(bef)}</span> → <span style="color:var(--text-secondary)">${esc(aft)}</span></span>`;
+          }).join('<span style="color:var(--text-tertiary);margin:0 6px">·</span>');
+        } else if (row.action === 'artist.bulk_import' && row.meta) {
+          const m = row.meta;
+          delta = `<span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary)">${m.succeeded || 0} imported · ${m.failed || 0} failed · ${m.total || 0} total</span>`;
+        } else if (row.after_value) {
+          const parts = Object.entries(row.after_value).map(([k,v]) => `${esc(k)}=${esc(fmtVal(v))}`);
+          delta = `<span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary)">${parts.join(' · ')}</span>`;
+        }
+
+        return `
+          <div style="padding:10px 0;border-bottom:1px solid var(--border-subtle)">
+            <div style="color:var(--text-primary)"><strong>${esc(label)}</strong>${stageName}</div>
+            ${delta ? `<div style="margin-top:4px">${delta}</div>` : ''}
+            <div style="font-size:0.72rem;color:var(--text-tertiary);margin-top:4px">
+              ${esc(row.actor_email || 'unknown')} · ${whenStr}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    window.refreshAuditLog = refreshAuditLog;
+
+    // ─── Roster ────────────────────────────────────────────
+    async function renderAdminArtists() {
+      const list = document.getElementById('admin-artists-list');
+      if (!list) return;
+      list.innerHTML = '<div class="text-tertiary" style="font-size:0.85rem">Loading…</div>';
+      const res = await DB.adminListAllArtists();
+      if (!res.success) {
+        list.innerHTML = `<div style="color:var(--status-cancelled);font-size:0.85rem">Failed to load: ${esc(res.error || '')}</div>`;
+        return;
+      }
+      if (!res.data || res.data.length === 0) {
+        list.innerHTML = UI.emptyState({ icon: 'music', title: 'No artists yet', body: 'Seed the roster from the Bulk import tab.', compact: true });
+        return;
+      }
+      list.innerHTML = res.data.map(a => {
+        const genre = Array.isArray(a.genre) ? a.genre.join(', ') : (a.genre || '');
+        const city = Array.isArray(a.cities_active) ? a.cities_active[0] : '';
+        const claimed = a.profile_id ? '<span style="color:var(--status-confirmed);font-size:0.75rem">claimed</span>' : '<span class="text-tertiary" style="font-size:0.75rem">unclaimed</span>';
+        const statusClr = a.status === 'active' ? 'var(--status-confirmed)' : a.status === 'pending' ? 'var(--status-pending)' : 'var(--text-tertiary)';
+        return `
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-sm);padding:var(--space-sm) var(--space-md);background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm)">
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:8px;font-weight:500">
+                ${esc(a.stage_name)}
+                ${a.verified ? '<span style="color:var(--accent-soft);font-size:0.75rem">✓ verified</span>' : ''}
+                ${claimed}
+              </div>
+              <div style="font-size:0.75rem;color:var(--text-tertiary);margin-top:2px">
+                ${esc(genre)}${genre && city ? ' · ' : ''}${esc(city)} · <span style="color:${statusClr}">${esc(a.status)}</span>
+              </div>
+            </div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
+              ${a.status !== 'active' ? `<button class="btn btn-ghost btn-sm" style="font-size:0.75rem" onclick="adminSetStatus('${esc(a.id)}','active')">Activate</button>` : ''}
+              ${a.status !== 'pending' ? `<button class="btn btn-ghost btn-sm" style="font-size:0.75rem" onclick="adminSetStatus('${esc(a.id)}','pending')">Hide</button>` : ''}
+              ${a.status !== 'inactive' ? `<button class="btn btn-ghost btn-sm" style="font-size:0.75rem" onclick="adminSetStatus('${esc(a.id)}','inactive')">Retire</button>` : ''}
+              <button class="btn btn-ghost btn-sm" style="font-size:0.75rem" onclick="adminToggleVerified('${esc(a.id)}',${!a.verified})">${a.verified ? 'Unverify' : 'Verify'}</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function adminSetStatus(artistId, status) {
+      const res = await DB.adminUpdateArtistStatus(artistId, status);
+      if (!res.success) { UI.toast('Failed: ' + (res.error || ''), 'error'); return; }
+      UI.toast(`Status → ${status}`, 'success');
+      renderAdminArtists();
+    }
+
+    async function adminToggleVerified(artistId, verified) {
+      const res = await DB.adminSetArtistVerified(artistId, verified);
+      if (!res.success) { UI.toast('Failed: ' + (res.error || ''), 'error'); return; }
+      UI.toast(verified ? 'Marked verified' : 'Unverified', 'success');
+      renderAdminArtists();
+    }
+
+    async function adminCreateArtist() {
+      const name = document.getElementById('admin-new-name').value.trim();
+      const genre = document.getElementById('admin-new-genre').value.trim();
+      const city = document.getElementById('admin-new-city').value.trim();
+      const status = document.getElementById('admin-new-status').value;
+      if (!name) { UI.toast('Stage name required', 'warning'); return; }
+      const res = await DB.adminCreateUnclaimedArtist({
+        stage_name: name,
+        genre: genre ? [genre] : [],
+        cities_active: city ? [city] : [],
+        status,
+      });
+      if (!res.success) { UI.toast('Failed: ' + (res.error || ''), 'error'); return; }
+      UI.toast(`Added ${name}`, 'success');
+      document.getElementById('admin-new-name').value = '';
+      document.getElementById('admin-new-genre').value = '';
+      document.getElementById('admin-new-city').value = '';
+      renderAdminArtists();
+    }
+
+    // ─── CSV import ───────────────────────────────────────
+    // Minimal RFC-4180-ish parser. Handles quoted fields (including
+    // escaped quotes "" and embedded newlines/commas).
+    function parseCsv(text) {
+      const rows = [];
+      let row = [], field = '', inQuotes = false;
+      for (let i = 0; i < text.length; i++) {
+        const c = text[i];
+        if (inQuotes) {
+          if (c === '"' && text[i + 1] === '"') { field += '"'; i++; }
+          else if (c === '"') inQuotes = false;
+          else field += c;
+        } else {
+          if (c === '"') inQuotes = true;
+          else if (c === ',') { row.push(field); field = ''; }
+          else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+          else if (c === '\r') { /* ignore */ }
+          else field += c;
+        }
+      }
+      if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row); }
+      while (rows.length && rows[rows.length - 1].every(v => !v.trim())) rows.pop();
+      if (rows.length < 2) return [];
+      const header = rows[0].map(h => h.trim().toLowerCase());
+      return rows.slice(1).map(vals => {
+        const obj = {};
+        header.forEach((k, idx) => { obj[k] = (vals[idx] ?? '').trim(); });
+        return obj;
+      });
+    }
+
+    let _csvParsedRows = [];
+
+    function adminResetCsv() {
+      _csvParsedRows = [];
+      document.getElementById('admin-csv-file').value = '';
+      document.getElementById('admin-csv-filename').textContent = '';
+      document.getElementById('admin-csv-preview').style.display = 'none';
+      document.getElementById('admin-csv-results').style.display = 'none';
+      document.getElementById('admin-csv-preview-table').innerHTML = '';
+    }
+    window.adminResetCsv = adminResetCsv;
+
+    function renderCsvPreview(rows) {
+      _csvParsedRows = rows;
+      const count = rows.length;
+      document.getElementById('admin-csv-count').textContent = count;
+      document.getElementById('admin-csv-plural').textContent = count === 1 ? '' : 's';
+      document.getElementById('admin-csv-import-count').textContent = count;
+      document.getElementById('admin-csv-preview').style.display = '';
+
+      if (count === 0) {
+        document.getElementById('admin-csv-preview-table').innerHTML =
+          '<div style="color:var(--status-cancelled)">No valid rows found. Check the header row — stage_name is required.</div>';
+        document.getElementById('admin-csv-import').disabled = true;
+        return;
+      }
+      document.getElementById('admin-csv-import').disabled = false;
+
+      const sample = rows.slice(0, 10);
+      const cols = ['stage_name','genre','city','status','verified','base_fee','instagram'];
+      let html = '<table style="width:100%;border-collapse:collapse"><thead><tr>';
+      cols.forEach(c => {
+        html += `<th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:var(--text-tertiary);text-transform:uppercase;font-size:0.7rem;letter-spacing:0.06em">${esc(c)}</th>`;
+      });
+      html += '</tr></thead><tbody>';
+      sample.forEach(r => {
+        html += '<tr>';
+        cols.forEach(c => {
+          const v = r[c] || r[c.replace('_',' ')] || '';
+          html += `<td style="padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:var(--text-primary);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(v)}</td>`;
+        });
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+      if (count > 10) html += `<div style="padding:8px;color:var(--text-tertiary);text-align:center;font-size:0.82rem">+ ${count - 10} more row${count - 10 === 1 ? '' : 's'}</div>`;
+      document.getElementById('admin-csv-preview-table').innerHTML = html;
+    }
+
+    async function handleCsvFile(file) {
+      if (!file) return;
+      document.getElementById('admin-csv-filename').textContent = file.name + ' · ' + (file.size / 1024).toFixed(1) + ' KB';
+      try {
+        const text = await file.text();
+        const rows = parseCsv(text).filter(r => (r.stage_name || r.name || '').trim());
+        renderCsvPreview(rows);
+      } catch (e) {
+        UI.toast('Failed to parse CSV: ' + e.message, 'error');
+      }
+    }
+
+    async function runCsvImport() {
+      if (!_csvParsedRows.length) return;
+      const btn = document.getElementById('admin-csv-import');
+      btn.disabled = true;
+      btn.textContent = 'Importing…';
+      const res = await DB.adminBulkImportArtists(_csvParsedRows);
+      btn.disabled = false;
+      btn.innerHTML = `Import <span id="admin-csv-import-count">${_csvParsedRows.length}</span> artists`;
+
+      if (!res.success) { UI.toast('Import failed: ' + (res.error || ''), 'error'); return; }
+
+      const results = document.getElementById('admin-csv-results');
+      let html = `<div style="font-size:0.88rem;margin-bottom:var(--space-sm)">
+        <strong style="color:var(--status-confirmed)">${res.succeeded} added</strong>
+        ${res.failed > 0 ? `· <strong style="color:var(--status-cancelled)">${res.failed} failed</strong>` : ''}
+      </div>`;
+      if (res.failed > 0) {
+        html += '<div style="background:var(--bg-1);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:var(--space-sm);font-family:var(--font-mono);font-size:0.78rem;max-height:160px;overflow:auto">';
+        res.results.filter(r => !r.ok).forEach(r => {
+          html += `<div style="color:var(--status-cancelled)">${esc(r.stage_name)}: ${esc(r.error || 'unknown')}</div>`;
+        });
+        html += '</div>';
+      }
+      results.innerHTML = html;
+      results.style.display = '';
+      UI.toast(`${res.succeeded} imported, ${res.failed} failed`, res.failed === 0 ? 'success' : 'warning');
+      renderAdminArtists();
+      if (res.failed === 0) setTimeout(adminResetCsv, 3000);
+    }
+
+    function wireCsvUI() {
+      const drop = document.getElementById('admin-csv-drop');
+      const file = document.getElementById('admin-csv-file');
+      if (!drop || !file) return;
+
+      drop.addEventListener('click', () => file.click());
+      file.addEventListener('change', e => handleCsvFile(e.target.files[0]));
+
+      drop.addEventListener('dragover', e => { e.preventDefault(); drop.style.borderColor = 'var(--accent-soft)'; });
+      drop.addEventListener('dragleave', () => { drop.style.borderColor = ''; });
+      drop.addEventListener('drop', e => {
+        e.preventDefault();
+        drop.style.borderColor = '';
+        const f = e.dataTransfer.files[0];
+        if (f && /\.csv$/i.test(f.name)) handleCsvFile(f);
+        else UI.toast('Expected a .csv file', 'warning');
+      });
+
+      document.getElementById('admin-csv-import').addEventListener('click', runCsvImport);
+    }
+
+    // ─── Errors tab ────────────────────────────────────────
+    // Reads public.client_errors directly via REST — RLS restricts
+    // SELECT to admins. We just need the anon key + the admin's JWT;
+    // the supabase-js client already handles that.
+    async function renderErrors() {
+      const host = document.getElementById('err-list');
+      if (!host) return;
+      host.innerHTML = '<div style="padding:var(--space-md);color:var(--text-tertiary);font-size:0.82rem">Loading…</div>';
+
+      const range = document.getElementById('err-range').value;
+      let sinceHours = 24;
+      if (range === '7d') sinceHours = 24 * 7;
+      if (range === 'all') sinceHours = 24 * 30;
+      const since = new Date(Date.now() - sinceHours * 60 * 60 * 1000).toISOString();
+
+      try {
+        const { data, error } = await _sb.from('client_errors')
+          .select('id, message, stack, url, build, context, created_at, user_id')
+          .gt('created_at', since)
+          .order('created_at', { ascending: false })
+          .limit(200);
+        if (error) {
+          host.innerHTML = `<div style="padding:var(--space-md);color:var(--status-cancelled);font-size:0.82rem">Failed: ${esc(error.message)}</div>`;
+          return;
+        }
+        if (!data || data.length === 0) {
+          host.innerHTML = UI.emptyState({ icon: 'check', title: 'No errors in this window', body: 'Quiet browsers all around.', compact: true });
+          return;
+        }
+        host.innerHTML = data.map(row => {
+          const when = new Date(row.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          return `
+            <div class="err-row" onclick="toggleErrDetail('${row.id}')">
+              <div class="when">${when}</div>
+              <div class="build">${esc(row.build || 'dev')}</div>
+              <div class="msg">${esc(row.message || '')}</div>
+              <div class="url">${esc(row.url || '')}</div>
+            </div>
+            <div class="err-detail" id="err-d-${row.id}">${esc(row.stack || '(no stack)')}${row.context && Object.keys(row.context).length ? '\n\ncontext: ' + esc(JSON.stringify(row.context, null, 2)) : ''}</div>
+          `;
+        }).join('');
+      } catch (e) {
+        host.innerHTML = `<div style="padding:var(--space-md);color:var(--status-cancelled);font-size:0.82rem">Failed: ${esc(String(e))}</div>`;
+      }
+    }
+    window.renderErrors = renderErrors;
+
+    function toggleErrDetail(id) {
+      const el = document.getElementById('err-d-' + id);
+      if (el) el.classList.toggle('open');
+    }
+    window.toggleErrDetail = toggleErrDetail;
+
+    // ─── Health tab ────────────────────────────────────────
+    async function renderHealth() {
+      const summary = document.getElementById('health-summary');
+      const runsHost = document.getElementById('cron-runs-list');
+      if (!summary || !runsHost) return;
+
+      summary.innerHTML = '<div style="color:var(--text-tertiary)">Loading…</div>';
+      runsHost.innerHTML = '';
+
+      // 1) Live health endpoint
+      try {
+        const r = await fetch('https://vgjmfpryobsuboukbemr.supabase.co/functions/v1/health', { cache: 'no-store' });
+        const h = await r.json();
+        const pill = h.ok
+          ? '<span class="health-pill health-pill--ok">● HEALTHY</span>'
+          : '<span class="health-pill health-pill--bad">● DEGRADED</span>';
+        const jobsHtml = Object.entries(h.crons || {}).map(([job, run]) => {
+          const ok = run.status === 'ok';
+          return `<div style="display:flex;align-items:center;gap:12px;padding:6px 0">
+            <span class="health-pill ${ok ? 'health-pill--ok' : 'health-pill--bad'}">${ok ? 'OK' : run.status}</span>
+            <code style="font-family:var(--font-mono);font-size:0.82rem">${esc(job)}</code>
+            <span style="font-size:0.78rem;color:var(--text-tertiary);margin-left:auto">ran ${timeAgo(run.ran_at)} · ${run.duration_ms || '—'}ms</span>
+          </div>`;
+        }).join('') || '<div style="color:var(--text-tertiary);font-size:0.82rem">No cron runs on record yet.</div>';
+        const warnings = (h.warnings || []).length
+          ? `<div style="margin-top:var(--space-md);padding:var(--space-sm);background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.3);border-radius:var(--radius-sm);color:var(--status-pending);font-size:0.82rem">⚠ ${(h.warnings).map(esc).join('<br>')}</div>`
+          : '';
+        summary.innerHTML = `
+          <div style="display:flex;align-items:center;gap:var(--space-md);margin-bottom:var(--space-md)">
+            ${pill}
+            <div style="font-size:0.78rem;color:var(--text-tertiary);margin-left:auto">latency ${h.latency_ms || '—'}ms · ${new Date(h.ts).toLocaleString('en-GB', { hour: '2-digit', minute: '2-digit' })}</div>
+          </div>
+          <div>${jobsHtml}</div>
+          ${warnings}
+        `;
+      } catch (e) {
+        summary.innerHTML = `<div style="color:var(--status-cancelled)">Health endpoint failed: ${esc(String(e))}</div>`;
+      }
+
+      // 2) cron_runs tail
+      try {
+        const { data, error } = await _sb.from('cron_runs')
+          .select('job, status, duration_ms, error, ran_at')
+          .order('ran_at', { ascending: false })
+          .limit(20);
+        if (error || !data || data.length === 0) {
+          runsHost.innerHTML = '<div style="padding:var(--space-md);color:var(--text-tertiary);font-size:0.82rem">No cron runs yet.</div>';
+          return;
+        }
+        runsHost.innerHTML = data.map(r => {
+          const when = new Date(r.ran_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+          const pill = r.status === 'ok'
+            ? '<span class="health-pill health-pill--ok">OK</span>'
+            : '<span class="health-pill health-pill--bad">ERR</span>';
+          return `<div style="display:grid;grid-template-columns:80px 220px 1fr 100px 120px;gap:var(--space-md);padding:8px 12px;border-bottom:1px solid var(--border-subtle);font-size:0.82rem;align-items:center">
+            <div>${pill}</div>
+            <code style="font-family:var(--font-mono);font-size:0.78rem">${esc(r.job)}</code>
+            <div style="color:var(--text-tertiary);font-size:0.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.error || '')}</div>
+            <div style="font-family:var(--font-mono);font-size:0.74rem;color:var(--text-tertiary)">${r.duration_ms || '—'}ms</div>
+            <div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary);text-align:right">${when}</div>
+          </div>`;
+        }).join('');
+      } catch (e) {
+        runsHost.innerHTML = `<div style="padding:var(--space-md);color:var(--status-cancelled);font-size:0.82rem">Failed: ${esc(String(e))}</div>`;
+      }
+    }
+    window.renderHealth = renderHealth;
+
+    function timeAgo(iso) {
+      try {
+        const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+        if (diff < 60) return 'just now';
+        if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+        if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+        return `${Math.floor(diff / 86400)}d ago`;
+      } catch (_) { return '—'; }
+    }
+
+    // ─── Init ──────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', async function() {
+      await Auth.ready();
+      if (!Auth.isLoggedIn()) { Auth.require(); return; }
+
+      // Client-side gate. The real defence is RLS on every admin mutation,
+      // but bouncing non-admins here keeps the page from flashing UI they
+      // can't use.
+      const isAdmin = await DB.isAdmin();
+      if (!isAdmin) {
+        window.location.replace('/dashboard.html');
+        return;
+      }
+
+      document.getElementById('nav-root').innerHTML = renderNav('admin');
+      if (typeof hydrateIcons === 'function') hydrateIcons();
+
+      document.getElementById('admin-who').innerHTML =
+        esc(Auth.user?.email || 'admin') + ' · build ' + esc(window.ROSTR_VERSION || 'dev');
+
+      renderAdminArtists();
+      wireCsvUI();
+      // Other tabs lazy-load on switch (see switchAdminTab).
+    });
+  </script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
+</body>
+</html>

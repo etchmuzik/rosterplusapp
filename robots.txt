@@ -9,6 +9,7 @@ Disallow: /contracts.html
 Disallow: /payments.html
 Disallow: /messages.html
 Disallow: /settings.html
+Disallow: /admin.html
 Disallow: /calendar.html
 Disallow: /analytics.html
 Disallow: /artist-profile-edit.html

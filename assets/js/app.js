@@ -1,3 +1,4 @@
+window.ROSTR_VERSION = 'ea9a5be';
 /* ═══════════════════════════════════════════════════════════
    ROSTR+ GCC — Core Application JS
    Supabase client, auth, router, UI helpers, live data
@@ -52,6 +53,7 @@ function initSupabase() {
 const Auth = {
   user: null,
   role: null, // 'promoter' | 'artist' | 'admin'
+  isAdminCached: false, // populated asynchronously by loadProfile via DB.isAdmin()
   _readyResolve: null,
   _readyPromise: null,
   _initialized: false,
@@ -171,6 +173,28 @@ const Auth = {
       this.user.company = data.company;
       this.user.bio = data.bio;
     }
+    // Cache the admin check so renderNav can read it synchronously every
+    // render. DB.isAdmin() is a server-side RPC — one call per session,
+    // free thereafter. Defer via setTimeout so we don't deadlock inside
+    // the auth lock (see Auth.init note on supabase-js v2 mutex).
+    setTimeout(() => {
+      if (typeof DB === 'undefined' || !DB.isAdmin) return;
+      DB.isAdmin().then(ok => {
+        this.isAdminCached = !!ok;
+        // If a nav was already rendered before this resolved, the Admin
+        // link will be missing — re-render if a mount point is around.
+        if (this.isAdminCached) {
+          const navRoot = document.getElementById('nav-root');
+          if (navRoot && typeof renderNav === 'function' && navRoot.innerHTML) {
+            const activeMatch = navRoot.innerHTML.match(/class="active"[^>]*>[^<]*<[^>]*>\s*([A-Za-z]+)/);
+            // Safer: just re-render with no active page — pages call renderNav
+            // themselves in DOMContentLoaded so this only matters mid-flight.
+            navRoot.innerHTML = renderNav('');
+            if (typeof hydrateIcons === 'function') hydrateIcons();
+          }
+        }
+      }).catch(() => { /* no-op — non-admin is the default */ });
+    }, 0);
   },
 
   async signUp(email, password, role, name) {
@@ -731,6 +755,14 @@ function renderNav(activePage = '') {
   const dashLink = isArtist ? '/artist-dashboard.html' : '/dashboard.html';
   const ac = (pg) => activePage === pg ? 'active' : '';
 
+  // Admin link — only rendered for users whose email is in the server-side
+  // is_admin() allowlist. Auth.isAdminCached populates asynchronously via
+  // loadProfile; the nav re-renders once it resolves, so the link appears
+  // without a full page reload. The actual admin page re-verifies via RPC.
+  const adminLink = Auth.isAdminCached
+    ? `<li><a href="/admin.html" class="${ac('admin')}" style="color:var(--accent-soft)">${UI.icon('shield', 16)} Admin</a></li>`
+    : '';
+
   const promoterLinks = `
     <li><a href="/dashboard.html" class="${ac('dashboard')}">${UI.icon('home', 16)} Dashboard</a></li>
     <li><a href="/directory.html" class="${ac('directory')}">${UI.icon('grid', 16)} Directory</a></li>
@@ -739,13 +771,15 @@ function renderNav(activePage = '') {
     <li><a href="/analytics.html" class="${ac('analytics')}">${UI.icon('barChart', 16)} Analytics</a></li>
     <li><a href="/contracts.html" class="${ac('contracts')}">${UI.icon('fileText', 16)} Contracts</a></li>
     <li><a href="/payments.html" class="${ac('payments')}">${UI.icon('dollar', 16)} Payments</a></li>
-    <li><a href="/messages.html" class="${ac('messages')}" style="position:relative">${UI.icon('inbox', 16)} Messages<span class="nav-unread-dot" data-nav-unread style="display:none;position:absolute;top:8px;right:-2px;min-width:8px;height:8px;border-radius:999px;background:var(--accent);box-shadow:0 0 0 2px var(--bg-base)"></span></a></li>`;
+    <li><a href="/messages.html" class="${ac('messages')}" style="position:relative">${UI.icon('inbox', 16)} Messages<span class="nav-unread-dot" data-nav-unread style="display:none;position:absolute;top:8px;right:-2px;min-width:8px;height:8px;border-radius:999px;background:var(--accent);box-shadow:0 0 0 2px var(--bg-base)"></span></a></li>
+    ${adminLink}`;
 
   const artistLinks = `
     <li><a href="/artist-dashboard.html" class="${ac('artist-dashboard')}">${UI.icon('home', 16)} Dashboard</a></li>
     <li><a href="/artist-profile-edit.html" class="${ac('profile-edit')}">${UI.icon('music', 16)} My Profile</a></li>
     <li><a href="/epk.html" class="${ac('epk')}">${UI.icon('fileText', 16)} My EPK</a></li>
-    <li><a href="/messages.html" class="${ac('messages')}" style="position:relative">${UI.icon('inbox', 16)} Messages<span class="nav-unread-dot" data-nav-unread style="display:none;position:absolute;top:8px;right:-2px;min-width:8px;height:8px;border-radius:999px;background:var(--accent);box-shadow:0 0 0 2px var(--bg-base)"></span></a></li>`;
+    <li><a href="/messages.html" class="${ac('messages')}" style="position:relative">${UI.icon('inbox', 16)} Messages<span class="nav-unread-dot" data-nav-unread style="display:none;position:absolute;top:8px;right:-2px;min-width:8px;height:8px;border-radius:999px;background:var(--accent);box-shadow:0 0 0 2px var(--bg-base)"></span></a></li>
+    ${adminLink}`;
 
   return `
     <nav class="nav">
