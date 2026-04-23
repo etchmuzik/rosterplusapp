@@ -1,0 +1,68 @@
+name: Visual Baseline Refresh
+
+# Manual-only workflow. Run this after a deliberate design change to
+# refresh all visual regression baselines.
+#
+# Trigger: Actions tab → "Visual Baseline Refresh" → "Run workflow".
+# Result: the workflow runs `playwright test --update-snapshots` on a
+# clean Ubuntu runner, then commits the updated PNGs back to the branch.
+#
+# Why this exists: visual-regression baselines must be generated on
+# Linux Chromium (the same environment CI uses) so they match. We can't
+# seed them from macOS dev machines without pixel drift from font rendering.
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Why are you refreshing baselines?'
+        required: true
+        default: 'Intentional design change'
+
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Use a token with write perms so the commit-back step works.
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm install --no-audit --no-fund
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Start static server
+        run: |
+          npx http-server . -p 8090 -c-1 -s >/tmp/server.log 2>&1 &
+          sleep 2
+          curl -sSf http://localhost:8090/ > /dev/null
+
+      - name: Generate baselines
+        run: npx playwright test --config=e2e/playwright.config.js --grep @visual --update-snapshots
+
+      - name: Commit updated baselines
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add e2e/tests/visual.spec.js-snapshots/
+          if git diff --staged --quiet; then
+            echo "No baseline changes — nothing to commit."
+            exit 0
+          fi
+          git commit -m "chore(visual): refresh baselines via workflow_dispatch
+
+Reason: ${{ github.event.inputs.reason }}
+Triggered by: ${{ github.actor }}"
+          git push

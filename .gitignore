@@ -1,7 +1,15 @@
 node_modules/
 .DS_Store
 .claude/
-e2e/
+
+# Playwright: track spec sources + config + snapshot baselines, but
+# ignore runtime artifacts (reports, traces, results, videos).
+# The e2e tests are the source of truth for CI so the source files MUST
+# be checked in. Only transient outputs stay local.
+e2e/test-results/
+e2e/playwright-report/
+e2e/results.json
+
 serve.js
 *.log
 

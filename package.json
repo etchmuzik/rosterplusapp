@@ -9,6 +9,8 @@
     "deploy:full": "bash scripts/deploy.sh --full",
     "test:e2e": "playwright test --config=e2e/playwright.config.js",
     "test:smoke": "playwright test --config=e2e/playwright.config.js --grep @smoke",
+    "test:visual": "playwright test --config=e2e/playwright.config.js --grep @visual",
+    "test:visual:update": "playwright test --config=e2e/playwright.config.js --grep @visual --update-snapshots",
     "serve": "npx http-server . -p 8090 -c-1 -s"
   },
   "devDependencies": {
