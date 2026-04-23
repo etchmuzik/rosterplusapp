@@ -146,6 +146,12 @@
         <p class="text-secondary" style="font-size:0.88rem;margin-bottom:var(--space-md)">
           Promote pending artists, deactivate, or toggle verified status. All actions are audited.
         </p>
+
+        <!-- Verification queue — surfaces artists that need an admin
+             decision before they become discoverable. Collapses when
+             the queue is empty so it doesn't waste screen space. -->
+        <div id="verify-queue" style="display:none;margin-bottom:var(--space-md)"></div>
+
         <div id="admin-artists-list" style="display:flex;flex-direction:column;gap:var(--space-sm);margin-bottom:var(--space-md)"></div>
 
         <details style="margin-top:var(--space-md)">
@@ -551,6 +557,94 @@
     window.auditUndo = auditUndo;
 
     // ─── Roster ────────────────────────────────────────────
+    // Verification queue — surfaces artists that need admin attention:
+    //   1. Claimed-but-unverified: a real user claimed the artist row
+    //      and is now booking-visible as 'pending'; needs a verify
+    //      decision before they go live.
+    //   2. Pending status regardless of claim: promoters can't find
+    //      these in the directory; decide active/inactive.
+    // Empty queue → panel hides entirely.
+    function renderVerifyQueue(allArtists) {
+      const host = document.getElementById('verify-queue');
+      if (!host) return;
+      const queue = (allArtists || []).filter(a =>
+        (a.profile_id && !a.verified) ||       // claimed but unverified
+        (a.status === 'pending')               // any pending row
+      );
+      if (queue.length === 0) {
+        host.style.display = 'none';
+        host.innerHTML = '';
+        return;
+      }
+      host.style.display = '';
+      const rows = queue.slice(0, 8).map(a => {
+        const genre = Array.isArray(a.genre) ? a.genre[0] : (a.genre || '');
+        const city = Array.isArray(a.cities_active) ? a.cities_active[0] : '';
+        const reasonChips = [];
+        if (a.profile_id && !a.verified) reasonChips.push('<span style="font-family:var(--font-mono);font-size:0.64rem;padding:1px 6px;border-radius:999px;background:rgba(243,191,36,0.1);border:1px solid rgba(243,191,36,0.3);color:#f3bf24">claimed · unverified</span>');
+        if (a.status === 'pending')      reasonChips.push('<span style="font-family:var(--font-mono);font-size:0.64rem;padding:1px 6px;border-radius:999px;background:rgba(251,146,60,0.1);border:1px solid rgba(251,146,60,0.3);color:#fb923c">pending</span>');
+        return `
+          <div style="display:grid;grid-template-columns:1fr auto;gap:var(--space-md);padding:10px 14px;background:var(--bg-raised);border:1px solid var(--accent-dim-20);border-radius:var(--radius-sm);margin-bottom:6px;align-items:center">
+            <div style="min-width:0">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <strong>${esc(a.stage_name || 'Artist')}</strong>
+                ${reasonChips.join('')}
+              </div>
+              <div style="font-size:0.72rem;color:var(--text-tertiary);margin-top:2px">
+                ${esc(genre)}${genre && city ? ' · ' : ''}${esc(city)}
+              </div>
+            </div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap">
+              ${!a.verified ? `<button class="btn btn-primary btn-sm" style="font-size:0.72rem" onclick="queueApprove('${esc(a.id)}')">Approve</button>` : ''}
+              ${a.status !== 'active' ? `<button class="btn btn-secondary btn-sm" style="font-size:0.72rem" onclick="queueActivate('${esc(a.id)}')">Activate</button>` : ''}
+              <button class="btn btn-ghost btn-sm" style="font-size:0.72rem;color:var(--status-cancelled)" onclick="queueReject('${esc(a.id)}')">Reject</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+      host.innerHTML = `
+        <div style="background:var(--bg-card);border:1px solid var(--accent-dim-20);border-radius:var(--radius-md);padding:var(--space-md) var(--space-lg);box-shadow:var(--accent-glow)">
+          <div style="display:flex;align-items:center;gap:var(--space-md);margin-bottom:var(--space-md);flex-wrap:wrap">
+            <div style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--accent)">Verification queue</div>
+            <div style="font-size:1rem;font-weight:600;color:var(--text-primary)">${queue.length} artist${queue.length === 1 ? '' : 's'} waiting</div>
+            ${queue.length > 8 ? `<div style="margin-left:auto;font-size:0.72rem;color:var(--text-tertiary)">showing first 8</div>` : ''}
+          </div>
+          ${rows}
+        </div>
+      `;
+    }
+
+    // Queue action shortcuts — one-click variants of the row-level
+    // actions below. Keep the audit trail intact by routing through
+    // the same DB helpers.
+    async function queueApprove(artistId) {
+      // Approve = activate (if pending) + verify.
+      const res1 = await DB.adminUpdateArtistStatus(artistId, 'active');
+      if (!res1.success) { UI.toast('Failed: ' + (res1.error || ''), 'error'); return; }
+      const res2 = await DB.adminSetArtistVerified(artistId, true);
+      if (!res2.success) { UI.toast('Failed to verify: ' + (res2.error || ''), 'error'); return; }
+      UI.toast('Approved & verified', 'success');
+      renderAdminArtists();
+    }
+    window.queueApprove = queueApprove;
+
+    async function queueActivate(artistId) {
+      const res = await DB.adminUpdateArtistStatus(artistId, 'active');
+      if (!res.success) { UI.toast('Failed: ' + (res.error || ''), 'error'); return; }
+      UI.toast('Activated', 'success');
+      renderAdminArtists();
+    }
+    window.queueActivate = queueActivate;
+
+    async function queueReject(artistId) {
+      if (!confirm('Reject this artist? Status → inactive. They won\u2019t appear in the directory.')) return;
+      const res = await DB.adminUpdateArtistStatus(artistId, 'inactive');
+      if (!res.success) { UI.toast('Failed: ' + (res.error || ''), 'error'); return; }
+      UI.toast('Rejected (status: inactive)', 'info');
+      renderAdminArtists();
+    }
+    window.queueReject = queueReject;
+
     async function renderAdminArtists() {
       const list = document.getElementById('admin-artists-list');
       if (!list) return;
@@ -562,8 +656,10 @@
       }
       if (!res.data || res.data.length === 0) {
         list.innerHTML = UI.emptyState({ icon: 'music', title: 'No artists yet', body: 'Seed the roster from the Bulk import tab.', compact: true });
+        renderVerifyQueue([]);
         return;
       }
+      renderVerifyQueue(res.data);
       list.innerHTML = res.data.map(a => {
         const genre = Array.isArray(a.genre) ? a.genre.join(', ') : (a.genre || '');
         const city = Array.isArray(a.cities_active) ? a.cities_active[0] : '';

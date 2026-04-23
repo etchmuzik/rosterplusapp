@@ -2096,6 +2096,19 @@ const DB = {
     } catch (e) { return { success: false, error: String(e) }; }
   },
 
+  // Translates Postgres `rate_limited: N calls/hour exceeded for X`
+  // exceptions into a friendly one-liner for toast display.
+  _prettyAdminError(rawErr) {
+    const msg = String(rawErr || '');
+    if (msg.includes('rate_limited')) {
+      return 'Rate limit hit — slow down and try again in an hour.';
+    }
+    if (msg.includes('forbidden')) {
+      return 'Forbidden. Your session may have expired — reload and try again.';
+    }
+    return msg;
+  },
+
   // ── Admin Phase 2 RPCs ──
   // All admin-gated at function level via is_admin(). Client errors out
   // for non-admins; no client-side check required beyond UX.
@@ -2120,8 +2133,8 @@ const DB = {
     if (DEMO_MODE) return { success: true };
     try {
       const { error } = await _sb.rpc('admin_update_user_role', { p_user_id: userId, p_role: role });
-      return error ? { success: false, error: error.message } : { success: true };
-    } catch (e) { return { success: false, error: String(e) }; }
+      return error ? { success: false, error: this._prettyAdminError(error.message) } : { success: true };
+    } catch (e) { return { success: false, error: this._prettyAdminError(e) }; }
   },
 
   async adminForceCancelBooking(bookingId, reason) {
@@ -2131,7 +2144,7 @@ const DB = {
         p_booking_id: bookingId,
         p_reason: reason || null,
       });
-      return error ? { success: false, error: error.message } : { success: true };
+      return error ? { success: false, error: this._prettyAdminError(error.message) } : { success: true };
     } catch (e) { return { success: false, error: String(e) }; }
   },
 
@@ -2166,7 +2179,13 @@ const DB = {
         body: JSON.stringify({ action, user_id: userId, reason: reason || null }),
       });
       const body = await res.json().catch(() => ({}));
-      if (!res.ok) return { success: false, error: body.error || `HTTP ${res.status}` };
+      if (!res.ok) {
+        // Edge function returns 429 + {error: 'rate_limited', detail: '...'} when throttled.
+        if (res.status === 429 || body.error === 'rate_limited') {
+          return { success: false, error: 'Rate limit hit — slow down and try again in an hour.' };
+        }
+        return { success: false, error: body.error || `HTTP ${res.status}` };
+      }
       return { success: true, ...body };
     } catch (e) { return { success: false, error: String(e) }; }
   },
@@ -2219,8 +2238,9 @@ const DB = {
         p_href: href || null,
         p_filter_role: role || null,
       });
-      return error ? { success: false, error: error.message } : { success: true, recipients: data };
-    } catch (e) { return { success: false, error: String(e) }; }
+      if (error) return { success: false, error: this._prettyAdminError(error.message) };
+      return { success: true, recipients: data };
+    } catch (e) { return { success: false, error: this._prettyAdminError(e) }; }
   },
 
   // Check if the current user is an admin. Used client-side to show/hide

@@ -147,6 +147,10 @@
             <div class="eyebrow">Notes</div>
             <p id="bk-review-notes-text"></p>
           </div>
+
+          <!-- Conflict detection banner. Populated by checkBookingConflict
+               after the review step renders; hidden by default. -->
+          <div id="bk-conflict-warn" style="display:none;margin-top:var(--space-md);padding:10px 14px;background:rgba(251,146,60,0.08);border:1px solid rgba(251,146,60,0.3);border-radius:var(--radius-sm);color:#fb923c;font-size:0.85rem;line-height:1.5"></div>
         </div>
 
         <div class="bk-reassure">
@@ -279,9 +283,14 @@
         notes:      document.getElementById('bookingNotes').value.trim(),
       };
     }
-    function renderReview() {
+    async function renderReview() {
       renderChosen('bk-chosen-3');
       document.getElementById('bk-review-status').innerHTML = UI.statusTag('pending');
+
+      // Conflict detection — check if the chosen artist is already
+      // booked or blocked on this date. Non-blocking: we warn but still
+      // let the promoter proceed (the artist can decline if needed).
+      checkBookingConflict(_chosen?.id, document.getElementById('eventDate').value).catch(() => {});
 
       const v = formReadValues();
       const dateStr = v.eventDate ? new Date(v.eventDate + 'T00:00:00').toLocaleDateString('en', { weekday:'long', day:'numeric', month:'long', year:'numeric' }) : '—';
@@ -325,6 +334,39 @@
       const name = _chosen && (_chosen.name || _chosen.stage_name) || 'the artist';
       document.getElementById('bk-reassure-text').textContent =
         `${name} gets notified immediately. Once they accept, a contract is auto-drafted for e-signature by both sides.`;
+    }
+
+    /* ── Conflict check ─────────────────────────────────────
+       Warns (non-blocking) when the target artist is already
+       booked or has the date marked blocked. DB.checkAvailability
+       already exists in app.js — we reuse it. */
+    async function checkBookingConflict(artistId, dateStr) {
+      const host = document.getElementById('bk-conflict-warn');
+      if (!host) return;
+      host.style.display = 'none';
+      host.innerHTML = '';
+      if (!artistId || !dateStr) return;
+
+      try {
+        const res = await DB.checkAvailability(artistId, dateStr);
+        if (!res || res.available === true) return;
+
+        // Not available — surface the reason.
+        const reason = res.reason || 'unavailable';
+        const prettyDate = new Date(dateStr + 'T00:00:00').toLocaleDateString('en', { weekday: 'long', day: 'numeric', month: 'long' });
+        host.innerHTML = `
+          <div style="display:flex;align-items:flex-start;gap:8px">
+            <div style="font-size:1rem">\u26a0</div>
+            <div>
+              <strong>Heads up:</strong> ${esc(reason)} on ${esc(prettyDate)}.
+              <div style="color:rgba(251,146,60,0.75);font-size:0.78rem;margin-top:4px">
+                You can still send the request, but the artist may decline. Try a different date or reach out directly first.
+              </div>
+            </div>
+          </div>
+        `;
+        host.style.display = '';
+      } catch (_) { /* quiet */ }
     }
 
     /* ── Step 2 validation + Submit ── */
