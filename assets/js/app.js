@@ -784,7 +784,8 @@ function renderNav(activePage = '') {
     ${adminLink}`;
 
   return `
-    <nav class="nav">
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <nav class="nav" role="navigation" aria-label="Primary">
       <div class="nav-inner">
         <a href="/" class="nav-brand">ROSTR<span>+</span></a>
 
@@ -824,7 +825,7 @@ function renderNav(activePage = '') {
               <button class="sidebar-item" style="font-size:0.85rem;color:var(--status-cancelled)" onclick="Auth.signOut()">${UI.icon('logout', 14)} Sign out</button>
             </div>
           </div>
-          <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('show')">${UI.icon('menu', 20)}</button>
+          <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('show')" aria-label="Toggle navigation menu" aria-expanded="false">${UI.icon('menu', 20)}</button>
         </div>
       </div>
     </nav>
@@ -1028,6 +1029,34 @@ window.addEventListener('keydown', (e) => {
     if (!typing) {
       e.preventDefault();
       openSearchPalette();
+    }
+  }
+  // ESC — close any visible modal. Each page wires its own close fn
+  // to the specific modal element, but we provide a generic fallback
+  // so every overlay respects the universal "escape to dismiss" idiom.
+  if (e.key === 'Escape') {
+    // 1) Search palette (has its own close fn)
+    const palette = document.getElementById('search-palette');
+    if (palette && palette.classList.contains('active')) {
+      if (typeof closeSearchPalette === 'function') closeSearchPalette();
+      return;
+    }
+    // 2) Any generic .modal-overlay that's currently visible.
+    const overlays = Array.from(document.querySelectorAll('.modal-overlay'));
+    for (const ov of overlays) {
+      const visible = ov.offsetParent !== null ||
+        ov.classList.contains('active') ||
+        (ov.style.display && ov.style.display !== 'none');
+      if (!visible) continue;
+      // Prefer a close button inside the header — simulates a click so
+      // each modal's specific cleanup (state resets, un-freezing body
+      // scroll, etc.) runs through its own handler.
+      const closeBtn = ov.querySelector('[aria-label^="Close"], .modal-close, .btn-icon[onclick*="close"]');
+      if (closeBtn) { closeBtn.click(); return; }
+      // Fallback: hide inline.
+      ov.style.display = 'none';
+      ov.classList.remove('active');
+      return;
     }
   }
 });

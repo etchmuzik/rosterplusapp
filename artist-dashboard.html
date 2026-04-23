@@ -93,7 +93,7 @@
         </div>
       </aside>
 
-      <main class="main-content">
+      <main id="main-content" class="main-content">
         <!-- OVERVIEW -->
         <section id="view-overview" class="view-section active">
           <div style="margin-bottom:var(--space-2xl)">
@@ -225,11 +225,11 @@
   </div>
 
   <!-- Accept/Reject Modal -->
-  <div id="action-modal" class="modal-overlay" onclick="if(event.target===this) closeActionModal()" style="display:none">
+  <div id="action-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title" onclick="if(event.target===this) closeActionModal()" style="display:none">
     <div class="modal" style="max-width:500px">
       <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-lg)">
         <h3 id="modal-title">Accept Booking</h3>
-        <button class="btn btn-ghost btn-icon" onclick="closeActionModal()"><span class="js-icon" data-icon="x" data-size="16"></span></button>
+        <button class="btn btn-ghost btn-icon" onclick="closeActionModal()" aria-label="Close dialog"><span class="js-icon" data-icon="x" data-size="16" aria-hidden="true"></span></button>
       </div>
       <div id="modal-details" style="margin-bottom:var(--space-lg)"></div>
       <div class="form-group">

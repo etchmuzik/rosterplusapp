@@ -17,7 +17,7 @@
   <div class="page-shell">
     <nav-root id="nav-root"></nav-root>
 
-    <main class="container" style="padding-top: var(--space-xl); padding-bottom: var(--space-3xl)">
+    <main id="main-content" class="container" style="padding-top: var(--space-xl); padding-bottom: var(--space-3xl)">
       <!-- ═══ Welcome ═══ -->
       <div class="dash-welcome lp-anim">
         <div>
@@ -132,15 +132,15 @@
   </div>
 
   <!-- Message modal (kept from the v2 dashboard for realtime toasts) -->
-  <div id="message-modal" class="modal-overlay">
+  <div id="message-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="message-modal-from">
     <div class="modal">
       <div class="modal-header">
         <div>
           <h3 id="message-modal-from"></h3>
           <div class="text-secondary" style="font-size: 0.85rem; margin-top: 4px" id="message-modal-time"></div>
         </div>
-        <button class="btn btn-ghost btn-icon" onclick="document.getElementById('message-modal').classList.remove('active')">
-          <span class="js-icon" data-icon="x" data-size="16"></span>
+        <button class="btn btn-ghost btn-icon" onclick="document.getElementById('message-modal').classList.remove('active')" aria-label="Close dialog">
+          <span class="js-icon" data-icon="x" data-size="16" aria-hidden="true"></span>
         </button>
       </div>
       <div id="message-modal-preview" style="color: var(--text-secondary); line-height: 1.6; margin-bottom: var(--space-lg)"></div>

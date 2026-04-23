@@ -623,7 +623,7 @@
     <nav-root id="nav-root"></nav-root>
 
     <div class="layout-main">
-      <main class="main-content" style="padding: var(--space-xl)">
+      <main id="main-content" class="main-content" style="padding: var(--space-xl)">
         <!-- Page Header -->
         <div class="payments-header">
           <h1>Payments</h1>
@@ -685,15 +685,15 @@
   </div>
 
   <!-- Payment Details Modal -->
-  <div id="payment-detail-modal" class="modal-overlay" onclick="if(event.target === this) closePaymentDetailModal()">
+  <div id="payment-detail-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-label="Payment details" onclick="if(event.target === this) closePaymentDetailModal()">
     <div class="modal">
       <div class="modal-header">
         <div>
           <h3>Payment Details</h3>
           <div class="text-secondary" id="detail-artist"></div>
         </div>
-        <button class="btn btn-ghost btn-icon" onclick="closePaymentDetailModal()">
-          <span class="js-icon" data-icon="x" data-size="16"></span>
+        <button class="btn btn-ghost btn-icon" onclick="closePaymentDetailModal()" aria-label="Close dialog">
+          <span class="js-icon" data-icon="x" data-size="16" aria-hidden="true"></span>
         </button>
       </div>
 
@@ -726,12 +726,12 @@
   </div>
 
   <!-- Make Payment Modal -->
-  <div id="make-payment-modal" class="modal-overlay" onclick="if(event.target === this) closeMakePaymentModal()">
+  <div id="make-payment-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-label="Make payment" onclick="if(event.target === this) closeMakePaymentModal()">
     <div class="modal">
       <div class="modal-header">
         <h3>Make Payment</h3>
-        <button class="btn btn-ghost btn-icon" onclick="closeMakePaymentModal()">
-          <span class="js-icon" data-icon="x" data-size="16"></span>
+        <button class="btn btn-ghost btn-icon" onclick="closeMakePaymentModal()" aria-label="Close dialog">
+          <span class="js-icon" data-icon="x" data-size="16" aria-hidden="true"></span>
         </button>
       </div>
 

@@ -603,7 +603,7 @@
     <div id="nav-root"></div>
 
     <!-- Main Content -->
-    <main class="contracts-container">
+    <main id="main-content" class="contracts-container">
       <!-- Page Header -->
       <div class="page-header">
         <div class="page-header-left">
@@ -658,11 +658,11 @@
   </div>
 
   <!-- View Contract Modal -->
-  <div class="modal-overlay" id="view-modal">
+  <div class="modal-overlay" id="view-modal" role="dialog" aria-modal="true" aria-label="Contract details">
     <div class="modal">
       <div class="modal-header">
         <h2>Contract Details</h2>
-        <button class="modal-close" onclick="closeViewModal()">✕</button>
+        <button class="modal-close" onclick="closeViewModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
       </div>
       <div id="view-modal-content">
         <!-- Populated by JS -->
@@ -676,11 +676,11 @@
   </div>
 
   <!-- New Contract Modal -->
-  <div class="modal-overlay" id="new-modal">
+  <div class="modal-overlay" id="new-modal" role="dialog" aria-modal="true" aria-label="Create new contract">
     <div class="modal">
       <div class="modal-header">
         <h2>Create New Contract</h2>
-        <button class="modal-close" onclick="closeNewContractModal()">✕</button>
+        <button class="modal-close" onclick="closeNewContractModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
       </div>
       <form id="new-contract-form" onsubmit="createContract(event)">
         <div class="form-group">
