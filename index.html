@@ -86,9 +86,20 @@
   }
   </script>
 
+  <!-- Preconnect to critical third-party origins. Saves ~80-150ms on the
+       first request to each (TLS + DNS handshakes happen in parallel
+       with HTML parsing). Supabase is the backend, jsdelivr is where we
+       load supabase-js itself. -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://vgjmfpryobsuboukbemr.supabase.co" crossorigin>
+
   <link rel="stylesheet" href="assets/css/system.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="assets/js/error-logger.js"></script>
+  <!-- All three scripts `defer` — they stay in document order (supabase
+       SDK runs first, then error-logger, then app.js) but don't block
+       HTML parsing. Without this, the SDK script (60KB gzipped) blocks
+       render on every page for ~200ms. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="assets/js/error-logger.js" defer></script>
   <script src="assets/js/app.js" defer></script>
 </head>
 <body>

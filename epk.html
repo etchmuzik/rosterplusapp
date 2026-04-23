@@ -32,9 +32,12 @@
   <link rel="canonical" href="https://rosterplus.io/epk.html">
   <script type="application/ld+json" id="epk-ld-json"></script>
 
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://vgjmfpryobsuboukbemr.supabase.co" crossorigin>
+
   <link rel="stylesheet" href="assets/css/system.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="assets/js/error-logger.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="assets/js/error-logger.js" defer></script>
   <script src="assets/js/app.js" defer></script>
   <style>
     .epk-container { max-width: 900px; margin: 80px auto 0; padding: var(--space-2xl) var(--space-lg); }
@@ -181,7 +184,7 @@
         ${(social.soundcloud || social.spotify || social.youtube) ? `<div class="epk-section"><div class="epk-section-title">Listen</div>${UI.mediaEmbed(social.soundcloud || social.spotify || social.youtube)}</div>` : ''}
 
         <!-- Photo Gallery with download -->
-        ${(data.epk_gallery && data.epk_gallery.length) ? `<div class="epk-section"><div class="epk-section-title" style="display:flex;justify-content:space-between;align-items:center">Photos <span style="font-size:0.72rem;color:var(--text-tertiary);text-transform:none;letter-spacing:0">Click to zoom · Right-click to download</span></div><div class="photo-gallery">${data.epk_gallery.map((url, idx) => `<img src="${esc(url)}" alt="Press photo ${idx+1}" onclick="(function(){let lb=document.getElementById('lb');if(!lb){lb=document.createElement('div');lb.id='lb';lb.className='lightbox';lb.onclick=()=>lb.classList.remove('active');document.body.appendChild(lb)}lb.innerHTML='<img src=\\'${url}\\' alt=Photo>';lb.classList.add('active')})()">`).join('')}</div></div>` : ''}
+        ${(data.epk_gallery && data.epk_gallery.length) ? `<div class="epk-section"><div class="epk-section-title" style="display:flex;justify-content:space-between;align-items:center">Photos <span style="font-size:0.72rem;color:var(--text-tertiary);text-transform:none;letter-spacing:0">Click to zoom · Right-click to download</span></div><div class="photo-gallery">${data.epk_gallery.map((url, idx) => `<img src="${esc(url)}" alt="Press photo ${idx+1}" loading="lazy" decoding="async" onclick="(function(){let lb=document.getElementById('lb');if(!lb){lb=document.createElement('div');lb.id='lb';lb.className='lightbox';lb.onclick=()=>lb.classList.remove('active');document.body.appendChild(lb)}lb.innerHTML='<img src=\\'${url}\\' alt=Photo>';lb.classList.add('active')})()">`).join('')}</div></div>` : ''}
 
         <div class="epk-section">
           <div class="epk-section-title">Press</div>

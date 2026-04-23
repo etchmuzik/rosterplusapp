@@ -11,9 +11,12 @@
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
   <title>Edit Profile — ROSTR+ GCC</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://vgjmfpryobsuboukbemr.supabase.co" crossorigin>
+
   <link rel="stylesheet" href="assets/css/system.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="assets/js/error-logger.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="assets/js/error-logger.js" defer></script>
   <script src="assets/js/app.js" defer></script>
   <style>
     .profile-container { max-width: 800px; margin: 80px auto 0; padding: var(--space-2xl) var(--space-lg); }
@@ -274,7 +277,7 @@
     function removeGalleryPhoto(idx) { _gallery.splice(idx, 1); renderGallery(); }
     function renderGallery() {
       document.getElementById('gallery-grid').innerHTML = _gallery.map((url, i) =>
-        `<div class="gallery-thumb"><img src="${url}" alt="Photo ${i+1}"><button type="button" class="remove-btn" onclick="removeGalleryPhoto(${i})">&times;</button></div>`
+        `<div class="gallery-thumb"><img src="${url}" alt="Photo ${i+1}" loading="lazy" decoding="async"><button type="button" class="remove-btn" onclick="removeGalleryPhoto(${i})">&times;</button></div>`
       ).join('') || '<div style="grid-column:1/-1;color:var(--text-tertiary);font-size:0.82rem">No photos yet</div>';
     }
 
