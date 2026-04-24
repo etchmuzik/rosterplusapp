@@ -30,10 +30,15 @@ function initSupabase() {
     return;
   }
   if (!window.supabase) {
+    // Supabase-js loaded via `defer` in document order, but a real-world
+    // user can still hit this branch: CSP rule blocked jsdelivr, an
+    // ad-blocker stripped the script, or the CDN 502'd. Surface a
+    // clear banner + log to the error pipeline so we can correlate.
     console.error('[ROSTR] Supabase SDK failed to load. Check CSP / ad-blocker / network.');
-    // Do NOT silently fall into demo mode. Leave _sb null so DB functions
-    // return a clear 'Not authenticated' / 'Offline' error rather than
-    // quietly pretending everything works via fake data.
+    try {
+      if (window.logError) window.logError(new Error('supabase-js not on window'), { kind: 'sdk_load_failed' });
+    } catch (_) {}
+    _showConnectionErrorBanner();
     DEMO_MODE = false;
     return;
   }
@@ -43,9 +48,32 @@ function initSupabase() {
     console.log('[ROSTR] Supabase connected');
   } catch(e) {
     console.error('[ROSTR] Supabase client creation failed:', e);
+    try {
+      if (window.logError) window.logError(e, { kind: 'sdk_init_failed' });
+    } catch (_) {}
+    _showConnectionErrorBanner();
     DEMO_MODE = false;
     _sb = null;
   }
+}
+
+// Inline banner shown when the Supabase SDK fails to load. Better UX
+// than the generic "Account creation failed" — tells the user what
+// actually went wrong and what to try next. Hostinger's CSP allows
+// inline styles so we don't need a matching CSS class.
+function _showConnectionErrorBanner() {
+  if (typeof document === 'undefined') return;
+  if (document.getElementById('rostr-sdk-error-banner')) return;
+  const mount = () => {
+    if (document.getElementById('rostr-sdk-error-banner')) return;
+    const bar = document.createElement('div');
+    bar.id = 'rostr-sdk-error-banner';
+    bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9500;background:#f87171;color:#1a1a1a;padding:10px 16px;font-size:0.85rem;font-weight:500;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.35)';
+    bar.innerHTML = 'Connection issue — the platform could not load. Check your network or an ad-blocker, then <a href="javascript:location.reload()" style="color:#1a1a1a;text-decoration:underline;font-weight:700">reload</a>.';
+    if (document.body) document.body.appendChild(bar);
+  };
+  if (document.body) mount();
+  else document.addEventListener('DOMContentLoaded', mount, { once: true });
 }
 
 // ── Auth State ──
@@ -121,6 +149,19 @@ const Auth = {
       if (!didResolveReady) console.warn('[ROSTR] Auth init safety-timeout fired');
       resolveReadyOnce();
     }, SAFETY_MS);
+
+    // Guard against _sb being null — happens when the Supabase CDN
+    // script failed to load (CSP, ad-blocker, network). Without this
+    // check the whole page crashes with a cryptic "Cannot read
+    // properties of null (reading 'auth')". Resolve ready() immediately
+    // with no session so the UI can at least render in a logged-out
+    // state; any call that needs the DB will surface an Offline error.
+    if (!_sb) {
+      console.error('[ROSTR] Supabase client unavailable — running in disconnected mode');
+      clearTimeout(safetyTimer);
+      resolveReadyOnce();
+      return;
+    }
 
     _sb.auth.getSession().then(({ data: { session } }) => {
       if (session) {
@@ -245,7 +286,16 @@ const Auth = {
     }
 
     // Signup succeeded server-side. Now sign in locally so the browser
-    // has a valid Supabase session for subsequent DB queries.
+    // has a valid Supabase session for subsequent DB queries. If the
+    // SDK didn't load we still consider the signup a success at the
+    // server — the user can reload and try signing in manually.
+    if (!_sb) {
+      return {
+        success: false,
+        error: 'Account created but we couldn\u2019t sign you in here. Reload and try signing in.',
+      };
+    }
+
     const { data, error } = await _sb.auth.signInWithPassword({ email, password });
     if (error) return { success: false, error: 'Account created but sign-in failed: ' + error.message };
 
@@ -269,6 +319,8 @@ const Auth = {
       this.updateUI();
       return { success: true };
     }
+
+    if (!_sb) return { success: false, error: 'Platform didn\u2019t finish loading. Reload and try again.' };
 
     const { data, error } = await _sb.auth.signInWithPassword({ email, password });
     if (error) return { success: false, error: error.message };

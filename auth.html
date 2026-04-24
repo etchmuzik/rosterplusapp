@@ -14,10 +14,10 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://vgjmfpryobsuboukbemr.supabase.co" crossorigin>
 
-  <link rel="stylesheet" href="assets/css/system.css">
+  <link rel="stylesheet" href="assets/css/system.css?v=672d392">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="assets/js/error-logger.js" defer></script>
-  <script src="assets/js/app.js" defer></script>
+  <script src="assets/js/error-logger.js?v=672d392" defer></script>
+  <script src="assets/js/app.js?v=672d392" defer></script>
   <style>
     .auth-page {
       min-height: 100vh;
@@ -486,8 +486,14 @@
           btn.textContent = 'Create Account';
         }
       } catch(err) {
+        // Surface the real error so the user knows what actually broke
+        // (and so we can see it in the error-logger table). Previously
+        // the generic "Account creation failed" message swallowed
+        // Supabase-SDK-didn't-load + network errors indistinguishably.
         console.error('[ROSTR] Signup error:', err);
-        showError('Account creation failed. Please try again.');
+        try { if (window.logError) window.logError(err, { kind: 'signup_exception' }); } catch (_) {}
+        const msg = (err && err.message) ? err.message : String(err);
+        showError('Could not finish sign-up: ' + msg + '. Reload and try again.');
         btn.disabled = false;
         btn.textContent = 'Create Account';
       }
