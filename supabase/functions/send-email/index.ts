@@ -21,7 +21,9 @@ interface EmailPayload {
     // Artist onboarding drip — fired by send-artist-onboarding-drip cron
     | 'artist_welcome'
     | 'artist_profile_nudge_24h'
-    | 'artist_epk_share_72h';
+    | 'artist_epk_share_72h'
+    // Post-event review prompt — fired by send-review-prompts cron
+    | 'review_prompt';
   data: Record<string, string>;
 }
 
@@ -197,6 +199,27 @@ const templates: Record<string, (d: Record<string, string>) => { subject: string
       `You got this because your ROSTR+ profile has been live for 72 hours. This is the last automated onboarding email — future emails will be booking-related only.`,
     ),
     text: `Your ROSTR+ EPK is ready to share.\n\nOpen: ${d.epk_url}\n\nDrop this link into any WhatsApp, email, or Instagram bio.\n\n— ROSTER+`,
+  }),
+
+  // ── Post-event review prompt ──────────────────────────────
+  // Fires 3 days after a confirmed/contracted booking's event_date so
+  // everyone's back from the gig but the memory is fresh. Links straight
+  // to the review card on booking-detail where setRating() waits.
+  review_prompt: (d) => ({
+    subject: `How did ${d.event_name} go?`,
+    html: SHELL(
+      `${h1('How did it go?')}
+       ${lede(`${d.event_name} wrapped ${d.days_ago === '1' ? 'yesterday' : d.days_ago + ' days ago'}. Both sides of ROSTR+ work better when we know who showed up, delivered, and vibed \u2014 and who didn\u2019t. Leave a rating (it takes 15 seconds) and help the next person make a better booking.`)}
+       ${factCard([
+         ['Event',        d.event_name],
+         ['When',         d.event_date],
+         [d.role === 'promoter' ? 'Artist' : 'Promoter', d.counterparty_name],
+       ])}
+       ${btn(d.booking_url, 'Leave a rating')}
+       <p style="color:rgba(255,255,255,0.42);font-size:13px;margin-top:20px;line-height:1.6">Ratings are mutual \u2014 both of you leave one. Comments are public on profiles. Admins moderate anything that crosses a line.</p>`,
+      `You got this because you were party to a booking on ROSTR+ that happened 3 days ago.`,
+    ),
+    text: `How did ${d.event_name} go?\n\nLeave a quick rating — takes 15 seconds: ${d.booking_url}\n\n\u2014 ROSTER+`,
   }),
 
   invitation: (d) => ({
