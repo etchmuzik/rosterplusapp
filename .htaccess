@@ -49,40 +49,34 @@ RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
   # /assets/* at 1 year explicitly so it beats any generic rule.
 </IfModule>
 
+# Cache-Control headers. Apache merges <FilesMatch> top-to-bottom; when
+# patterns overlap the LAST match wins. Order matters here: broad rule
+# first (.js/.css long-cache), narrow overrides after (sw.js, HTML).
 <IfModule mod_headers.c>
-  # HTML + manifest + sitemap: always revalidate
+  # Broad rule: every .js/.css/font file gets 1 year immutable. Each
+  # deploy's ?v=<sha> query string (stamped by scripts/deploy.sh) makes
+  # the URL look new to the browser, so long-cache is safe — repeat
+  # visitors in a deploy window fetch zero bytes on the hot path.
+  <FilesMatch "\.(css|js|woff2?|ttf|otf|eot)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+
+  # Narrow override 1: sw.js MUST always revalidate — it's the cache-bust
+  # mechanism for the whole app; a stale SW means the whole app is stale.
+  # This block must come AFTER the .js rule above for Apache merge-order
+  # to resolve correctly.
+  <FilesMatch "^sw\.js$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+
+  # Narrow override 2: HTML + manifest + sitemap always revalidate.
+  # Lives here to keep all Cache-Control rules in one module-block so
+  # the order is obvious at a glance.
   <FilesMatch "\.(html|xml)$">
     Header set Cache-Control "no-cache, must-revalidate"
   </FilesMatch>
   <FilesMatch "^manifest\.json$">
     Header set Cache-Control "no-cache, must-revalidate"
-  </FilesMatch>
-  # Service worker MUST always revalidate — it's the cache-bust mechanism
-  # for the whole app; stale SW = stale app.
-  <FilesMatch "^sw\.js$">
-    Header set Cache-Control "no-cache, must-revalidate"
-  </FilesMatch>
-</IfModule>
-
-# Long-cache the assets directory. The ?v=<sha> query string (stamped by
-# scripts/deploy.sh into every <link> + <script>) ensures repeat visitors
-# fetch fresh files after a deploy while first-time visitors and
-# repeat-within-deploy visitors serve straight from browser cache.
-<IfModule mod_headers.c>
-  <Directory "/home/*/public_html/assets">
-    <FilesMatch "\.(css|js|woff2?|ttf|otf|eot)$">
-      Header set Cache-Control "public, max-age=31536000, immutable"
-    </FilesMatch>
-  </Directory>
-  # Hostinger's shared config may not honour <Directory> outside the main
-  # config; fallback using <FilesMatch> on the leaf filename pattern.
-  # The /assets/ prefix is enforced by file-system layout: only files
-  # under that path have extensions like .woff2 or live in /css/ /js/
-  # subtrees that this server actually serves.
-  <FilesMatch "\.(css|js)$">
-    <If "%{REQUEST_URI} =~ m#^/assets/#">
-      Header set Cache-Control "public, max-age=31536000, immutable"
-    </If>
   </FilesMatch>
 </IfModule>
 
