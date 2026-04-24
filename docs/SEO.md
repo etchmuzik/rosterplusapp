@@ -50,14 +50,21 @@ Schema.org validator: https://validator.schema.org/
 
 ## Search Console submission (one-time setup)
 
+The `<meta name="google-site-verification">` placeholder is already wired into `index.html`. You just need to swap in the real token:
+
 1. Go to https://search.google.com/search-console/welcome
 2. Pick "URL prefix" method, enter `https://rosterplus.io`
-3. Pick the "HTML tag" verification option — copy the `<meta name="google-site-verification" content="…">` tag
-4. Add that `<meta>` to `index.html` inside `<head>` (right under the existing `<meta name="description">`)
-5. Deploy, then click **Verify** in Search Console
-6. Once verified: **Sitemaps** → submit `https://rosterplus.io/sitemap.xml`
+3. Pick "HTML tag" verification → Google shows you a token like `abc123xyz...`
+4. In `index.html`, find the line:
+   ```html
+   <meta name="google-site-verification" content="GOOGLE_SITE_VERIFICATION_TOKEN">
+   ```
+   Replace `GOOGLE_SITE_VERIFICATION_TOKEN` with the real token value.
+5. Commit + deploy (`git commit` + `npm run deploy`)
+6. Back in Search Console, click **Verify**
+7. Once verified: **Sitemaps** → submit `https://rosterplus.io/sitemap.xml`
 
-Bing Webmaster Tools has the same flow at https://www.bing.com/webmasters — it accepts Google's verification automatically, so step 3 is one-tag-for-both.
+Bing Webmaster Tools picks up Google's verification automatically — submit the same sitemap URL at https://www.bing.com/webmasters after step 6.
 
 ## Lighthouse CI
 

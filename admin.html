@@ -395,6 +395,9 @@
 
         <div id="health-summary" class="health-card">Loading…</div>
 
+        <h3 style="font-size:1rem;margin:var(--space-xl) 0 var(--space-sm)">Per-job health</h3>
+        <div id="cron-health-grid" style="display:flex;flex-direction:column;gap:var(--space-sm);margin-bottom:var(--space-xl)"></div>
+
         <h3 style="font-size:1rem;margin-bottom:var(--space-sm)">Last 20 cron runs</h3>
         <div id="cron-runs-list" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);overflow:hidden"></div>
       </section>
@@ -921,7 +924,106 @@
     window.toggleErrDetail = toggleErrDetail;
 
     // ─── Health tab ────────────────────────────────────────
+    async function renderCronHealthGrid() {
+      const host = document.getElementById('cron-health-grid');
+      if (!host) return;
+      host.innerHTML = '<div style="padding:var(--space-md);color:var(--text-tertiary);font-size:0.82rem">Loading cron jobs…</div>';
+
+      const res = await DB.adminCronHealth();
+      if (!res.success) {
+        host.innerHTML = `<div style="padding:var(--space-md);color:var(--status-cancelled);font-size:0.82rem">Failed: ${esc(res.error || 'unknown')}</div>`;
+        return;
+      }
+      const jobs = res.data || [];
+      if (jobs.length === 0) {
+        host.innerHTML = '<div style="padding:var(--space-md);color:var(--text-tertiary);font-size:0.82rem">No cron runs recorded yet.</div>';
+        return;
+      }
+
+      // Sparkline: last 10 run statuses as coloured squares, newest on right.
+      // Red = error, green = ok, grey = missing. Gives an at-a-glance
+      // "this job is fine / this job is flapping" signal.
+      const spark = (arr) => {
+        const runs = Array.isArray(arr) ? arr.slice().reverse() : []; // oldest→newest
+        const cells = [];
+        for (let i = 0; i < 10; i++) {
+          const r = runs[i];
+          if (!r) {
+            cells.push('<span title="no run" style="width:10px;height:18px;background:rgba(255,255,255,0.05);border-radius:2px;display:inline-block"></span>');
+          } else {
+            const bg = r.status === 'ok'
+              ? 'rgba(52,211,153,0.55)'
+              : 'rgba(248,113,113,0.65)';
+            const err = r.error ? ' — ' + String(r.error).slice(0, 80) : '';
+            const when = r.ran_at ? new Date(r.ran_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+            cells.push(`<span title="${esc(r.status || '—')} · ${esc(when)}${esc(err)}" style="width:10px;height:18px;background:${bg};border-radius:2px;display:inline-block"></span>`);
+          }
+        }
+        return `<div style="display:flex;gap:3px">${cells.join('')}</div>`;
+      };
+
+      const timeAgo = (iso) => {
+        if (!iso) return '—';
+        const ms = Date.now() - new Date(iso).getTime();
+        const m = Math.round(ms / 60000);
+        if (m < 1) return 'just now';
+        if (m < 60) return m + 'm ago';
+        const h = Math.round(m / 60);
+        if (h < 24) return h + 'h ago';
+        const d = Math.round(h / 24);
+        return d + 'd ago';
+      };
+
+      host.innerHTML = jobs.map(j => {
+        const fail24 = Number(j.failures_24h) > 0;
+        const fail7  = Number(j.failures_7d)  > 0;
+        const okPill = j.last_status === 'ok'
+          ? '<span class="health-pill health-pill--ok">OK</span>'
+          : j.last_status === 'error'
+            ? '<span class="health-pill health-pill--bad">ERR</span>'
+            : '<span class="health-pill" style="background:rgba(255,255,255,0.08);color:var(--text-tertiary)">—</span>';
+        const rate24 = Number(j.runs_24h) > 0
+          ? `${Number(j.runs_24h) - Number(j.failures_24h)}/${Number(j.runs_24h)}`
+          : '0/0';
+        const rate7  = Number(j.runs_7d) > 0
+          ? `${Number(j.runs_7d) - Number(j.failures_7d)}/${Number(j.runs_7d)}`
+          : '0/0';
+        const lastErr = j.last_error && j.last_status === 'error'
+          ? `<div style="margin-top:6px;font-size:0.76rem;color:var(--status-cancelled);font-family:var(--font-mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(String(j.last_error).slice(0, 160))}</div>`
+          : '';
+        const border = fail24
+          ? 'border-color:rgba(248,113,113,0.4)'
+          : fail7
+            ? 'border-color:rgba(251,191,36,0.35)'
+            : '';
+        return `
+          <div style="display:grid;grid-template-columns:1fr 120px 100px 100px 140px;gap:var(--space-md);padding:var(--space-md);background:var(--bg-card);border:1px solid var(--border-subtle);${border};border-radius:var(--radius-sm);align-items:center">
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                ${okPill}
+                <code style="font-family:var(--font-mono);font-size:0.85rem;color:var(--text-primary)">${esc(j.job)}</code>
+              </div>
+              ${lastErr}
+            </div>
+            <div>${spark(j.last_10)}</div>
+            <div style="font-family:var(--font-mono);font-size:0.78rem;color:${fail24 ? 'var(--status-cancelled)' : 'var(--text-secondary)'}">
+              <div style="color:var(--text-tertiary);font-size:0.68rem;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px">24h</div>
+              ${rate24}
+            </div>
+            <div style="font-family:var(--font-mono);font-size:0.78rem;color:${fail7 && !fail24 ? 'var(--status-pending)' : 'var(--text-secondary)'}">
+              <div style="color:var(--text-tertiary);font-size:0.68rem;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px">7d</div>
+              ${rate7}
+            </div>
+            <div style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-tertiary);text-align:right">
+              ${esc(timeAgo(j.last_ran_at))}
+            </div>
+          </div>`;
+      }).join('');
+    }
+    window.renderCronHealthGrid = renderCronHealthGrid;
+
     async function renderHealth() {
+      renderCronHealthGrid().catch(() => {});
       const summary = document.getElementById('health-summary');
       const runsHost = document.getElementById('cron-runs-list');
       if (!summary || !runsHost) return;

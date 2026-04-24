@@ -70,6 +70,10 @@ const Auth = {
     // Make sure Supabase is initialized first
     initSupabase();
 
+    // Stamp last-online timestamp so the offline fallback page can tell
+    // the user when they were last connected. Cheap, non-blocking.
+    try { localStorage.setItem('rostr_last_online', String(Date.now())); } catch (_) {}
+
     // Always check for demo user in localStorage (persists across page loads)
     const saved = localStorage.getItem('rostr_demo_user');
     if (saved) {
@@ -1302,6 +1306,9 @@ const DB = {
       // linked (profile_id != null); unclaimed artists have no inbox.
       this._notifyArtistBookingRequest(data).catch(() => {});
 
+      // Impersonation audit — no-op unless admin is acting as this user.
+      _auditImpersonatedAction('booking.create', 'booking', data.id, { event_name: data.event_name });
+
       return { success: true, data };
     } catch(e) { return { success: false, error: String(e) }; }
   },
@@ -1346,6 +1353,9 @@ const DB = {
       .update({ status, updated_at: new Date().toISOString() })
       .eq('id', bookingId);
 
+    if (!error) {
+      _auditImpersonatedAction('booking.status_change', 'booking', bookingId, { status });
+    }
     return error ? { success: false, error: error.message } : { success: true };
   },
 
@@ -1400,6 +1410,9 @@ const DB = {
       .select()
       .single();
 
+    if (!error && data) {
+      _auditImpersonatedAction('payment.create', 'payment', data.id, { booking_id, amount, currency });
+    }
     return error ? { success: false, error: error.message } : { success: true, data };
   },
 
@@ -1557,6 +1570,9 @@ const DB = {
       .update(finalUpdate)
       .eq('id', contractId);
 
+    if (!error) {
+      _auditImpersonatedAction('contract.sign', 'contract', contractId, { role, bothSigned });
+    }
     return { error };
   },
 
@@ -1984,6 +2000,7 @@ const DB = {
         const friendlyMsg = Object.entries(friendly).find(([k]) => msg.includes(k));
         return { success: false, error: friendlyMsg ? friendlyMsg[1] : msg };
       }
+      _auditImpersonatedAction('review.create', 'booking', bookingId, { rating });
       return { success: true, id: data };
     } catch (e) { return { success: false, error: String(e) }; }
   },
@@ -2209,6 +2226,18 @@ const DB = {
   // Reads recent audit rows (admin only — RLS enforces). Default limit
   // 100 keeps payload small for the settings panel; pagination can come
   // later if needed.
+  // Cron health summary — one row per scheduled job, with last-run,
+  // 24h + 7d pass/fail counts, and the last 10 runs as a heatmap strip.
+  // RPC gates on is_admin() so non-admins get an empty result.
+  async adminCronHealth() {
+    if (DEMO_MODE) return { success: true, data: [] };
+    if (!Auth.user) return { success: false, data: [] };
+    try {
+      const { data, error } = await _sb.rpc('cron_health_summary');
+      return error ? { success: false, data: [], error: error.message } : { success: true, data: data || [] };
+    } catch (e) { return { success: false, data: [], error: String(e) }; }
+  },
+
   async adminListAuditLog({ limit = 100 } = {}) {
     if (DEMO_MODE) return { success: true, data: [] };
     if (!Auth.user) return { success: false, data: [] };
@@ -3409,6 +3438,43 @@ function hydrateIcons(root) {
   s.src = 'https://plausible.io/js/script.js';
   document.head.appendChild(s);
 })();
+
+// ── Impersonation audit ─────────────────────────────────────
+// Check if an impersonation session is currently active. Returns the
+// admin's email from the localStorage stash, or null.
+function _impersonatingAs() {
+  try {
+    const raw = localStorage.getItem('rostr_impersonating');
+    if (!raw) return null;
+    const info = JSON.parse(raw);
+    return (info && info.adminEmail) || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+// Fire a best-effort audit event for every significant mutation that
+// happens during an impersonated session. Writes to admin_audit_log via
+// the log_impersonation_event RPC (SECURITY DEFINER, admin-email gate
+// enforced server-side). Non-blocking — if the call fails we don't
+// interrupt the user's actual action.
+async function _auditImpersonatedAction(action, targetType, targetId, meta) {
+  const adminEmail = _impersonatingAs();
+  if (!adminEmail || !_sb) return;
+  try {
+    await _sb.rpc('log_impersonation_event', {
+      p_admin_email: adminEmail,
+      p_action:      String(action),
+      p_target_type: targetType || null,
+      p_target_id:   targetId || null,
+      p_meta:        meta || {},
+    });
+  } catch (_) { /* best-effort — don't break the user action */ }
+}
+// Exposed so page-local mutation fns (create booking, cancel, etc.) can
+// voluntarily stamp their action. Most of the time this fires from the
+// DB wrapper functions below.
+window._auditImpersonatedAction = _auditImpersonatedAction;
 
 // Impersonation banner. When an admin runs the "Log in as this user"
 // action from /admin.html, we stash a flag in localStorage. This banner
