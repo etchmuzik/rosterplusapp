@@ -621,6 +621,46 @@ const UI = {
     return `<button class="${btnClass}" onclick="UI.openShare(${urlArg}, ${titleArg})">${this.icon('send', 14)} ${label}</button>`;
   },
 
+  // One-tap WhatsApp share. Renders a green pill that opens wa.me with a
+  // pre-composed message. Used on EPK + profile — GCC's booking flow
+  // runs through WhatsApp groups, so a dedicated button beats burying
+  // it inside the generic share popover.
+  //
+  // Opts:
+  //   url     — the destination URL (EPK / profile link)
+  //   message — optional pre-composed text; if omitted we synthesize
+  //             from title+url
+  //   title   — used to build the default message when `message` isn't set
+  //   size    — btn size modifier ('sm' by default)
+  //   label   — button label ('Share on WhatsApp' by default)
+  whatsappShareButton({ url = null, message = null, title = null, size = 'sm', label = 'Share on WhatsApp' } = {}) {
+    const urlArg     = url     ? `'${String(url).replace(/'/g, '%27')}'`     : 'location.href';
+    const messageArg = message ? `'${String(message).replace(/'/g, '%27')}'` : 'null';
+    const titleArg   = title   ? `'${String(title).replace(/'/g, '&#39;')}'` : 'document.title';
+    const sizeCls    = size ? ` btn-${size}` : '';
+    // Inline green branding — distinct from the generic .btn styles so
+    // the button reads as "WhatsApp" at a glance without a logo asset.
+    return `<button class="btn${sizeCls}" style="background:#25D366;color:#fff;border:none;font-weight:600;gap:6px" onclick="UI.openWhatsApp(${urlArg}, ${messageArg}, ${titleArg})">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.1-1.7-.9-2-1-.3-.1-.5-.1-.7.1-.2.3-.8 1-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.2-.5-2.3-1.4-.9-.7-1.4-1.7-1.6-2-.2-.3 0-.4.1-.6.1-.1.3-.3.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5s-.7-1.6-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1 2.8 1.2 3c.2.2 2 3.1 4.8 4.3.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.6-.1 1.7-.7 1.9-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3zM12 2a10 10 0 0 0-8.4 15.4L2 22l4.7-1.6A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 1 .9-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2z"/></svg>
+      ${label}
+    </button>`;
+  },
+
+  // Build the wa.me URL with pre-composed message, track a Plausible
+  // event for funnel attribution, then open in new tab. Triggered by
+  // the button above + by the popover's WhatsApp link.
+  openWhatsApp(url, message, title) {
+    const body = message || ((title || 'Check this out') + '\n' + url);
+    const waUrl = `https://wa.me/?text=${encodeURIComponent(body)}`;
+    try {
+      // Plausible custom event for funnel tracking. Non-fatal.
+      if (typeof window.plausible === 'function') {
+        window.plausible('WhatsApp Share', { props: { url } });
+      }
+    } catch (_) { /* ignore */ }
+    window.open(waUrl, '_blank', 'noopener,noreferrer');
+  },
+
   // Open the share popover. Mounted lazily on body, hidden by default.
   openShare(url, title) {
     let overlay = document.getElementById('rostr-share-overlay');
@@ -632,8 +672,11 @@ const UI = {
       document.body.appendChild(overlay);
     }
     const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=8&format=svg&data=${encodeURIComponent(url)}`;
-    const waUrl = `https://wa.me/?text=${encodeURIComponent((title || 'Check this out') + '\n' + url)}`;
     const hasNative = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+    // Smarter default message for pastes into WhatsApp groups — a single
+    // line of context + a line with the URL. Falls back to "Check this
+    // out\nurl" when no title.
+    const waMessage = ((title || 'Check this out') + '\n' + url).replace(/'/g, '%27');
     overlay.innerHTML = `
       <div style="background:var(--bg-raised);border:1px solid var(--border-medium);border-radius:var(--radius-lg);padding:var(--space-lg);width:min(400px,94vw);box-shadow:var(--shadow-lg)">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-md)">
@@ -651,7 +694,10 @@ const UI = {
           <button class="btn btn-secondary btn-sm" onclick="UI._copyShareLink()">${this.icon('copy', 14)}</button>
         </div>
         <div style="display:flex;gap:8px">
-          <a href="${waUrl}" target="_blank" rel="noopener" class="btn btn-sm" style="flex:1;background:#25D366;color:#fff;border:none">WhatsApp</a>
+          <button class="btn btn-sm" style="flex:1;background:#25D366;color:#fff;border:none;font-weight:600;gap:6px" onclick="UI.openWhatsApp('${url.replace(/'/g,'%27')}', '${waMessage}', '${(title||'').replace(/'/g,'&#39;')}')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.1-1.7-.9-2-1-.3-.1-.5-.1-.7.1-.2.3-.8 1-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.2-.5-2.3-1.4-.9-.7-1.4-1.7-1.6-2-.2-.3 0-.4.1-.6.1-.1.3-.3.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5s-.7-1.6-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1 2.8 1.2 3c.2.2 2 3.1 4.8 4.3.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.6-.1 1.7-.7 1.9-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3zM12 2a10 10 0 0 0-8.4 15.4L2 22l4.7-1.6A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 1 .9-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2z"/></svg>
+            WhatsApp
+          </button>
           ${hasNative ? `<button class="btn btn-secondary btn-sm" style="flex:1" onclick="UI._nativeShare('${url.replace(/'/g,'\\\'')}','${(title||'').replace(/'/g,'\\\'')}')">More\u2026</button>` : ''}
         </div>
       </div>

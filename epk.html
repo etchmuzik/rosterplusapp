@@ -118,6 +118,11 @@
       const genre = esc(Array.isArray(data.genre) ? data.genre[0] : (data.genre || ''));
       const subgenres = Array.isArray(data.subgenres) ? data.subgenres : [];
       const city = esc(data.city || data.cities_active?.[0] || '');
+      // Pre-computed strings reused below (both by the inline renderer
+      // AND by the OG-meta updater further down). Keep in sync with the
+      // duplicate assignments near line 263.
+      const genres      = Array.isArray(data.genre) ? data.genre.join(', ') : (data.genre || '');
+      const cityForMeta = (data.cities_active && data.cities_active[0]) || data.city || '';
       const bio = esc(data.bio || data.profiles?.bio || '');
       const avatar = data.avatar_url || data.profiles?.avatar_url;
       const social = data.social_links || data.social || {};
@@ -235,7 +240,14 @@
             <span style="font-size:0.85rem;color:var(--text-secondary)">Share:</span>
             <div class="share-url" id="share-url">${window.location.href}</div>
             <button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('share-url').textContent);UI.toast('Link copied!','success')">Copy</button>
-            <a href="https://wa.me/?text=${encodeURIComponent(esc(name) + ' — EPK | ROSTR+ GCC\\n' + window.location.href)}" target="_blank" rel="noopener" class="btn btn-sm" style="background:#25D366;color:#fff;border:none">WhatsApp</a>
+            ${UI.whatsappShareButton({
+              url:     window.location.href,
+              // Pre-composed message carries artist context so it lands
+              // in a WhatsApp group with everything a promoter needs.
+              // Newlines render as line breaks in the chat input.
+              message: `${esc(name)} \u2014 live EPK on ROSTR+\n${[genres, cityForMeta].filter(Boolean).join(' \u00b7 ')}\n${window.location.href}`,
+              label:   'WhatsApp',
+            })}
             <button class="btn btn-ghost btn-sm" onclick="window.print()">Save PDF</button>
           </div>
           <div style="text-align:center">
