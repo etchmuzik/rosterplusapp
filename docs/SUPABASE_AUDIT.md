@@ -4,6 +4,22 @@ Full A-to-Z audit of the live Supabase project `vgjmfpryobsuboukbemr`
 ("roster new"). Every section below was produced by probing the live
 project via MCP, not by reading repo files.
 
+## Changelog since the audit landed
+
+| When | Change | Result |
+|---|---|---|
+| 2026-04-24 | Consolidated bookings + reviews RLS policies (migration `20260424_consolidate_overlapping_rls_policies.sql`) | 9 advisor warnings cleared |
+| 2026-04-24 | Collapsed profiles SELECT policies (migration `20260424_collapse_profiles_select_policies.sql`) | 5 advisor warnings cleared — all 14 overlap warnings gone |
+| 2026-04-24 | Backfilled the 9 historical migrations into `supabase/migrations/` | Repo is now a faithful mirror of live |
+
+**Remaining advisor items (all INFO-level, intentional):**
+15 unused indexes on near-empty tables + 1 unindexed FK. Keep as-is
+until any table passes ~10k rows.
+
+**Still action-required (manual):**
+Enable HaveIBeenPwned leaked-password check in Dashboard →
+Authentication → Providers → Password. 30 seconds.
+
 ## 1. Project snapshot
 
 | | |
