@@ -150,6 +150,13 @@
         <div id="svc-cron-pill" class="svc-pill ok">Unknown</div>
       </div>
 
+      <!-- Per-job heatmap. One row per scheduled background job, with a
+           10-cell sparkline of the last 10 runs (red = error, green =
+           ok, grey = no data). Same data model as the admin Health tab
+           but anonymised — no error strings leak to the public. -->
+      <h2 style="font-family:var(--font-display);font-size:1.1rem;letter-spacing:-0.02em;margin:var(--space-2xl) 0 var(--space-md)">Background jobs</h2>
+      <div id="cron-health-grid" style="display:flex;flex-direction:column;gap:var(--space-sm)"></div>
+
       <div id="incident-section" class="incident-list" style="display:none">
         <h2 style="font-family:var(--font-display);font-size:1.1rem;letter-spacing:-0.02em;margin-bottom:var(--space-md)">Recent issues (7 days)</h2>
         <div id="incident-list-items"></div>
@@ -272,9 +279,90 @@
       }
     }
 
+    // Per-job health grid. One card per background job: name, status
+    // pill, 10-cell sparkline heatmap (red/green/grey), 24h + 7d run
+    // counts, relative time-ago. Reuses svc-card + svc-pill + day-cell
+    // CSS from the existing page treatment.
+    //
+    // Job labels translate internal names → friendly strings so public
+    // visitors aren't seeing 'send-booking-reminders' raw. Anything not
+    // in the map falls through to the raw name (future-proof).
+    const CRON_JOB_LABELS = {
+      'send-booking-reminders':        'Booking reminders',
+      'admin-daily-digest':            'Admin daily digest',
+      'send-artist-onboarding-drip':   'Artist onboarding emails',
+      'send-review-prompts':           'Post-event review prompts',
+      'expire-stale-contracts':        'Contract expiry sweep',
+      'prune-client-errors':           'Error log retention',
+      'prune-cron-runs':               'Cron history retention',
+      'prune-email-events':            'Email event retention',
+    };
+
+    function timeAgo(iso) {
+      if (!iso) return '—';
+      const ms = Date.now() - new Date(iso).getTime();
+      const m = Math.round(ms / 60000);
+      if (m < 1)  return 'just now';
+      if (m < 60) return m + 'm ago';
+      const h = Math.round(m / 60);
+      if (h < 24) return h + 'h ago';
+      const d = Math.round(h / 24);
+      return d + 'd ago';
+    }
+
+    async function renderCronGrid() {
+      const host = document.getElementById('cron-health-grid');
+      if (!host) return;
+      try {
+        const { data, error } = await _sb.rpc('cron_health_public');
+        if (error || !Array.isArray(data) || data.length === 0) {
+          host.innerHTML = '<div class="svc-card" style="color:var(--text-tertiary);font-size:0.82rem">No background jobs have reported recent activity.</div>';
+          return;
+        }
+        host.innerHTML = data.map(j => {
+          const friendly = CRON_JOB_LABELS[j.job] || j.job;
+          const hasFail24 = Number(j.failures_24h) > 0;
+          const hasFail7  = Number(j.failures_7d)  > 0;
+          const pillCls   = hasFail24 ? 'bad' : 'ok';
+          const pillText  = hasFail24 ? '● DEGRADED' : '● OPERATIONAL';
+          // Sparkline: left = oldest, right = newest. Matches the admin
+          // Health tab visual so operators get a consistent mental model.
+          const runs = Array.isArray(j.last_10) ? j.last_10.slice().reverse() : [];
+          const cells = [];
+          for (let i = 0; i < 10; i++) {
+            const r = runs[i];
+            if (!r) { cells.push('<div class="day-cell none"></div>'); continue; }
+            const cls = r.status === 'ok' ? 'ok' : 'bad';
+            const when = r.ran_at ? new Date(r.ran_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+            cells.push(`<div class="day-cell ${cls}" title="${r.status || '—'} · ${when}"></div>`);
+          }
+          const metaBits = [];
+          metaBits.push(`last run ${timeAgo(j.last_ran_at)}`);
+          if (Number(j.runs_24h) > 0) {
+            metaBits.push(`${Number(j.runs_24h) - Number(j.failures_24h)}/${Number(j.runs_24h)} ok in 24h`);
+          }
+          if (hasFail7 && !hasFail24) {
+            metaBits.push('recovered in last 24h');
+          }
+          return `
+            <div class="svc-card">
+              <div style="flex:1;min-width:200px">
+                <div class="svc-name">${friendly}</div>
+                <div class="svc-meta">${metaBits.join(' · ')}</div>
+                <div class="day-strip" style="margin-top:var(--space-sm)">${cells.join('')}</div>
+              </div>
+              <div class="svc-pill ${pillCls}">${pillText}</div>
+            </div>`;
+        }).join('');
+      } catch (e) {
+        host.innerHTML = '<div class="svc-card" style="color:var(--status-cancelled);font-size:0.82rem">Failed to load background jobs.</div>';
+      }
+    }
+
     async function refreshStatus() {
       const [siteOk, health] = await Promise.all([probeSite(), probeHealth()]);
       renderCronStrip().catch(() => {});
+      renderCronGrid().catch(() => {});
 
       const allOk = siteOk && health.apiOk && health.cronOk;
       if (allOk) {
