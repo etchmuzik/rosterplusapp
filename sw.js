@@ -101,8 +101,15 @@ self.addEventListener('fetch', (e) => {
   //    Stale-while-revalidate. Serve from cache instantly, refresh in
   //    the background for the next visit. Falls back to /offline.html
   //    for navigations we've never seen (first-time + offline).
+  //
+  //    ignoreSearch: true — deploy.sh appends ?v=<sha> to every
+  //    /assets/*.{css,js} reference in the HTML. Without ignoreSearch
+  //    the SW would see /app.js and /app.js?v=abc123 as distinct keys
+  //    and never hit its own precache. The cache-bust story is still
+  //    intact because CACHE_NAME itself rotates per deploy — all old
+  //    cache entries get wiped on `activate`.
   e.respondWith(
-    caches.match(req).then(cached => {
+    caches.match(req, { ignoreSearch: true }).then(cached => {
       const fresh = fetch(req).then(res => {
         // Only cache real successful responses (skip opaque redirects,
         // 404s, etc.). type==='basic' guards against caching extension

@@ -28,30 +28,61 @@ RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
   CacheDisable public /
 </IfModule>
 
-# Cache static assets (browser-side only now that LSCache is off).
-# HTML/JSON: short. CSS/JS: 1 hour + must-revalidate so the service-worker
-# cache bump takes effect quickly. Images: 1 month is fine.
+# Cache static assets.
+# Strategy:
+#   HTML / manifest.json / sitemap.xml:   no-cache (always revalidate)
+#   /assets/**/*.css + .js:               1 year immutable (cache-busted by
+#                                         ?v=<sha> query string appended by
+#                                         scripts/deploy.sh, so each deploy
+#                                         creates fresh effective URLs)
+#   /sw.js (service worker):              no-cache so CACHE_NAME rotates fast
+#   Images / icons:                       1 month (rarely change)
 <IfModule mod_expires.c>
   ExpiresActive On
   ExpiresByType text/html "access plus 0 seconds"
   ExpiresByType application/manifest+json "access plus 0 seconds"
   ExpiresByType application/xml "access plus 0 seconds"
-  ExpiresByType text/css "access plus 1 hour"
-  ExpiresByType application/javascript "access plus 1 hour"
-  ExpiresByType application/x-javascript "access plus 1 hour"
   ExpiresByType image/png "access plus 1 month"
   ExpiresByType image/jpeg "access plus 1 month"
   ExpiresByType image/svg+xml "access plus 1 month"
+  # CSS + JS no longer set via mime-type — the <FilesMatch> below pins
+  # /assets/* at 1 year explicitly so it beats any generic rule.
 </IfModule>
 
-# Force revalidation on HTML and the service worker so users always get fresh
-# shell + SW even behind proxies.
 <IfModule mod_headers.c>
-  <FilesMatch "\.(html|json|xml)$">
+  # HTML + manifest + sitemap: always revalidate
+  <FilesMatch "\.(html|xml)$">
     Header set Cache-Control "no-cache, must-revalidate"
   </FilesMatch>
+  <FilesMatch "^manifest\.json$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+  # Service worker MUST always revalidate — it's the cache-bust mechanism
+  # for the whole app; stale SW = stale app.
   <FilesMatch "^sw\.js$">
     Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+</IfModule>
+
+# Long-cache the assets directory. The ?v=<sha> query string (stamped by
+# scripts/deploy.sh into every <link> + <script>) ensures repeat visitors
+# fetch fresh files after a deploy while first-time visitors and
+# repeat-within-deploy visitors serve straight from browser cache.
+<IfModule mod_headers.c>
+  <Directory "/home/*/public_html/assets">
+    <FilesMatch "\.(css|js|woff2?|ttf|otf|eot)$">
+      Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+  </Directory>
+  # Hostinger's shared config may not honour <Directory> outside the main
+  # config; fallback using <FilesMatch> on the leaf filename pattern.
+  # The /assets/ prefix is enforced by file-system layout: only files
+  # under that path have extensions like .woff2 or live in /css/ /js/
+  # subtrees that this server actually serves.
+  <FilesMatch "\.(css|js)$">
+    <If "%{REQUEST_URI} =~ m#^/assets/#">
+      Header set Cache-Control "public, max-age=31536000, immutable"
+    </If>
   </FilesMatch>
 </IfModule>
 

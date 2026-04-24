@@ -135,11 +135,43 @@ else
 fi
 rm -f assets/js/app.js.tmp
 
+# ── Cache-bust HTML asset references ──────────────────────
+# Every <link href="assets/css/system.css"> and <script src="assets/js/app.js">
+# gets a ?v=<sha> appended so browsers treat post-deploy assets as new
+# URLs. That lets the .htaccess long-cache the actual files (1 year,
+# immutable) while still guaranteeing freshness on the next deploy.
+#
+# Only rewrites tags that DON'T already have a ?v= query to keep this
+# script idempotent across local re-runs. Restored from .deploy-bak on
+# exit alongside sw.js and app.js.
+HTML_BAK_DIR=$(mktemp -d)
+for html in *.html; do
+  [[ -f "$html" ]] || continue
+  cp "$html" "$HTML_BAK_DIR/$html.deploy-bak"
+  # Match: src="assets/js/X.js" or href="assets/css/X.css" with no existing query
+  # Append: ?v=<sha>
+  # Use @-delimited sed so forward slashes stay legible.
+  sed -i.tmp -E \
+    -e "s@(src|href)=\"(assets/(js|css)/[^\"?]+\.(js|css))\"@\1=\"\2?v=$BUILD_SHA\"@g" \
+    -e "s@(src|href)=\"/(assets/(js|css)/[^\"?]+\.(js|css))\"@\1=\"/\2?v=$BUILD_SHA\"@g" \
+    "$html"
+  rm -f "$html.tmp"
+done
+
 # Restore backups on exit so local git state stays clean regardless of
 # whether the deploy succeeded, failed, or was interrupted.
 cleanup_stamps() {
   mv -f sw.js.deploy-bak sw.js 2>/dev/null || true
   mv -f assets/js/app.js.deploy-bak assets/js/app.js 2>/dev/null || true
+  # Restore every stamped HTML file.
+  if [[ -d "$HTML_BAK_DIR" ]]; then
+    for bak in "$HTML_BAK_DIR"/*.deploy-bak; do
+      [[ -f "$bak" ]] || continue
+      orig=$(basename "$bak" .deploy-bak)
+      mv -f "$bak" "$orig"
+    done
+    rmdir "$HTML_BAK_DIR" 2>/dev/null || true
+  fi
 }
 trap cleanup_stamps EXIT
 
