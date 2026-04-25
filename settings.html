@@ -140,6 +140,13 @@
         <div class="settings-header">Notifications</div>
         <div class="settings-row">
           <div>
+            <div class="settings-label">Browser push notifications</div>
+            <div class="settings-desc">Get instant alerts on this device when bookings update or messages arrive. Mirrors the iOS push flow.</div>
+          </div>
+          <div class="toggle" id="toggle-webpush" onclick="onToggleWebPush(this)"></div>
+        </div>
+        <div class="settings-row">
+          <div>
             <div class="settings-label">Email notifications</div>
             <div class="settings-desc">Receive booking requests, confirmations, and messages via email</div>
           </div>
@@ -300,6 +307,14 @@
       }
 
       await renderCompletion();
+
+      // Reflect current browser-push permission on the toggle.
+      try {
+        const state = await WebPush.permissionState();
+        if (state === 'granted') {
+          document.getElementById('toggle-webpush').classList.add('active');
+        }
+      } catch (_) {}
     });
 
     // Profile-completion widget: score + missing-field checklist above
@@ -333,6 +348,35 @@
           ${meter}
           ${missList ? `<ul style="list-style:none;padding:0;margin:var(--space-md) 0 0">${missList}</ul>` : ''}
         </div>`;
+    }
+
+    /// Click handler for the Browser push toggle. Routes through
+    /// WebPush.subscribe() which handles permission prompt + service
+    /// worker registration + device_tokens upsert.
+    async function onToggleWebPush(el) {
+      if (!WebPush.isSupported()) {
+        UI.toast('Push notifications aren\'t supported on this browser.', 'warning');
+        return;
+      }
+      const wasOn = el.classList.contains('active');
+      if (wasOn) {
+        // Disable — pull the device_tokens row + revoke browser sub.
+        await WebPush.unsubscribe();
+        el.classList.remove('active');
+        UI.toast('Browser notifications disabled.');
+        return;
+      }
+      const result = await WebPush.subscribe();
+      if (result.ok) {
+        el.classList.add('active');
+        UI.toast('Browser notifications enabled.');
+      } else if (result.reason === 'not_configured') {
+        UI.toast('Web push not configured yet — check back soon.', 'warning');
+      } else if (result.reason === 'denied') {
+        UI.toast('Notifications blocked. Enable them in your browser site settings.', 'warning');
+      } else {
+        UI.toast('Couldn\'t enable browser notifications.', 'error');
+      }
     }
   </script>
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>

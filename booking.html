@@ -15,6 +15,41 @@
   <link rel="preconnect" href="https://vgjmfpryobsuboukbemr.supabase.co" crossorigin>
 
   <link rel="stylesheet" href="assets/css/system.css">
+  <style>
+    /* ─── Availability conflict banner ─── */
+    /* Sits between the date input and the next form section.
+       Mirrors iOS BookingView's amber ConflictBanner — surfaces
+       the result of the check_availability RPC call. */
+    .availability-banner {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      margin-top: 12px;
+      padding: 12px 14px;
+      background: rgba(233, 207, 146, 0.08);
+      border: 1px solid rgba(233, 207, 146, 0.24);
+      border-radius: var(--radius-sm);
+    }
+    .availability-icon {
+      color: #e9cf92;
+      font-size: 16px;
+      line-height: 1;
+      padding-top: 2px;
+    }
+    .availability-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-size: 13px;
+    }
+    .availability-text strong {
+      color: rgba(255, 255, 255, 0.92);
+      font-weight: 600;
+    }
+    .availability-text span {
+      color: rgba(255, 255, 255, 0.62);
+    }
+  </style>
 </head>
 <body>
   <div class="page-shell">
@@ -73,6 +108,18 @@
           <div class="bk-field">
             <label class="bk-field-label" for="eventDate">Event date</label>
             <input class="bk-input" type="date" id="eventDate" required>
+          </div>
+          <div class="bk-field span-2">
+            <!-- Conflict banner — populated by runAvailabilityCheck() when
+                 artist + date are both set. Mirrors iOS BookingView's
+                 amber ConflictBanner. -->
+            <div id="availabilityBanner" class="availability-banner" style="display:none">
+              <span class="availability-icon">⚠</span>
+              <div class="availability-text">
+                <strong id="availabilityTitle">Potential conflict</strong>
+                <span id="availabilityReason">Artist already has a booking on this date.</span>
+              </div>
+            </div>
           </div>
           <div class="bk-field">
             <label class="bk-field-label" for="eventTime">Start time</label>
@@ -249,6 +296,9 @@
           _chosen = list.find(a => a.id === id) || null;
           renderArtistGrid(list);
           document.getElementById('btn-to-step-2').disabled = !_chosen;
+          // If a date was already filled in, re-check availability now
+          // that the artist is set.
+          if (typeof runAvailabilityCheck === 'function') runAvailabilityCheck();
         });
       });
     }
@@ -372,7 +422,7 @@
       } catch (_) { /* quiet */ }
     }
 
-    /* ── Step 2 validation + Submit ── */
+    /* ── Step 2 validation ── */
     function validateStep2() {
       const v = formReadValues();
       if (!v.eventName) { UI.toast('Event name is required', 'warning'); document.getElementById('eventName').focus(); return false; }
@@ -380,6 +430,60 @@
       return true;
     }
 
+    // ─── Availability check ───
+    // Wired to: artist selection + eventDate change. Calls the
+    // `check_availability` RPC (created in iOS Wave 5.5) so both
+    // platforms hit the same authoritative source. Falls back to the
+    // client-side helper on RPC failure.
+    let _availabilityToken = 0;
+    async function runAvailabilityCheck() {
+      const artistId = (typeof _chosen !== 'undefined' && _chosen) ? _chosen.id : null;
+      const date = document.getElementById('eventDate')?.value;
+      const banner = document.getElementById('availabilityBanner');
+      if (!banner) return;
+      if (!artistId || !date) {
+        banner.style.display = 'none';
+        return;
+      }
+      const myToken = ++_availabilityToken;
+      try {
+        let available = true;
+        let reason = null;
+        if (!DEMO_MODE && _sb) {
+          const { data, error } = await _sb.rpc('check_availability', {
+            p_artist_id: artistId,
+            p_event_date: date,
+          });
+          if (!error && Array.isArray(data) && data[0]) {
+            available = !!data[0].available;
+            reason = data[0].reason || null;
+          } else {
+            const fallback = await DB.checkAvailability(artistId, date);
+            available = !!fallback.available;
+            reason = fallback.reason || null;
+          }
+        }
+        if (myToken !== _availabilityToken) return; // stale answer
+        if (available) {
+          banner.style.display = 'none';
+        } else {
+          document.getElementById('availabilityReason').textContent =
+            (reason ? reason + '. ' : '') + "You can still send — they'll decline if it clashes.";
+          banner.style.display = 'flex';
+        }
+      } catch (err) {
+        console.warn('[booking] availability check failed', err);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const dateEl = document.getElementById('eventDate');
+      if (dateEl) {
+        dateEl.addEventListener('change', runAvailabilityCheck);
+      }
+    });
+
+    /* ── Submit ── */
     async function submitBooking() {
       const btn = document.getElementById('bk-submit');
       btn.disabled = true;

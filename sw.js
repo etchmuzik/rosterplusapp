@@ -17,8 +17,10 @@
 //   - Offline fallback navigation → /offline.html
 //     When a user hits a page they've never visited AND they're offline,
 //     serve a branded "You're offline" page instead of Chrome's dino.
+//   - Web Push — handlers at the bottom of this file. Receives payloads
+//     from send-push edge function and surfaces them via Notification API.
 
-const CACHE_NAME = 'rostr-v4-swr';
+const CACHE_NAME = 'rostr-v5-swr-push';
 
 // Core shell — precached on install so first offline navigation works.
 // Everything else populates the cache as the user visits it (lazy).
@@ -138,5 +140,56 @@ self.addEventListener('fetch', (e) => {
         return new Response('Offline', { status: 503 });
       });
     })
+  );
+});
+
+// ─── Web Push ───
+//
+// The `push` event fires when the browser receives a payload from the
+// push service. Our send-push edge function (or a future web-push
+// dispatcher) posts JSON like:
+//
+//   { title, body, data: { href, type, ... } }
+//
+// We surface it via the Notification API. Click → focus the tab and
+// navigate to data.href if present.
+
+self.addEventListener('push', (e) => {
+  let payload = {};
+  try {
+    payload = e.data ? e.data.json() : {};
+  } catch (_) {
+    payload = { title: 'ROSTR+', body: e.data ? e.data.text() : '' };
+  }
+  const title = payload.title || 'ROSTR+';
+  const options = {
+    body: payload.body || '',
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    data: payload.data || {},
+    tag: payload.tag,            // de-dupes when same tag fires twice
+    renotify: !!payload.renotify,
+  };
+  e.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const href = (e.notification.data && e.notification.data.href) || '/dashboard.html';
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then(clients => {
+        // If a ROSTR+ tab is already open, focus + navigate it.
+        for (const c of clients) {
+          if (new URL(c.url).origin === self.location.origin && 'focus' in c) {
+            c.navigate(href);
+            return c.focus();
+          }
+        }
+        // Otherwise open a new tab.
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(href);
+        }
+      })
   );
 });

@@ -3269,9 +3269,160 @@ const Realtime = {
     return () => { channel.unsubscribe(); delete this._channels[channelName]; };
   },
 
+  // Subscribe to incoming notifications for the current user. Mirrors
+  // the iOS NotificationsStore realtime channel — INSERT events on
+  // public.notifications scoped to user_id=auth.uid().
+  subscribeToNotifications(onInsert) {
+    if (!_sb || !Auth.user) return () => {};
+    const userId = Auth.user.id;
+    const channelName = `notifications:${userId}`;
+    if (this._channels[channelName]) {
+      this._channels[channelName].unsubscribe();
+    }
+    const channel = _sb
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => { if (onInsert) onInsert(payload.new); }
+      )
+      .subscribe();
+    this._channels[channelName] = channel;
+    return () => { channel.unsubscribe(); delete this._channels[channelName]; };
+  },
+
+  // Subscribe to booking_events for a single booking — used by
+  // bookings.html's detail modal so the timeline updates as the
+  // counterparty signs / cancels / completes.
+  subscribeToBookingEvents(bookingId, onInsert) {
+    if (!_sb || !bookingId) return () => {};
+    const channelName = `booking_events:${bookingId}`;
+    if (this._channels[channelName]) {
+      this._channels[channelName].unsubscribe();
+    }
+    const channel = _sb
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'booking_events',
+          filter: `booking_id=eq.${bookingId}`,
+        },
+        (payload) => { if (onInsert) onInsert(payload.new); }
+      )
+      .subscribe();
+    this._channels[channelName] = channel;
+    return () => { channel.unsubscribe(); delete this._channels[channelName]; };
+  },
+
   unsubscribeAll() {
     Object.values(this._channels).forEach(ch => ch.unsubscribe());
     this._channels = {};
+  },
+};
+
+// ══════════════════════════════════════════════════════════
+// WebPush — Browser push notifications (mirrors iOS PushStore)
+//
+// Subscribes the current browser to the Push API using the VAPID
+// public key configured server-side. Stores the resulting endpoint
+// in public.device_tokens with platform='web' so the same send-push
+// edge function can fan out to web clients alongside iOS.
+//
+// To go live: set VAPID_PUBLIC_KEY (publishable) here and
+// VAPID_PRIVATE_KEY in Supabase Function Secrets. Until both are set,
+// requestPermission() / subscribe() bail with a console warning.
+// ══════════════════════════════════════════════════════════
+const WebPush = {
+  // Operator: paste the VAPID public key here once generated. Until
+  // then the helper is a no-op + logs a warning. The private half
+  // belongs in Supabase Function Secrets (VAPID_PRIVATE_KEY).
+  // Generate via: `npx web-push generate-vapid-keys`
+  VAPID_PUBLIC_KEY: '',
+
+  /// Returns true if every API we need is present + a service
+  /// worker is registered. Bail-safe in older browsers.
+  isSupported() {
+    return 'serviceWorker' in navigator
+      && 'PushManager' in window
+      && 'Notification' in window;
+  },
+
+  async permissionState() {
+    if (!('Notification' in window)) return 'denied';
+    return Notification.permission;  // 'default' | 'granted' | 'denied'
+  },
+
+  /// Prompt the user, register a push subscription, persist the
+  /// endpoint into public.device_tokens. Returns true on success.
+  async subscribe() {
+    if (!this.isSupported()) return { ok: false, reason: 'unsupported' };
+    if (!this.VAPID_PUBLIC_KEY) {
+      console.warn('[WebPush] VAPID_PUBLIC_KEY not configured — staying in dry-run mode.');
+      return { ok: false, reason: 'not_configured' };
+    }
+    if (!Auth.user) return { ok: false, reason: 'not_signed_in' };
+
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') return { ok: false, reason: 'denied' };
+
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: this._urlBase64ToUint8Array(this.VAPID_PUBLIC_KEY),
+      });
+
+      // Stash the endpoint as the "token" so send-push can fan out
+      // to it via the same path as iOS APNs tokens.
+      const token = JSON.stringify(sub.toJSON());
+      const { error } = await _sb.from('device_tokens').upsert({
+        user_id: Auth.user.id,
+        token,
+        platform: 'web',
+        environment: 'production',
+        last_seen_at: new Date().toISOString(),
+      }, { onConflict: 'token' });
+      if (error) return { ok: false, reason: error.message };
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, reason: String(e) };
+    }
+  },
+
+  /// Remove the current browser's push subscription + delete the
+  /// device_tokens row. Called from sign-out.
+  async unsubscribe() {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) {
+        const token = JSON.stringify(sub.toJSON());
+        await sub.unsubscribe();
+        if (Auth.user && _sb) {
+          await _sb.from('device_tokens').delete()
+            .eq('user_id', Auth.user.id)
+            .eq('token', token);
+        }
+      }
+    } catch (_) {}
+  },
+
+  // VAPID public key is base64url; PushManager wants a Uint8Array.
+  _urlBase64ToUint8Array(b64) {
+    const padding = '='.repeat((4 - b64.length % 4) % 4);
+    const base64 = (b64 + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(base64);
+    const out = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; ++i) out[i] = raw.charCodeAt(i);
+    return out;
   },
 };
 

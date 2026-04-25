@@ -228,6 +228,13 @@
             <label class="form-label" style="margin:0">Available for bookings</label>
             <div class="toggle" id="availability-toggle" onclick="this.classList.toggle('active')"></div>
           </div>
+          <div class="form-group" style="display:flex;align-items:center;gap:var(--space-md)">
+            <div>
+              <label class="form-label" style="margin:0">Tour mode</label>
+              <p class="text-tertiary" style="font-size:0.78rem;margin-top:2px">Show "Flexible on travel" — promoters in other cities see you first.</p>
+            </div>
+            <div class="toggle" id="tour-mode-toggle" onclick="this.classList.toggle('active')"></div>
+          </div>
           <div class="form-grid" style="margin-top:var(--space-lg)">
             <div class="form-group">
               <label class="form-label">Available From</label>
@@ -423,6 +430,11 @@
       if (data.available_to) document.getElementById('available-to').value = data.available_to;
       _blockedDates = Array.isArray(data.blocked_dates) ? [...data.blocked_dates] : [];
       renderBlockedDates();
+      // Tour mode (mirrors iOS AvailabilityView toggle, persists to
+      // public.artists.tour_mode added in iOS Wave 5.7).
+      if (data.tour_mode === true) {
+        document.getElementById('tour-mode-toggle').classList.add('active');
+      }
 
       // Gallery, Rider, Quotes, Service Tags
       _gallery = Array.isArray(data.epk_gallery) ? [...data.epk_gallery] : [];
@@ -474,6 +486,7 @@
         tech_rider: _rider,
         press_quotes: _quotes,
         service_tags: Array.from(document.querySelectorAll('#service-tags-grid input:checked')).map(cb => cb.value),
+        tour_mode: document.getElementById('tour-mode-toggle').classList.contains('active'),
       };
       if (_avatarUrl) payload.avatar_url = _avatarUrl;
 

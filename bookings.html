@@ -701,7 +701,11 @@
         <div class="detail-divider"></div>
 
         <h4 style="margin-bottom:var(--space-md);font-size:0.95rem">Activity</h4>
-        <div class="detail-timeline">
+        <!-- Timeline is populated asynchronously from public.booking_events
+             (the table the iOS app's TimelineStore listens to). Falls back
+             to "Booking created" if the table has nothing for this booking
+             yet. -->
+        <div class="detail-timeline" id="bookingTimeline">
           <div class="timeline-item">
             <div class="timeline-dot"></div>
             <div>
@@ -709,27 +713,6 @@
               <div class="timeline-time">${UI.formatDate(b.created)}</div>
             </div>
           </div>
-          ${b.contract !== 'none' ? `<div class="timeline-item">
-            <div class="timeline-dot" style="background:var(--status-pending)"></div>
-            <div>
-              <div>Contract ${b.contract}</div>
-              <div class="timeline-time">${UI.formatDate(b.created)}</div>
-            </div>
-          </div>` : ''}
-          ${b.status === 'confirmed' ? `<div class="timeline-item">
-            <div class="timeline-dot" style="background:var(--status-confirmed)"></div>
-            <div>
-              <div>Booking confirmed</div>
-              <div class="timeline-time">${UI.formatDate(b.created)}</div>
-            </div>
-          </div>` : ''}
-          ${b.status === 'cancelled' ? `<div class="timeline-item">
-            <div class="timeline-dot" style="background:var(--status-cancelled)"></div>
-            <div>
-              <div>Booking cancelled</div>
-              <div class="timeline-time">${UI.formatDate(b.created)}</div>
-            </div>
-          </div>` : ''}
         </div>
 
         <div style="display:flex;gap:var(--space-sm);margin-top:var(--space-xl)">
@@ -740,6 +723,83 @@
       `;
 
       document.getElementById('detailModal').classList.add('active');
+
+      // Asynchronously upgrade the timeline with live booking_events.
+      // The trigger on public.bookings INSERTs an event on every
+      // status transition; iOS reads + subscribes to the same table
+      // via TimelineStore.
+      loadBookingTimeline(b.id).catch(err => console.warn('[bookings] timeline load failed', err));
+
+      // Live updates while the modal is open — re-load the timeline
+      // whenever a new booking_event lands. Cheap (full re-fetch is
+      // ~10 rows) and avoids fragile incremental DOM patching.
+      _activeTimelineUnsub = Realtime.subscribeToBookingEvents(b.id, () => {
+        loadBookingTimeline(b.id).catch(() => {});
+      });
+    }
+    let _activeTimelineUnsub = null;
+
+    /// Fetches public.booking_events scoped to this booking, oldest
+    /// first, and re-renders the timeline list with proper labels +
+    /// status-coloured dots.
+    async function loadBookingTimeline(bookingId) {
+      if (DEMO_MODE || !_sb) return;
+      const { data, error } = await _sb
+        .from('booking_events')
+        .select('id, kind, label, created_at')
+        .eq('booking_id', bookingId)
+        .order('created_at', { ascending: true });
+      if (error || !Array.isArray(data) || data.length === 0) return;
+
+      const dotColor = {
+        'request_sent':            'var(--text-tertiary)',
+        'artist_accepted':         'var(--status-confirmed)',
+        'artist_declined':         'var(--status-cancelled)',
+        'contract_drafted':        'var(--status-pending)',
+        'contract_signed_artist':  'var(--status-pending)',
+        'contract_signed_promoter':'var(--status-pending)',
+        'contract_countersigned':  'var(--status-confirmed)',
+        'payment_scheduled':       'var(--status-pending)',
+        'payment_recorded':        'var(--status-confirmed)',
+        'payment_confirmed':       'var(--status-confirmed)',
+        'event_completed':         'var(--status-confirmed)',
+        'event_cancelled':         'var(--status-cancelled)',
+        'review_submitted':        'var(--status-pending)',
+        'note':                    'var(--text-tertiary)',
+      };
+
+      const fallbackLabel = {
+        'request_sent':            'Booking request sent',
+        'artist_accepted':         'Artist accepted',
+        'artist_declined':         'Artist declined',
+        'contract_drafted':        'Contract drafted',
+        'contract_signed_artist':  'Artist signed',
+        'contract_signed_promoter':'Promoter signed',
+        'contract_countersigned':  'Contract countersigned',
+        'payment_scheduled':       'Payment scheduled',
+        'payment_recorded':        'Payment recorded',
+        'payment_confirmed':       'Payment confirmed',
+        'event_completed':         'Performance completed',
+        'event_cancelled':         'Booking cancelled',
+        'review_submitted':        'Review submitted',
+        'note':                    'Note',
+      };
+
+      const html = data.map(ev => {
+        const label = ev.label || fallbackLabel[ev.kind] || 'Update';
+        const color = dotColor[ev.kind] || 'var(--text-tertiary)';
+        const when  = UI.formatDate(ev.created_at);
+        return `<div class="timeline-item">
+          <div class="timeline-dot" style="background:${color}"></div>
+          <div>
+            <div>${esc(label)}</div>
+            <div class="timeline-time">${when}</div>
+          </div>
+        </div>`;
+      }).join('');
+
+      const el = document.getElementById('bookingTimeline');
+      if (el) el.innerHTML = html;
     }
 
     async function cancelBooking(id) {
@@ -759,6 +819,11 @@
 
     function closeModal() {
       document.getElementById('detailModal').classList.remove('active');
+      // Tear the timeline channel down so we don't leak sockets.
+      if (_activeTimelineUnsub) {
+        try { _activeTimelineUnsub(); } catch (_) {}
+        _activeTimelineUnsub = null;
+      }
     }
 
     // ── Init ──
