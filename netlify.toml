@@ -1,0 +1,91 @@
+# Netlify configuration for rosterplus.io
+# ─────────────────────────────────────────────────────────────────────
+# Replaces the manual lftp-to-Hostinger flow. Push to main → Netlify
+# pulls + deploys automatically. The deploy-stamp script writes the
+# git sha into sw.js + app.js + every <link>/<script> ?v= so the SW
+# cache rotates per deploy — same logic the old scripts/deploy.sh ran
+# locally, just triggered by Netlify now.
+#
+# Migrated from .htaccess on 2026-04-25. The old file stays in the
+# repo as a reference + emergency-rollback path until Hostinger is
+# decommissioned.
+
+[build]
+  publish = "."
+  command = "bash scripts/deploy-stamp.sh"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# ── Security headers ──
+# Mirrors the .htaccess <IfModule mod_headers.c> block. Same CSP,
+# same HSTS, same Permissions-Policy. CSP narrowed to exactly the
+# origins the app actually contacts:
+#   script:  jsDelivr (Supabase SDK), Plausible, Sentry browser SDK
+#   connect: Supabase REST + WebSocket, Plausible, Sentry ingest
+#   style:   Fontshare + Google Fonts stylesheets
+#   font:    .woff2 payloads from those CDNs
+#   img:     data: (inline SVG avatars) + any https: source
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options                   = "DENY"
+    X-Content-Type-Options            = "nosniff"
+    Referrer-Policy                   = "strict-origin-when-cross-origin"
+    Permissions-Policy                = "camera=(), microphone=(), geolocation=()"
+    Strict-Transport-Security         = "max-age=31536000; includeSubDomains; preload"
+    X-XSS-Protection                  = "1; mode=block"
+    Content-Security-Policy           = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://plausible.io https://browser.sentry-cdn.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://plausible.io https://*.ingest.sentry.io; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://api.fontshare.com https://fonts.googleapis.com; font-src 'self' data: https://api.fontshare.com https://cdn.fontshare.com https://fonts.gstatic.com; frame-ancestors 'none'"
+
+# ── Cache-Control ──
+# Matches the .htaccess strategy:
+#   /assets/**            → 1y immutable (deploy stamps ?v=<sha>, URL
+#                                         rotates per deploy)
+#   sw.js                 → no-cache (cache-bust pivot — must always revalidate)
+#   *.html / manifest /   → no-cache (always revalidate)
+#   sitemap
+#   /icons/**             → 1 month
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"
+
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"
+
+[[headers]]
+  for = "/manifest.json"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"
+
+[[headers]]
+  for = "/sitemap.xml"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"
+
+[[headers]]
+  for = "/icons/*"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000"
+
+# ── 404 handler ──
+# Apache used `ErrorDocument 404 /404.html`. Netlify equivalent:
+# any unmatched path serves /404.html with a real 404 status.
+# Without this, Netlify shows its own generic 404 page.
+[[redirects]]
+  from = "/*"
+  to = "/404.html"
+  status = 404
+
+# Note: NO catch-all SPA redirect. The previous netlify.toml had
+# `from = "/*", to = "/index.html", status = 200` which would have
+# silently rewritten every URL to the homepage. ROSTR+ is a multi-page
+# static site, not a SPA — every page is its own .html file. The 404
+# fallback above is the correct catch-all.
