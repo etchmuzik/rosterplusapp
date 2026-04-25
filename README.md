@@ -11,14 +11,32 @@ Companion iOS app: [etchmuzik/rosterplusapp-ios](https://github.com/etchmuzik/ro
 ## What's on the platform today
 
 - **27 public/protected pages** — auth, dashboard, directory, booking wizard, contracts, payments, messages, EPK, admin console, public status page, 404 + offline fallbacks
-- **5 Supabase edge functions** — `signup` (custom SMTP bypass), `send-email` (11 transactional templates), `send-booking-reminders` (24h-before cron), `send-artist-onboarding-drip` (1h/24h/72h cron), `send-review-prompts` (post-event cron)
+- **13 Supabase edge functions** — `signup` (custom SMTP bypass), `send-password-reset`, `send-email` (transactional templates), `send-booking-reminders` (24h cron), `send-artist-onboarding-drip` (1h/24h/72h cron), `send-review-prompts` (post-event cron), `admin-daily-digest`, `admin-user-action`, `send-push` (web + iOS push fan-out), `profile-share`, `stripe-webhook`, `resend-webhook`, `health`
 - **8 pg_cron jobs** all self-logging to `cron_runs` — visible on both `/status.html` (anonymised) and `/admin.html` Health tab (full detail)
 - **Mutual review system** — artists and promoters rate each other 3 days post-event. Drives `AggregateRating` JSON-LD which unlocks star-rating rich snippets in Google
+- **Web Push notifications** — opt-in toggle on `/settings.html`, payloads dispatched from the same `send-push` edge function that fans out to iOS APNs
 - **Impersonation audit trail** — when admin "log in as user" is used, every mutation is tagged with the admin's email in `admin_audit_log`
-- **Offline-capable PWA** — stale-while-revalidate service worker; dashboards work on bad wifi; branded `/offline.html` fallback
-- **Accessibility** — skip-link, focus-trap in modals, `role=radiogroup` star picker, global ESC-to-close, aria-labels on every icon button
+- **Offline-capable PWA** — stale-while-revalidate service worker (cross-origin requests pass through to respect page CSP); dashboards work on bad wifi; branded `/offline.html` fallback
+- **Accessibility** — skip-link, focus-trap in modals, `role=radiogroup` star picker, global ESC-to-close, aria-labels on every icon button, `role="alert"` + `aria-live="polite"` on the booking-conflict banner
 - **Visual regression suite** — Playwright screenshots on 8 pages × 2 viewports, diffed on every PR
 - **Lighthouse CI** — hard gates on accessibility ≥0.90 and SEO ≥0.95
+
+### Recent ships (last 7 days)
+
+- `61d8df1` docs: link README to `rosterplus-shared` contract repo
+- `58028a1` fix(epk): real bugs in the public EPK page + footer mislabel
+- `02ce92a` fix(audit): unify availability check on RPC + housekeeping
+- `a2d3719` feat: site-wide footer + homepage refresh reflecting Wave 5.x
+- `2521872` fix(sw): stop intercepting cross-origin requests — was breaking site CSP
+- `2639b18` feat: web parity sweep — Tier B + Tier C from the iOS audit
+- `32a1f29` chore(supabase): clear RLS overlap warnings + backfill historical migrations
+- `ed2389a` docs: full A-to-Z Supabase audit (2026-04-24)
+- `657356b` docs: refresh README + DEPLOY to reflect current platform state
+- `386cdc1` fix: surface real error when Supabase SDK fails to load
+- `672d392` fix(.htaccess): correct FilesMatch order for 1yr asset cache
+- `44c0c78` perf: cache-bust assets with `?v=<sha>` + long-cache `/assets` on CDN
+
+The 2026-04-25 audit (see `AUDIT-2026-04-25.md`) drove the recent web parity sweep, the SW CSP hotfix, the EPK bug fixes, and the creation of [rosterplus-shared](https://github.com/etchmuzik/rosterplus-shared) as the cross-platform contract.
 
 ## Tech stack
 
@@ -233,7 +251,7 @@ CI runs all three on every PR plus Lighthouse. Baseline regeneration happens on 
 Built around the [taste-skill](https://github.com/Leonxlnx/taste-skill) principles. All design tokens live in `assets/css/system.css` as CSS custom properties.
 
 - **Typography**: Chillax (display) + Satoshi (body) + JetBrains Mono (code/labels)
-- **Palette**: Charcoal base `#08090b`, gold accent (`--gold: #c9a84c`), mono accent treatments (`--accent-soft`, `--accent-dim-*`)
+- **Palette**: Charcoal base `#08090b`, near-white accent (`--accent: #f3f5f8`). Note: the `--gold*` tokens still exist for backwards-compat but alias to `--accent` — the live palette is monochrome, not gold. Status tokens (`--status-pending`, `--status-confirmed`, `--status-cancelled`, `--status-info`) are the only place colour appears
 - **Glass**: `backdrop-filter: blur(14px)`, border-rgba(255,255,255,0.08), inset 1px highlight
 - **Radius**: 8 / 12 / 16 / 24px scale
 - **Easing**: `cubic-bezier(0.16, 1, 0.3, 1)`
