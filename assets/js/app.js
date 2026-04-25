@@ -1,3 +1,4 @@
+window.ROSTR_VERSION = '2521872';
 /* ═══════════════════════════════════════════════════════════
    ROSTR+ GCC — Core Application JS
    Supabase client, auth, router, UI helpers, live data
@@ -936,6 +937,119 @@ function renderNav(activePage = '') {
   // pattern is `el.innerHTML = renderNav(page)` — by the time this setTimeout
   // fires, the DOM nodes exist and refreshUnreadBadge() can find them.
   setTimeout(() => { try { _wireUnreadBadge(); } catch (_) {} }, 0);
+}
+
+// ── App Store / Web platform badges ──
+// Static SVG components, inlined to avoid the CSP cross-origin fetch path
+// that the service worker can't currently cache (see sw.js comment).
+// Apple logo glyph is used per Apple's marketing brand guidelines for
+// directing users to the App Store. The "Coming soon" treatment is a
+// custom desaturated badge — Apple's official Coming Soon badge looks
+// awkward in the wild, so we render our own that matches the existing
+// design tokens.
+function renderAppStoreBadge({ size = 'md', context = 'footer' } = {}) {
+  const w = size === 'sm' ? 132 : 156;
+  const h = size === 'sm' ? 44 : 52;
+  // TestFlight is the actual current state — the badge points to a
+  // request-access mailto when there's no public TestFlight URL yet.
+  // (Caller can pass context='hero' if they want a different label.)
+  const caption = context === 'hero'
+    ? 'TestFlight beta open'
+    : 'TestFlight beta open — request access';
+  return `
+    <div class="app-badge-block" data-size="${size}">
+      <a class="app-badge app-badge--coming"
+         href="mailto:hesham@beyondmngmt.ae?subject=ROSTR%2B%20iOS%20TestFlight%20access"
+         aria-label="ROSTR+ iOS app — coming soon to App Store. Request TestFlight access."
+         style="width:${w}px;height:${h}px">
+        <svg viewBox="0 0 17 21" width="22" height="22" aria-hidden="true" focusable="false" class="app-badge-glyph">
+          <path fill="currentColor" d="M14.94 16.32q-.42.97-.99 1.78-.78 1.11-1.27 1.54-.76.69-1.63.71-.62.02-1.5-.36-.88-.38-1.62-.36-.78.02-1.65.36-.88.34-1.42.36-.83.04-1.66-.74-.53-.5-1.32-1.65-.85-1.22-1.4-2.83Q.78 13.05.78 11.4q0-1.88.81-3.24.64-1.09 1.7-1.72 1.07-.64 2.31-.66.66-.02 1.69.41.88.36 1.13.36.18 0 1.27-.43 1.03-.4 1.74-.36 1.93.16 2.9 1.52-1.73 1.05-1.71 2.94.02 1.47 1.06 2.45.47.45 1.06.7-.13.37-.27.71zM11.66 1.46q0 1.4-1.02 2.62-1.23 1.44-2.97 1.32-.02-.17-.02-.36 0-1.34 1.16-2.59.58-.62 1.47-1.04.89-.4 1.69-.43.02.16.02.34z"/>
+        </svg>
+        <span class="app-badge-text">
+          <small class="app-badge-eyebrow">Coming soon</small>
+          <span class="app-badge-store">App Store</span>
+        </span>
+      </a>
+      <small class="app-badge-caption">${caption}</small>
+    </div>
+  `;
+}
+
+function renderWebLiveBadge() {
+  return `
+    <div class="app-badge-block" data-size="md">
+      <a class="app-badge app-badge--live" href="/dashboard.html"
+         aria-label="ROSTR+ web app — live now. Open in browser.">
+        <svg viewBox="0 0 22 22" width="22" height="22" aria-hidden="true" focusable="false" class="app-badge-glyph">
+          <circle cx="11" cy="11" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M2 11 H 20 M11 2 a 14 14 0 0 1 0 18 M11 2 a 14 14 0 0 0 0 18" fill="none" stroke="currentColor" stroke-width="1.2"/>
+        </svg>
+        <span class="app-badge-text">
+          <small class="app-badge-eyebrow">Open in</small>
+          <span class="app-badge-store">Browser</span>
+        </span>
+      </a>
+      <small class="app-badge-caption"><span class="app-badge-pulse"></span> Live now</small>
+    </div>
+  `;
+}
+
+// ── Site footer ──
+// Mirror of the renderNav pattern. Pages opt in by including
+// <site-footer id="site-footer"></site-footer> before </body>. The
+// self-installer at the bottom of this file mounts renderFooter() on
+// DOMContentLoaded for every page that has the placeholder, so per-page
+// JS doesn't need to know the footer exists. Auth + claim + offline +
+// 404 + invoice/contract export views simply omit the placeholder.
+function renderFooter() {
+  const year = new Date().getFullYear();
+  return `
+    <footer class="site-footer">
+      <div class="container site-footer-grid">
+
+        <div class="site-footer-brand">
+          <div class="site-footer-wordmark">ROSTR<span class="plus">+</span></div>
+          <p class="site-footer-tagline">GCC nightlife booking, on rails. Discover, request, e-sign, message and pay — all timestamped, all on one platform.</p>
+          <div class="site-footer-badges">
+            ${renderAppStoreBadge({ size: 'md', context: 'footer' })}
+            ${renderWebLiveBadge()}
+          </div>
+        </div>
+
+        <div class="site-footer-col">
+          <div class="site-footer-heading">Platform</div>
+          <ul class="site-footer-links">
+            <li><a href="/directory.html">Directory</a></li>
+            <li><a href="/bookings.html">Bookings</a></li>
+            <li><a href="/contracts.html">Contracts</a></li>
+            <li><a href="/payments.html">Payments</a></li>
+            <li><a href="/messages.html">Messages</a></li>
+            <li><a href="/epk.html">EPK builder</a></li>
+            <li><a href="/calendar.html">Calendar</a></li>
+            <li><a href="/analytics.html">Analytics</a></li>
+          </ul>
+        </div>
+
+        <div class="site-footer-col">
+          <div class="site-footer-heading">Trust &amp; legal</div>
+          <ul class="site-footer-links">
+            <li><a href="/status.html">Status</a></li>
+            <li><a href="/privacy.html">Privacy</a></li>
+            <li><a href="/terms.html">Terms</a></li>
+            <li><a href="/claim-profile.html">Claim a profile</a></li>
+            <li><a href="mailto:hesham@beyondmngmt.ae">Contact</a></li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="site-footer-base container">
+        <span>&copy; ${year} Beyond MNGMT. ROSTR+ is a Beyond MNGMT product.</span>
+        <span class="site-footer-base-sep" aria-hidden="true">·</span>
+        <span>Built in Dubai for the GCC.</span>
+      </div>
+    </footer>
+  `;
 }
 
 // ── Unread-badge helper ──
@@ -3980,3 +4094,18 @@ function _maybeShowIOSInstallHint() {
   maybeShowInstallBanner({ ios: true });
 }
 setTimeout(_maybeShowIOSInstallHint, 2500);
+// ── Footer self-installer ──
+// Any page that includes <site-footer id="site-footer"> gets the footer
+// mounted automatically on DOMContentLoaded — no per-page wiring needed.
+// hydrateIcons() runs after, so any future icon glyphs in the footer
+// resolve without an extra call from the page.
+document.addEventListener('DOMContentLoaded', () => {
+  const slot = document.getElementById('site-footer');
+  if (!slot) return;
+  try {
+    slot.innerHTML = renderFooter();
+    if (typeof hydrateIcons === 'function') hydrateIcons(slot);
+  } catch (err) {
+    console.warn('[footer] mount failed', err);
+  }
+});

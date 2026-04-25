@@ -1161,15 +1161,27 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   margin-bottom: 8px;
 }
 
-/* Editorial feature grid */
+/* Editorial feature grid
+   ─── 1 hero item (spans 2 rows on the left) + 7 standard items
+   that fill the remaining cells via grid auto-flow. The hero anchors
+   the eye while the rest read as a paired-column rhythm rather than
+   the banned "3 equal cards" cliché. */
 .lp-feature-grid {
   display: grid;
   grid-template-columns: 1.3fr 1fr 1fr;
-  grid-template-rows: auto auto;
+  grid-auto-rows: minmax(220px, auto);
   gap: var(--space-md);
 }
 @media (max-width: 900px) {
-  .lp-feature-grid { grid-template-columns: 1fr; grid-template-rows: none; }
+  .lp-feature-grid {
+    grid-template-columns: 1fr;
+    grid-auto-rows: auto;
+  }
+}
+@media (min-width: 901px) and (max-width: 1200px) {
+  .lp-feature-grid {
+    grid-template-columns: 1.3fr 1fr;
+  }
 }
 .lp-feature-item {
   padding: var(--space-lg);
@@ -1198,6 +1210,9 @@ tr:hover td { background: rgba(255,255,255,0.015); }
 }
 @media (max-width: 900px) {
   .lp-feature-item.hero-item { grid-row: auto; min-height: 320px; }
+}
+@media (min-width: 901px) and (max-width: 1200px) {
+  .lp-feature-item.hero-item { grid-row: span 2; }
 }
 .lp-feature-item h3 { font-size: 1.25rem; }
 .lp-feature-item p { font-size: 0.9rem; }
@@ -2919,4 +2934,228 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   margin-top: 4px;
   color: var(--text-secondary);
   font-size: 0.85rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   App-store / web-live badges
+   ─── Inline SVG, no external image fetch (avoids the cross-origin
+   path the SW can't safely cache). Coming-soon treatment uses a
+   desaturated overlay; live treatment uses a quiet pulse dot.
+   ═══════════════════════════════════════════════════════════════════ */
+.app-badge-block {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+.app-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: border-color 200ms cubic-bezier(0.16, 1, 0.3, 1),
+              background 200ms cubic-bezier(0.16, 1, 0.3, 1),
+              transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+.app-badge:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-card-hover);
+}
+.app-badge:active {
+  transform: translateY(1px);
+}
+.app-badge-glyph {
+  flex-shrink: 0;
+  color: var(--text-primary);
+}
+.app-badge--coming .app-badge-glyph,
+.app-badge--coming .app-badge-store {
+  color: var(--text-secondary);
+}
+.app-badge-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+  text-align: left;
+}
+.app-badge-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 3px;
+}
+.app-badge-store {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.app-badge-caption {
+  font-size: 0.74rem;
+  color: var(--text-tertiary);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.app-badge-pulse {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #4ade80;
+  box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.45);
+  animation: appBadgePulse 2200ms cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+@keyframes appBadgePulse {
+  0%   { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.45); }
+  70%  { box-shadow: 0 0 0 8px rgba(74, 222, 128, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Site footer
+   ─── Asymmetric 3-col grid (brand 2fr, then two 1fr columns).
+   Stacks on mobile. Uses spacing tokens, no magic numbers.
+   ═══════════════════════════════════════════════════════════════════ */
+.site-footer {
+  margin-top: var(--space-4xl);
+  padding-top: var(--space-3xl);
+  padding-bottom: var(--space-2xl);
+  background: var(--bg-1);
+  border-top: 1px solid var(--border-subtle);
+}
+.site-footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: var(--space-2xl);
+  padding-bottom: var(--space-2xl);
+  border-bottom: 1px solid var(--border-subtle);
+}
+@media (max-width: 768px) {
+  .site-footer-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+  }
+}
+.site-footer-brand {
+  max-width: 460px;
+}
+.site-footer-wordmark {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin-bottom: var(--space-md);
+}
+.site-footer-wordmark .plus {
+  color: var(--accent-soft);
+  margin-left: 1px;
+}
+.site-footer-tagline {
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  line-height: 1.6;
+  margin: 0 0 var(--space-lg);
+  max-width: 52ch;
+}
+.site-footer-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+.site-footer-heading {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-md);
+}
+.site-footer-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.site-footer-links a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.site-footer-links a:hover {
+  color: var(--text-primary);
+}
+.site-footer-base {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  align-items: center;
+  padding-top: var(--space-lg);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+}
+.site-footer-base-sep {
+  color: var(--text-quaternary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Hero "Available on" strip
+   ─── Sits beneath the hero trust microcopy. Two badges side-by-side
+   on desktop, stacked on mobile.
+   ═══════════════════════════════════════════════════════════════════ */
+.lp-hero-platforms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-lg);
+  margin-top: var(--space-xl);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Platform-parity strip (between Pricing and Closing CTA)
+   ─── Single split: parity claim left, badges right.
+   ═══════════════════════════════════════════════════════════════════ */
+.lp-parity {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: var(--space-2xl);
+  align-items: center;
+  padding: var(--space-2xl);
+  background: var(--bg-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+@media (max-width: 768px) {
+  .lp-parity {
+    grid-template-columns: 1fr;
+  }
+}
+.lp-parity h2 {
+  font-size: clamp(1.6rem, 3.6vw, 2.4rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin: 0 0 var(--space-md);
+}
+.lp-parity p {
+  color: var(--text-secondary);
+  margin: 0;
+  max-width: 52ch;
+  line-height: 1.6;
+}
+.lp-parity-badges {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
 }

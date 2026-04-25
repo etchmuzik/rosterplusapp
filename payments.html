@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://vgjmfpryobsuboukbemr.supabase.co" crossorigin>
 
-  <link rel="stylesheet" href="assets/css/system.css">
+  <link rel="stylesheet" href="assets/css/system.css?v=2521872">
   <style>
     /* ── Payments Page Specific Styles ── */
     .payments-header {
@@ -786,8 +786,8 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="assets/js/error-logger.js" defer></script>
-  <script src="assets/js/app.js" defer></script>
+  <script src="assets/js/error-logger.js?v=2521872" defer></script>
+  <script src="assets/js/app.js?v=2521872" defer></script>
   <script>
     // ── State ──
     let paymentsData = [];
@@ -974,6 +974,8 @@
         <div class="row"><span>Method</span><span>Bank Transfer</span></div>
         <div class="row"><span>Status</span><span style="text-transform:capitalize">${payment.status}</span></div></div>
         <div class="footer">ROSTER+ GCC — Beyond Concierge Events Co. LLC — rosterplus.io<br>This is a computer-generated invoice and does not require a signature.</div>
+    <!-- Site-wide footer (rendered by app.js renderFooter()) -->
+    <site-footer id="site-footer"></site-footer>
         </body></html>`;
 
       const win = window.open('', '_blank', 'width=800,height=1100');

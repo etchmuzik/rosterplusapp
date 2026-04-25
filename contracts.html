@@ -15,10 +15,10 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://vgjmfpryobsuboukbemr.supabase.co" crossorigin>
 
-  <link rel="stylesheet" href="assets/css/system.css">
+  <link rel="stylesheet" href="assets/css/system.css?v=2521872">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="assets/js/error-logger.js" defer></script>
-  <script src="assets/js/app.js" defer></script>
+  <script src="assets/js/error-logger.js?v=2521872" defer></script>
+  <script src="assets/js/app.js?v=2521872" defer></script>
   <style>
     /* ═════════════════════════════════════════════════════════
        Contracts Page
@@ -1073,6 +1073,8 @@
         const content = document.getElementById('view-modal-content');
         if (!content) return;
         const printWin = window.open('', '_blank', 'width=800,height=1100');
+    <!-- Site-wide footer (rendered by app.js renderFooter()) -->
+    <site-footer id="site-footer"></site-footer>
         printWin.document.write(`<!DOCTYPE html><html><head><title>Contract — ${esc(contract.artist)}</title><style>body{font-family:system-ui,sans-serif;padding:40px;color:#222;line-height:1.6}h1,h2,h3{margin-top:24px}.contract-section{margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid #eee}.sig-line{border-top:1px solid #999;width:200px;margin-top:40px;padding-top:4px}@media print{body{padding:20px}}</style></head><body>${content.innerHTML}</body></html>`);
         printWin.document.close();
         printWin.focus();

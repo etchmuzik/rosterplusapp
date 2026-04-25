@@ -100,14 +100,14 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://vgjmfpryobsuboukbemr.supabase.co" crossorigin>
 
-  <link rel="stylesheet" href="assets/css/system.css">
+  <link rel="stylesheet" href="assets/css/system.css?v=2521872">
   <!-- All three scripts `defer` — they stay in document order (supabase
        SDK runs first, then error-logger, then app.js) but don't block
        HTML parsing. Without this, the SDK script (60KB gzipped) blocks
        render on every page for ~200ms. -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="assets/js/error-logger.js" defer></script>
-  <script src="assets/js/app.js" defer></script>
+  <script src="assets/js/error-logger.js?v=2521872" defer></script>
+  <script src="assets/js/app.js?v=2521872" defer></script>
 </head>
 <body>
   <div class="page-shell">
@@ -128,9 +128,9 @@
             without the noise.
           </h1>
           <p class="lp-sub lp-anim lp-d-2">
-            ROSTR+ puts every DJ, live act, and headliner across Dubai, Riyadh,
-            Abu Dhabi and the wider Gulf behind one roster. Discover, book,
-            contract and pay — without chasing WhatsApp threads.
+            Discover, request, e-sign, message and pay — all timestamped,
+            all on one platform. Realtime conflict checks before you submit.
+            iOS app and web, in lockstep.
           </p>
           <div class="lp-cta lp-anim lp-d-3">
             <a href="auth.html?role=promoter" class="btn btn-primary btn-lg">
@@ -149,8 +149,10 @@
             <span class="sep" aria-hidden="true">·</span>
             <span>No card required</span>
             <span class="sep" aria-hidden="true">·</span>
-            <span>Contracts &amp; payments built-in</span>
+            <span>Contracts, e-sign &amp; payments built-in</span>
           </div>
+          <!-- Hero "Available on" strip — App Store coming soon + web live now -->
+          <div class="lp-hero-platforms lp-anim lp-d-4" id="lp-hero-platforms" aria-label="Where to use ROSTR+"></div>
         </div>
 
         <div class="lp-hero-side lp-anim lp-d-4">
@@ -239,26 +241,44 @@
 
         <div class="lp-feature-item">
           <div class="lp-feature-num">02 / REQUEST</div>
-          <h3>60-second booking form.</h3>
-          <p>Date, venue, set time, budget. Artist gets pinged instantly, responds with a firm quote in hours — not days.</p>
+          <h3>60-second booking, conflict-checked.</h3>
+          <p>Date, venue, set time, budget. Realtime double-booking warning fires the moment you pick the date — same check on iOS and web.</p>
         </div>
 
         <div class="lp-feature-item">
           <div class="lp-feature-num">03 / CONTRACT</div>
-          <h3>Auto-generated contracts.</h3>
-          <p>Terms, riders, cancellation policy. E-signed by both sides before the gig is live.</p>
+          <h3>Auto-generated &amp; e-signed.</h3>
+          <p>Terms, riders, cancellation policy. Sign + Send flow on iOS and web — multi-party, audit-trailed, before the gig goes live.</p>
         </div>
 
         <div class="lp-feature-item">
           <div class="lp-feature-num">04 / PAYMENT</div>
           <h3>Secured bank transfers.</h3>
-          <p>Funds confirmed and tracked. Artists see when to expect payout. No surprises.</p>
+          <p>Funds confirmed and tracked. Artists see exactly when to expect payout. No surprise line items.</p>
         </div>
 
         <div class="lp-feature-item">
           <div class="lp-feature-num">05 / MESSAGES</div>
-          <h3>On-platform chat.</h3>
-          <p>Rider tweaks, set times, logistics. All timestamped, all in one thread.</p>
+          <h3>Realtime chat &amp; live timeline.</h3>
+          <p>Every status change appears in the thread the second it happens. Rider tweaks, set times, logistics — timestamped and in one place.</p>
+        </div>
+
+        <div class="lp-feature-item">
+          <div class="lp-feature-num">06 / EPK &amp; RIDER</div>
+          <h3>Press kit, gallery, tour mode.</h3>
+          <p>Artists build a shareable EPK with bio, gallery, technical rider and tour calendar — one URL that promoters actually read.</p>
+        </div>
+
+        <div class="lp-feature-item">
+          <div class="lp-feature-num">07 / TRUST</div>
+          <h3>Mutual reviews &amp; verification.</h3>
+          <p>Two-sided post-event reviews, verified profiles, public status page, full audit trail on every contract change.</p>
+        </div>
+
+        <div class="lp-feature-item">
+          <div class="lp-feature-num">08 / REACH</div>
+          <h3>iOS, web, push everywhere.</h3>
+          <p>Sign a contract on the train, get a counteroffer ping at the venue. Push notifications on iOS native and web — same backbone.</p>
         </div>
       </div>
     </section>
@@ -467,6 +487,25 @@
       </div>
     </section>
 
+    <!-- ═══ PLATFORM PARITY STRIP ═══
+         Single split panel: parity claim left, platform badges right.
+         Surfaces the cross-platform reality without burying it in the footer. -->
+    <section class="container" style="padding: var(--space-2xl) 0">
+      <div class="lp-parity" id="lp-parity">
+        <div>
+          <span class="eyebrow">Same backbone, two front doors</span>
+          <h2>Web is live today.<br>iOS is coming to the App Store.</h2>
+          <p>
+            Every booking, contract, message and payment syncs in realtime
+            across both. Sign on iOS in the morning, counteroffer from the
+            browser at lunch — same database, same audit trail, same push.
+            TestFlight beta is open if you want it sooner.
+          </p>
+        </div>
+        <div class="lp-parity-badges" id="lp-parity-badges"></div>
+      </div>
+    </section>
+
     <!-- ═══ CLOSING CTA ═══ -->
     <section class="container" style="padding: var(--space-3xl) 0 var(--space-4xl)">
       <div class="lp-cta-panel">
@@ -475,9 +514,13 @@
         <div class="cta-row">
           <a href="auth.html?role=promoter" class="btn btn-primary btn-lg">I'm a promoter</a>
           <a href="auth.html?role=artist" class="btn btn-secondary btn-lg">I'm an artist</a>
+          <a href="#lp-parity" class="btn btn-ghost btn-lg">Get the app</a>
         </div>
       </div>
     </section>
+
+    <!-- Site-wide footer (rendered by app.js renderFooter()) -->
+    <site-footer id="site-footer"></site-footer>
   </div>
 
   <script>
@@ -486,6 +529,31 @@
       if (typeof renderNav === 'function') {
         document.getElementById('nav-root').innerHTML = renderNav('home');
       }
+
+      // Hero "Available on" strip — App Store coming soon + web live now.
+      // Both badges share the same SVG components from app.js, so the
+      // footer and the hero stay visually consistent.
+      const heroPlatforms = document.getElementById('lp-hero-platforms');
+      if (heroPlatforms && typeof renderAppStoreBadge === 'function') {
+        heroPlatforms.innerHTML =
+          renderAppStoreBadge({ size: 'sm', context: 'hero' }) +
+          renderWebLiveBadge();
+      }
+
+      // Platform parity strip — same badges, full size for visual weight.
+      const parityBadges = document.getElementById('lp-parity-badges');
+      if (parityBadges && typeof renderAppStoreBadge === 'function') {
+        parityBadges.innerHTML =
+          renderAppStoreBadge({ size: 'md', context: 'footer' }) +
+          renderWebLiveBadge();
+      }
+
+      // Site-wide footer.
+      const footer = document.getElementById('site-footer');
+      if (footer && typeof renderFooter === 'function') {
+        footer.innerHTML = renderFooter();
+      }
+
       if (typeof hydrateIcons === 'function') hydrateIcons();
 
       // Scroll-triggered arc draw on the reach map.
