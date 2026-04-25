@@ -1024,7 +1024,7 @@ function renderFooter() {
             <li><a href="/contracts.html">Contracts</a></li>
             <li><a href="/payments.html">Payments</a></li>
             <li><a href="/messages.html">Messages</a></li>
-            <li><a href="/epk.html">EPK builder</a></li>
+            <li><a href="/directory.html">Artist EPKs</a></li>
             <li><a href="/calendar.html">Calendar</a></li>
             <li><a href="/analytics.html">Analytics</a></li>
           </ul>

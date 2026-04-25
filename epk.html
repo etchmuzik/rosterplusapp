@@ -310,29 +310,57 @@
       const message = document.getElementById('inq-message').value.trim();
       const artistName = _epkData?.stage_name || _epkData?.name || 'Artist';
 
-      // Send email to platform (book@rosterplus.io) with inquiry details
-      await Emails.send('book@rosterplus.io', 'booking_request', {
+      // Primary path: send via the platform's transactional edge function.
+      // Surface failure to the user instead of silently dropping the inquiry.
+      const platformRes = await Emails.send('book@rosterplus.io', 'booking_request', {
         promoter_name: name + (company ? ' (' + company + ')' : ''),
-        event_name: 'EPK Inquiry' + (date ? ' — ' + date : ''),
+        event_name: 'EPK Inquiry — ' + artistName + (date ? ' — ' + date : ''),
         venue_name: company || 'Via EPK',
         event_date: date || 'TBD',
         fee: 'To be discussed',
         booking_url: window.location.href,
+        message: message,
+        reply_to: email,
       });
 
-      // Also try to email the artist directly if we have their email
-      if (_epkData?.email) {
-        await Emails.send(_epkData.email, 'booking_request', {
+      // The artists table doesn't carry an email column directly; the
+      // contact email lives on the joined profiles row. Try that path
+      // when the artist has claimed their profile (profile_id set).
+      const artistEmail = _epkData?.profiles?.email || _epkData?.email;
+      if (artistEmail) {
+        // Best-effort, don't block the success path on this one — the
+        // platform inbox is the source of truth.
+        Emails.send(artistEmail, 'booking_request', {
           promoter_name: name,
           event_name: message.substring(0, 60),
           venue_name: company || 'Direct inquiry',
           event_date: date || 'TBD',
           fee: 'To be discussed',
           booking_url: 'mailto:' + email,
-        });
+          reply_to: email,
+        }).catch(() => { /* surface only the primary path */ });
       }
 
-      document.getElementById('epk-inquiry-form').innerHTML = '<div style="text-align:center;padding:var(--space-xl);color:var(--status-confirmed)"><div style="font-size:1.5rem;margin-bottom:var(--space-sm)">Inquiry Sent</div><p style="color:var(--text-secondary)">Thank you, ' + esc(name) + '. We\'ll get back to you shortly.</p></div>';
+      const host = document.getElementById('epk-inquiry-form');
+      if (platformRes && !platformRes.error) {
+        host.innerHTML = '<div style="text-align:center;padding:var(--space-xl);color:var(--status-confirmed)"><div style="font-size:1.5rem;margin-bottom:var(--space-sm)">Inquiry Sent</div><p style="color:var(--text-secondary)">Thank you, ' + esc(name) + '. We\'ll get back to you shortly.</p></div>';
+        return;
+      }
+
+      // Email send failed — give the user a guaranteed-working fallback
+      // (mailto: with the inquiry pre-filled) so the inquiry isn't lost.
+      const subject = encodeURIComponent('EPK Inquiry — ' + artistName + (date ? ' — ' + date : ''));
+      const body = encodeURIComponent(
+        'From: ' + name + (company ? ' (' + company + ')' : '') + ' <' + email + '>\n' +
+        'Event date: ' + (date || 'TBD') + '\n\n' +
+        message
+      );
+      host.innerHTML =
+        '<div style="text-align:center;padding:var(--space-xl);color:var(--status-pending)">' +
+        '<div style="font-size:1rem;margin-bottom:var(--space-sm)">We couldn\'t send that automatically.</div>' +
+        '<p style="color:var(--text-secondary);margin-bottom:var(--space-md)">No problem — open your email app and send it from there. We\'ve pre-filled the message.</p>' +
+        '<a href="mailto:book@rosterplus.io?subject=' + subject + '&body=' + body + '" class="btn btn-primary">Open in email app</a>' +
+        '</div>';
     }
 
     document.addEventListener('DOMContentLoaded', async function() {
@@ -344,21 +372,36 @@
       _artistId = params.get('artist');
 
       if (_artistId) {
-        // Public view mode
+        // Public view mode — anyone can hit /epk.html?artist=<id>
         const result = await DB.getArtistEPK(_artistId);
-        renderEPK(result.success ? result.data : null);
+        if (result.success && result.data) {
+          _epkData = result.data;          // ← was missing; submitInquiry depends on it
+          renderEPK(_epkData);
+        } else {
+          renderEPK(null);
+        }
       } else if (Auth.isLoggedIn() && Auth.role === 'artist') {
-        // Edit mode — show own EPK
+        // Edit-preview mode — show own EPK with an "Edit Full Profile" CTA
         _isEditMode = true;
         const result = await DB.getMyArtistProfile();
         if (result.success && result.data) {
           _artistId = result.data.id;
-          renderEPK(result.data);
+          _epkData = result.data;
+          renderEPK(_epkData);
         } else {
-          document.getElementById('epk-content').innerHTML = '<div class="empty-state" style="text-align:center;padding:var(--space-3xl)"><h2>No Profile Yet</h2><p>Create your artist profile first to build your EPK.</p><a href="artist-profile-edit.html?setup=1" class="btn btn-primary">Create Profile</a></div>';
+          document.getElementById('epk-content').innerHTML = '<div class="empty-state" style="text-align:center;padding:var(--space-3xl)"><h2>No EPK Yet</h2><p>Set up your artist profile to generate a shareable EPK.</p><a href="artist-profile-edit.html?setup=1" class="btn btn-primary">Set up profile</a></div>';
         }
+      } else if (Auth.isLoggedIn()) {
+        // Logged-in promoter (or other non-artist) hit /epk.html with no
+        // artist param. Send them to the directory where they can pick
+        // an artist whose EPK they actually want to view. Prevents the
+        // "I'm logged in but it bounced me to auth" footer-link bug.
+        window.location.href = 'directory.html';
       } else {
-        window.location.href = 'auth.html';
+        // Anonymous visitor — directory is also the right entry point
+        // (it's public). Keeps the URL bar friendly instead of forcing
+        // a login they don't need.
+        window.location.href = 'directory.html';
       }
     });
   </script>
