@@ -45,12 +45,23 @@ fi
 rm -f assets/js/app.js.tmp
 
 # ── Cache-bust HTML asset references ──────────────────────
-# Match: src="assets/js/X.js" or href="assets/css/X.css" with no existing query
-# Append: ?v=<sha>
-# Idempotent: skips tags that already carry a ?v= query.
+# Match: src="assets/js/X.js" or href="assets/css/X.css", with or
+#        without an existing ?v=… query string.
+# Set:   ?v=<sha>
+#
+# Two passes per pattern:
+#   1. Replace existing ?v=… with the current SHA. Catches stamps
+#      that got committed from past local lftp deploys (the
+#      .deploy-bak restore wasn't always run cleanly).
+#   2. Append ?v=<sha> to bare refs that have no query at all.
+#
+# Order matters — rewrite first, append second, otherwise the
+# append regex would double-stamp ?v=<sha>?v=<sha>.
 for html in *.html; do
   [[ -f "$html" ]] || continue
   sed -i.tmp -E \
+    -e "s@(src|href)=\"(assets/(js|css)/[^\"?]+\.(js|css))\?v=[^\"]*\"@\1=\"\2?v=$BUILD_SHA\"@g" \
+    -e "s@(src|href)=\"/(assets/(js|css)/[^\"?]+\.(js|css))\?v=[^\"]*\"@\1=\"/\2?v=$BUILD_SHA\"@g" \
     -e "s@(src|href)=\"(assets/(js|css)/[^\"?]+\.(js|css))\"@\1=\"\2?v=$BUILD_SHA\"@g" \
     -e "s@(src|href)=\"/(assets/(js|css)/[^\"?]+\.(js|css))\"@\1=\"/\2?v=$BUILD_SHA\"@g" \
     "$html"
