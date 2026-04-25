@@ -6,6 +6,8 @@ Promoters discover artists, send booking requests, sign contracts, and log payme
 
 Companion iOS app: [etchmuzik/rosterplusapp-ios](https://github.com/etchmuzik/rosterplusapp-ios). The data contract both clients share — Supabase types, the RPC catalog with caller lists per platform, and schema notes — lives in [etchmuzik/rosterplus-shared](https://github.com/etchmuzik/rosterplus-shared). **Cross-check `RPC_CONTRACT.md` there before adding any new `_sb.rpc(` / `_sb.from(` / `_sb.functions.invoke(` call** so web and iOS don't drift apart at the data layer.
 
+For a one-page snapshot of where the platform stands today (live deploy state, parity status, outstanding follow-ups): [`STATUS.md`](https://github.com/etchmuzik/rosterplus-shared/blob/main/STATUS.md) in the shared repo.
+
 ---
 
 ## What's on the platform today
