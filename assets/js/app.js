@@ -1,4 +1,4 @@
-window.ROSTR_VERSION = '2521872';
+window.ROSTR_VERSION = 'a2d3719';
 /* ═══════════════════════════════════════════════════════════
    ROSTR+ GCC — Core Application JS
    Supabase client, auth, router, UI helpers, live data
@@ -2938,6 +2938,24 @@ const DB = {
 
   async checkAvailability(artistId, date) {
     if (DEMO_MODE) return { available: true };
+    // Prefer the server-side `check_availability` RPC — it's the same
+    // function iOS uses (Stores/AvailabilityCheckStore.swift), so both
+    // clients answer "available?" the same way for the same inputs.
+    // Fall back to the inline JS predicate if the RPC errors (older
+    // projects, transient failure) so existing call-sites never lose
+    // a result.
+    try {
+      const { data, error } = await _sb.rpc('check_availability', {
+        p_artist_id: artistId,
+        p_event_date: date,
+      });
+      if (!error && Array.isArray(data) && data[0]) {
+        return {
+          available: !!data[0].available,
+          reason: data[0].reason || null,
+        };
+      }
+    } catch (_) { /* fall through to inline */ }
     try {
       const { data } = await _sb.from('artists')
         .select('blocked_dates, available_from, available_to')
@@ -2947,7 +2965,6 @@ const DB = {
       if (data.available_from && d < new Date(data.available_from)) return { available: false, reason: 'Before available range' };
       if (data.available_to && d > new Date(data.available_to)) return { available: false, reason: 'After available range' };
       if (data.blocked_dates && data.blocked_dates.includes(date)) return { available: false, reason: 'Date blocked' };
-      // Check existing bookings for double-booking
       const { data: bookings } = await _sb.from('bookings')
         .select('id').eq('artist_id', artistId).eq('event_date', date)
         .in('status', ['confirmed', 'contracted', 'pending']);

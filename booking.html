@@ -49,6 +49,22 @@
     .availability-text span {
       color: rgba(255, 255, 255, 0.62);
     }
+
+    /* ─── Conflict warning banner (review step) ───
+       Reuses the --status-pending semantic token so the warning
+       palette stays in sync with status pills site-wide. */
+    .bk-conflict-warn {
+      display: none;
+      margin-top: var(--space-md);
+      padding: 10px 14px;
+      background: var(--status-pending-bg);
+      border: 1px solid var(--status-pending);
+      border-radius: var(--radius-sm);
+      color: var(--status-pending);
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+    .bk-conflict-warn.is-visible { display: block; }
   </style>
 </head>
 <body>
@@ -173,7 +189,7 @@
           </div>
         </div>
         <div class="bk-foot">
-          <button class="btn btn-ghost" data-go-step="1">&larr; Back</button>
+          <button class="btn btn-ghost" data-go-step="1" aria-label="Back to artist selection">&larr; Back</button>
           <button class="btn btn-primary" data-go-step="3">
             Review <span class="js-icon" data-icon="chevronRight" data-size="14"></span>
           </button>
@@ -200,7 +216,7 @@
 
           <!-- Conflict detection banner. Populated by checkBookingConflict
                after the review step renders; hidden by default. -->
-          <div id="bk-conflict-warn" style="display:none;margin-top:var(--space-md);padding:10px 14px;background:rgba(251,146,60,0.08);border:1px solid rgba(251,146,60,0.3);border-radius:var(--radius-sm);color:#fb923c;font-size:0.85rem;line-height:1.5"></div>
+          <div id="bk-conflict-warn" class="bk-conflict-warn" role="alert" aria-live="polite"></div>
         </div>
 
         <div class="bk-reassure">
@@ -214,7 +230,7 @@
         </div>
 
         <div class="bk-foot">
-          <button class="btn btn-ghost" data-go-step="2">&larr; Back</button>
+          <button class="btn btn-ghost" data-go-step="2" aria-label="Back to event details">&larr; Back</button>
           <button id="bk-submit" class="btn btn-primary btn-lg">
             <span class="js-icon" data-icon="send" data-size="14"></span>
             Send request
@@ -396,7 +412,7 @@
     async function checkBookingConflict(artistId, dateStr) {
       const host = document.getElementById('bk-conflict-warn');
       if (!host) return;
-      host.style.display = 'none';
+      host.classList.remove('is-visible');
       host.innerHTML = '';
       if (!artistId || !dateStr) return;
 
@@ -412,13 +428,13 @@
             <div style="font-size:1rem">\u26a0</div>
             <div>
               <strong>Heads up:</strong> ${esc(reason)} on ${esc(prettyDate)}.
-              <div style="color:rgba(251,146,60,0.75);font-size:0.78rem;margin-top:4px">
+              <div style="opacity:0.75;font-size:0.78rem;margin-top:4px">
                 You can still send the request, but the artist may decline. Try a different date or reach out directly first.
               </div>
             </div>
           </div>
         `;
-        host.style.display = '';
+        host.classList.add('is-visible');
       } catch (_) { /* quiet */ }
     }
 

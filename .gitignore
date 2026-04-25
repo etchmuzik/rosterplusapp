@@ -18,3 +18,9 @@ serve.js
 .env.deploy
 .env.local
 
+# Deploy artifacts: scripts/deploy.sh stamps `?v=<sha>` cache-busters
+# in-place and writes *.deploy-bak alongside before the FTP upload. The
+# script restores them post-deploy, but a failed run can leave them
+# behind. They're never source-of-truth — always regeneratable.
+*.deploy-bak
+
