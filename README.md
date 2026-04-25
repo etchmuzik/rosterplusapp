@@ -4,6 +4,8 @@
 
 Promoters discover artists, send booking requests, sign contracts, and log payments. Artists receive requests, manage availability, share a live EPK, and get paid. Everything in one place — replacing WhatsApp threads + PDF contracts + spreadsheet payment logs.
 
+Companion iOS app: [etchmuzik/rosterplusapp-ios](https://github.com/etchmuzik/rosterplusapp-ios). The data contract both clients share — Supabase types, the RPC catalog with caller lists per platform, and schema notes — lives in [etchmuzik/rosterplus-shared](https://github.com/etchmuzik/rosterplus-shared). **Cross-check `RPC_CONTRACT.md` there before adding any new `_sb.rpc(` / `_sb.from(` / `_sb.functions.invoke(` call** so web and iOS don't drift apart at the data layer.
+
 ---
 
 ## What's on the platform today
