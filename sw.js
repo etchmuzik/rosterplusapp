@@ -20,7 +20,7 @@
 //   - Web Push — handlers at the bottom of this file. Receives payloads
 //     from send-push edge function and surfaces them via Notification API.
 
-const CACHE_NAME = 'rostr-v5-swr-push';
+const CACHE_NAME = 'rostr-v6-swr-push';
 
 // Core shell — precached on install so first offline navigation works.
 // Everything else populates the cache as the user visits it (lazy).
@@ -81,23 +81,17 @@ self.addEventListener('fetch', (e) => {
   //    must not leak across users on the same device.
   if (url.hostname.endsWith('supabase.co')) return;
 
-  // 3. Cross-origin assets (jsdelivr SDK, etc.): cache-first.
-  //    These are immutable versioned URLs — safe to cache forever.
-  if (url.origin !== location.origin) {
-    e.respondWith(
-      caches.match(req).then(cached => {
-        if (cached) return cached;
-        return fetch(req).then(res => {
-          if (res.ok) {
-            const clone = res.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(req, clone));
-          }
-          return res;
-        }).catch(() => cached || Response.error());
-      })
-    );
-    return;
-  }
+  // 3. Cross-origin requests: do NOT intercept.
+  //    The previous version cached cross-origin GETs (jsdelivr SDK,
+  //    fontshare, googleapis), but the SW re-issuing the fetch
+  //    triggers CSP `connect-src` enforcement against URLs the page
+  //    is allowed to load directly under script-src/style-src/font-src.
+  //    Result: the Supabase SDK + webfonts get blocked and the app
+  //    breaks. Letting these pass through means the browser uses the
+  //    page's normal request path with the page's CSP, which already
+  //    permits them. We lose offline caching of cross-origin assets,
+  //    which is a nice-to-have, not load-bearing for first-paint.
+  if (url.origin !== location.origin) return;
 
   // 4. Same-origin navigation / HTML / JS / CSS / images:
   //    Stale-while-revalidate. Serve from cache instantly, refresh in
