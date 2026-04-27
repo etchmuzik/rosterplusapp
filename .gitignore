@@ -24,3 +24,4 @@ serve.js
 # behind. They're never source-of-truth — always regeneratable.
 *.deploy-bak
 
+.mcp.json
