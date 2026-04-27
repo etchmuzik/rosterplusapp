@@ -231,6 +231,53 @@ small, .text-sm { font-size: 0.85rem; }
 .text-tertiary { color: var(--text-tertiary); }
 .text-gold { color: var(--gold-text); }
 
+/* ── Status colour utilities ── */
+.text-status-confirmed { color: var(--status-confirmed); }
+.text-status-pending   { color: var(--status-pending); }
+.text-accent-soft      { color: var(--accent-soft); }
+.text-accent           { color: var(--accent); }
+
+/* ── Mono caption ──
+   Recurring "tiny uppercase mono label" pattern — matches the eyebrow
+   look used by stat tiles, suggestion blocks, and meta rows. The
+   contextual `.eyebrow` rules below override per-component when needed,
+   but most callers wanted exactly this triplet. */
+.label-mono {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-tertiary);
+}
+.label-mono-sm {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+/* ── Flex helpers ── */
+.flex-row { display: flex; }
+.flex-col { display: flex; flex-direction: column; }
+.flex-1   { flex: 1; min-width: 0; }
+.gap-xs   { gap: 8px; }
+.gap-sm   { gap: var(--space-sm); }
+.gap-md   { gap: var(--space-md); }
+.items-end    { align-items: end; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.text-center  { text-align: center; }
+
+/* ── Spacing helpers ── */
+.mt-xs { margin-top: 4px; }
+.mt-sm { margin-top: 8px; }
+.mt-md { margin-top: 12px; }
+.mb-md { margin-bottom: 8px; }
+.mb-xl { margin-bottom: var(--space-xl); }
+.mb-lg { margin-bottom: var(--space-lg); }
+
+/* ── Display ── */
+.is-hidden { display: none; }
+
 /* ── Links ── */
 a {
   color: var(--gold-text);

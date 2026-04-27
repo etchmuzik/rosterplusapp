@@ -24,13 +24,13 @@
       <!-- ═══ Welcome ═══ -->
       <div class="dash-welcome lp-anim">
         <div>
-          <div class="eyebrow" style="font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-tertiary)">
+          <div class="eyebrow" class="label-mono">
             <span id="welcome-date">—</span>
           </div>
           <h1>Good evening, <em id="welcome-name">there</em>.</h1>
           <p id="welcome-sub">Here's what's coming up.</p>
         </div>
-        <div style="display: flex; gap: 8px">
+        <div class="flex-row gap-xs">
           <a class="btn btn-secondary" href="directory.html">
             <span class="js-icon" data-icon="search" data-size="14"></span>
             Find artist
@@ -54,12 +54,12 @@
         </div>
         <div class="dash-stat lp-anim lp-d-2">
           <div class="label">Confirmed</div>
-          <div class="value" style="color: var(--status-confirmed)" id="stat-confirmed">—</div>
+          <div class="value" class="text-status-confirmed" id="stat-confirmed">—</div>
           <div class="sub" id="stat-confirmed-sub">—</div>
         </div>
         <div class="dash-stat lp-anim lp-d-3">
           <div class="label">Pending</div>
-          <div class="value" style="color: var(--status-pending)" id="stat-pending">—</div>
+          <div class="value" class="text-status-pending" id="stat-pending">—</div>
           <div class="sub" id="stat-pending-sub">—</div>
         </div>
         <div class="dash-stat lp-anim lp-d-4">
@@ -70,13 +70,13 @@
       </div>
 
       <!-- ═══ Action required ═══ -->
-      <div id="action-required-mount" style="margin-bottom: var(--space-xl)"></div>
+      <div id="action-required-mount" class="mb-xl"></div>
 
       <!-- ═══ Body: timeline + side column ═══ -->
       <div class="dash-body">
         <!-- Timeline -->
         <div class="lp-anim lp-d-5">
-          <div class="lp-section-head" style="align-items: end">
+          <div class="lp-section-head" class="items-end">
             <div>
               <span class="eyebrow">Upcoming</span>
               <h2 style="margin-top: 4px; font-family: var(--font-display); font-size: 1.5rem; letter-spacing: -0.03em">Next shows</h2>
@@ -99,7 +99,7 @@
                 <span class="eyebrow">Pipeline</span>
                 <h3>Booking funnel</h3>
               </div>
-              <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-tertiary)" id="pipeline-total">—</span>
+              <span class="label-mono-sm" id="pipeline-total">—</span>
             </div>
             <div id="pipeline-root"></div>
           </div>
@@ -111,17 +111,17 @@
                 <span class="eyebrow">Inbox</span>
                 <h3>Recent messages</h3>
               </div>
-              <a href="messages.html" style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-soft)">Open &rarr;</a>
+              <a href="messages.html" class="label-mono-sm text-accent-soft">Open &rarr;</a>
             </div>
             <div id="inbox-root" class="dash-inbox"></div>
           </div>
 
           <!-- Suggestion -->
-          <div class="dash-suggest" id="suggestion-root" style="display: none">
-            <span class="eyebrow" style="font-family: var(--font-mono); font-size: 0.7rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-tertiary)">Suggested for you</span>
+          <div class="dash-suggest" id="suggestion-root" class="is-hidden">
+            <span class="eyebrow" class="label-mono">Suggested for you</span>
             <div class="who">
               <div class="tile" id="sug-initials">—</div>
-              <div style="flex: 1; min-width: 0">
+              <div class="flex-1">
                 <div class="stage" id="sug-name">—</div>
                 <div class="meta" id="sug-meta">—</div>
               </div>
@@ -147,8 +147,8 @@
         </button>
       </div>
       <div id="message-modal-preview" style="color: var(--text-secondary); line-height: 1.6; margin-bottom: var(--space-lg)"></div>
-      <div style="display: flex; gap: var(--space-sm)">
-        <a class="btn btn-primary flex-1" href="messages.html" style="text-align: center">View Full Message</a>
+      <div class="flex-row gap-sm">
+        <a class="btn btn-primary flex-1" href="messages.html" class="text-center">View Full Message</a>
         <button class="btn btn-secondary flex-1" onclick="document.getElementById('message-modal').classList.remove('active')">Close</button>
       </div>
     </div>
@@ -323,7 +323,7 @@
           <div class="card-inner">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:var(--space-md)">
               <div style="width:28px;height:28px;border-radius:8px;background:var(--accent-dim-10);display:flex;align-items:center;justify-content:center;color:var(--accent)">${UI.icon('activity', 14)}</div>
-              <div style="flex:1">
+              <div class="flex-1">
                 <div style="font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;font-family:var(--font-mono);color:var(--accent)">Action required</div>
                 <div style="font-size:1rem;font-weight:600;color:var(--text-primary);margin-top:2px">${top.length} item${top.length === 1 ? '' : 's'} need your attention</div>
               </div>
@@ -333,7 +333,7 @@
                 <a href="${it.href}" style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);text-decoration:none;color:inherit;transition:border-color 120ms ease"
                    onmouseover="this.style.borderColor='var(--border-medium)'" onmouseout="this.style.borderColor='var(--border-subtle)'">
                   <div style="width:32px;height:32px;border-radius:8px;background:var(--bg-raised);border:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:center;color:var(--text-tertiary);flex-shrink:0">${UI.icon(it.icon, 16)}</div>
-                  <div style="flex:1;min-width:0">
+                  <div class="flex-1">
                     <div style="font-size:0.88rem;color:var(--text-primary);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${it.title}</div>
                     <div style="font-size:0.74rem;color:var(--text-tertiary);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${it.body}</div>
                   </div>
@@ -406,8 +406,8 @@
       const root = document.getElementById('timeline-root');
       if (list.length === 0) {
         root.innerHTML = `
-          <div class="dir-empty" style="margin-top: 8px">
-            <h3 style="margin-bottom: 8px">Nothing on the calendar</h3>
+          <div class="dir-empty" class="mt-sm">
+            <h3 class="mb-md">Nothing on the calendar</h3>
             <p style="color: var(--text-tertiary); font-size: 0.9rem; margin-bottom: 16px">
               No upcoming bookings in this range. Pick an artist to get started.
             </p>
@@ -487,7 +487,7 @@
       document.getElementById('pipeline-root').innerHTML = counts.map(b => `
         <div class="dash-pipeline-row">
           <div class="label-line">
-            <span style="color: var(--text-secondary)">${esc(b.label)}</span>
+            <span class="text-secondary">${esc(b.label)}</span>
             <span class="count">${b.count}</span>
           </div>
           <div class="track">
