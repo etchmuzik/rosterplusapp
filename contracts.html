@@ -673,7 +673,7 @@
       <div class="modal-actions" style="display:flex;gap:var(--space-sm)">
         <button class="btn btn-secondary" onclick="closeViewModal()">Close</button>
         <a id="contract-full-view-link" class="btn btn-primary" href="#" target="_blank">Open full view / Save PDF</a>
-        <button id="sign-btn" class="btn" style="background:var(--status-confirmed);color:#000" onclick="signContractAsPromoter(currentViewingContract?.id)">Sign as Promoter</button>
+        <button id="sign-btn" class="btn" style="background:var(--status-confirmed);color:#000" aria-label="Sign this contract as the promoter" onclick="signContractAsPromoter(currentViewingContract?.id)">Sign as Promoter</button>
       </div>
     </div>
   </div>
@@ -850,9 +850,9 @@
             <td>${formattedDate}</td>
             <td>
               <div class="contract-actions">
-                <button class="btn btn-ghost btn-sm" onclick="viewContract('${contract.id}')">View</button>
-                <button class="btn btn-ghost btn-sm" onclick="downloadContractPDF('${contract.id}')">Download</button>
-                ${contract.status === 'sent' || contract.status === 'draft' ? `<button class="btn btn-ghost btn-sm" onclick="sendContract('${contract.id}')">Send</button>` : ''}
+                <button class="btn btn-ghost btn-sm" aria-label="View contract for ${esc(contract.event || 'event')}" onclick="viewContract('${contract.id}')">View</button>
+                <button class="btn btn-ghost btn-sm" aria-label="Download contract PDF for ${esc(contract.event || 'event')}" onclick="downloadContractPDF('${contract.id}')">Download</button>
+                ${contract.status === 'sent' || contract.status === 'draft' ? `<button class="btn btn-ghost btn-sm" aria-label="Send contract for ${esc(contract.event || 'event')}" onclick="sendContract('${contract.id}')">Send</button>` : ''}
               </div>
             </td>
           </tr>

@@ -46,7 +46,6 @@ function initSupabase() {
   try {
     _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     DEMO_MODE = false;
-    console.log('[ROSTR] Supabase connected');
   } catch(e) {
     console.error('[ROSTR] Supabase client creation failed:', e);
     try {

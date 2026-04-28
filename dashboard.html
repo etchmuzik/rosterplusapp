@@ -81,10 +81,10 @@
               <span class="eyebrow">Upcoming</span>
               <h2 style="margin-top: 4px; font-family: var(--font-display); font-size: 1.5rem; letter-spacing: -0.03em">Next shows</h2>
             </div>
-            <div class="dash-filter" role="tablist">
-              <button data-filter="week" class="active">Week</button>
-              <button data-filter="month">Month</button>
-              <button data-filter="all">All</button>
+            <div class="dash-filter" role="tablist" aria-label="Filter upcoming shows by time range">
+              <button data-filter="week" class="active" role="tab" aria-label="Show this week's bookings">Week</button>
+              <button data-filter="month" role="tab" aria-label="Show this month's bookings">Month</button>
+              <button data-filter="all" role="tab" aria-label="Show all upcoming bookings">All</button>
             </div>
           </div>
           <div id="timeline-root"></div>
@@ -142,7 +142,7 @@
           <h3 id="message-modal-from"></h3>
           <div class="text-secondary" style="font-size: 0.85rem; margin-top: 4px" id="message-modal-time"></div>
         </div>
-        <button class="btn btn-ghost btn-icon" onclick="document.getElementById('message-modal').classList.remove('active')" aria-label="Close dialog">
+        <button class="btn btn-ghost btn-icon" onclick="document.getElementById('message-modal').classList.remove('active')" aria-label="Close message preview">
           <span class="js-icon" data-icon="x" data-size="16" aria-hidden="true"></span>
         </button>
       </div>

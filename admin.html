@@ -191,8 +191,8 @@
         <div style="display:flex;gap:8px;margin-bottom:var(--space-sm);align-items:center;flex-wrap:wrap">
           <div style="font-size:0.88rem;color:var(--text-secondary)">All registered accounts. Change role only when you understand the consequences.</div>
           <input type="text" id="user-search" placeholder="Search email or name" oninput="renderUsers()" class="form-input" style="max-width:260px;margin-left:auto;font-size:0.82rem;padding:6px 10px">
-          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" onclick="exportUsersCSV()">↓ CSV</button>
-          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" onclick="renderUsers()">Refresh</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" aria-label="Export users to CSV" onclick="exportUsersCSV()">↓ CSV</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" aria-label="Refresh users list" onclick="renderUsers()">Refresh</button>
         </div>
         <div id="users-list" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);overflow:hidden"></div>
       </section>
@@ -209,8 +209,8 @@
             <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
           </select>
-          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" onclick="exportBookingsModCSV()">↓ CSV</button>
-          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" onclick="renderBookingsMod()">Refresh</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" aria-label="Export bookings to CSV" onclick="exportBookingsModCSV()">↓ CSV</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" aria-label="Refresh bookings list" onclick="renderBookingsMod()">Refresh</button>
         </div>
         <div id="bookings-mod-list" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);overflow:hidden"></div>
       </section>
@@ -286,8 +286,8 @@
       <section class="admin-panel" data-panel="audit">
         <div style="display:flex;gap:8px;margin-bottom:var(--space-sm);align-items:center;flex-wrap:wrap">
           <div style="font-size:0.88rem;color:var(--text-secondary)">Admin actions. Up to 500 rows; use filters to narrow.</div>
-          <button class="btn btn-ghost btn-sm" style="margin-left:auto;font-size:0.76rem" onclick="exportAuditLogCSV()">↓ CSV</button>
-          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" onclick="refreshAuditLog()">Refresh</button>
+          <button class="btn btn-ghost btn-sm" style="margin-left:auto;font-size:0.76rem" aria-label="Export audit log to CSV" onclick="exportAuditLogCSV()">↓ CSV</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" aria-label="Refresh audit log" onclick="refreshAuditLog()">Refresh</button>
         </div>
         <div style="display:flex;gap:8px;margin-bottom:var(--space-sm);flex-wrap:wrap;align-items:center">
           <input type="text" id="audit-actor" placeholder="Filter by actor email" oninput="applyAuditFilters()" class="form-input" style="max-width:260px;font-size:0.82rem;padding:6px 10px">
@@ -327,8 +327,8 @@
             <option value="168">Last 7 days</option>
             <option value="720">Last 30 days</option>
           </select>
-          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" onclick="exportEmailsCSV()">↓ CSV</button>
-          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" onclick="renderEmails()">Refresh</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" aria-label="Export email events to CSV" onclick="exportEmailsCSV()">↓ CSV</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" aria-label="Refresh email events" onclick="renderEmails()">Refresh</button>
         </div>
 
         <div id="email-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:var(--space-lg)"></div>
@@ -371,8 +371,8 @@
             <option value="7d">Last 7 days</option>
             <option value="all">All (30-day window)</option>
           </select>
-          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" onclick="exportErrorsCSV()">↓ CSV</button>
-          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" onclick="renderErrors()">Refresh</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" aria-label="Export client errors to CSV" onclick="exportErrorsCSV()">↓ CSV</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" aria-label="Refresh client errors" onclick="renderErrors()">Refresh</button>
         </div>
         <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);overflow:hidden">
           <div class="err-row" style="background:var(--bg-raised);font-family:var(--font-mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);cursor:default">
@@ -389,8 +389,8 @@
       <section class="admin-panel" data-panel="health">
         <div style="display:flex;gap:8px;margin-bottom:var(--space-lg);align-items:center">
           <div style="font-size:0.88rem;color:var(--text-secondary)">Platform health snapshot</div>
-          <button class="btn btn-ghost btn-sm" style="margin-left:auto;font-size:0.76rem" onclick="exportCronRunsCSV()">↓ CSV</button>
-          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" onclick="renderHealth()">Refresh</button>
+          <button class="btn btn-ghost btn-sm" style="margin-left:auto;font-size:0.76rem" aria-label="Export cron run history to CSV" onclick="exportCronRunsCSV()">↓ CSV</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" aria-label="Refresh cron health" onclick="renderHealth()">Refresh</button>
         </div>
 
         <div id="health-summary" class="health-card">Loading…</div>
@@ -524,7 +524,7 @@
            'user.role_change','booking.force_cancel','booking.status_change']
             .includes(row.action);
         const undoBtn = undoable
-          ? `<button class="btn btn-ghost btn-sm" style="font-size:0.7rem;margin-top:6px;color:var(--text-tertiary);border:1px dashed var(--border-subtle)" onclick="auditUndo('${esc(row.target_type)}','${esc(row.target_id)}', '${esc(row.action)}')">↶ Undo</button>`
+          ? `<button class="btn btn-ghost btn-sm" style="font-size:0.7rem;margin-top:6px;color:var(--text-tertiary);border:1px dashed var(--border-subtle)" aria-label="Undo admin action ${esc(row.action)} on ${esc(row.target_type)}" onclick="auditUndo('${esc(row.target_type)}','${esc(row.target_id)}', '${esc(row.action)}')">↶ Undo</button>`
           : '';
 
         return `
@@ -601,9 +601,9 @@
               </div>
             </div>
             <div style="display:flex;gap:4px;flex-wrap:wrap">
-              ${!a.verified ? `<button class="btn btn-primary btn-sm" style="font-size:0.72rem" onclick="queueApprove('${esc(a.id)}')">Approve</button>` : ''}
-              ${a.status !== 'active' ? `<button class="btn btn-secondary btn-sm" style="font-size:0.72rem" onclick="queueActivate('${esc(a.id)}')">Activate</button>` : ''}
-              <button class="btn btn-ghost btn-sm" style="font-size:0.72rem;color:var(--status-cancelled)" onclick="queueReject('${esc(a.id)}')">Reject</button>
+              ${!a.verified ? `<button class="btn btn-primary btn-sm" style="font-size:0.72rem" aria-label="Approve artist ${esc(a.stage_name || 'unnamed')}" onclick="queueApprove('${esc(a.id)}')">Approve</button>` : ''}
+              ${a.status !== 'active' ? `<button class="btn btn-secondary btn-sm" style="font-size:0.72rem" aria-label="Activate artist ${esc(a.stage_name || 'unnamed')}" onclick="queueActivate('${esc(a.id)}')">Activate</button>` : ''}
+              <button class="btn btn-ghost btn-sm" style="font-size:0.72rem;color:var(--status-cancelled)" aria-label="Reject artist ${esc(a.stage_name || 'unnamed')}" onclick="queueReject('${esc(a.id)}')">Reject</button>
             </div>
           </div>
         `;
@@ -684,10 +684,10 @@
               </div>
             </div>
             <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
-              ${a.status !== 'active' ? `<button class="btn btn-ghost btn-sm" style="font-size:0.75rem" onclick="adminSetStatus('${esc(a.id)}','active')">Activate</button>` : ''}
-              ${a.status !== 'pending' ? `<button class="btn btn-ghost btn-sm" style="font-size:0.75rem" onclick="adminSetStatus('${esc(a.id)}','pending')">Hide</button>` : ''}
-              ${a.status !== 'inactive' ? `<button class="btn btn-ghost btn-sm" style="font-size:0.75rem" onclick="adminSetStatus('${esc(a.id)}','inactive')">Retire</button>` : ''}
-              <button class="btn btn-ghost btn-sm" style="font-size:0.75rem" onclick="adminToggleVerified('${esc(a.id)}',${!a.verified})">${a.verified ? 'Unverify' : 'Verify'}</button>
+              ${a.status !== 'active' ? `<button class="btn btn-ghost btn-sm" style="font-size:0.75rem" aria-label="Set artist ${esc(a.stage_name || 'unnamed')} to active" onclick="adminSetStatus('${esc(a.id)}','active')">Activate</button>` : ''}
+              ${a.status !== 'pending' ? `<button class="btn btn-ghost btn-sm" style="font-size:0.75rem" aria-label="Hide artist ${esc(a.stage_name || 'unnamed')} from directory" onclick="adminSetStatus('${esc(a.id)}','pending')">Hide</button>` : ''}
+              ${a.status !== 'inactive' ? `<button class="btn btn-ghost btn-sm" style="font-size:0.75rem" aria-label="Retire artist ${esc(a.stage_name || 'unnamed')}" onclick="adminSetStatus('${esc(a.id)}','inactive')">Retire</button>` : ''}
+              <button class="btn btn-ghost btn-sm" style="font-size:0.75rem" aria-label="${a.verified ? 'Remove verification from' : 'Verify'} artist ${esc(a.stage_name || 'unnamed')}" onclick="adminToggleVerified('${esc(a.id)}',${!a.verified})">${a.verified ? 'Unverify' : 'Verify'}</button>
             </div>
           </div>
         `;
@@ -1169,10 +1169,10 @@
             <div style="color:var(--text-tertiary);font-size:0.78rem">${esc(u.city || '—')}</div>
             <div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary)">${lastSeen}</div>
             <div style="display:flex;gap:4px;flex-wrap:wrap">
-              <button class="btn btn-ghost btn-sm" style="font-size:0.7rem" onclick="userToggleRole('${esc(u.id)}','${flip}', '${esc(u.email||'')}')">Make ${flip}</button>
-              <button class="btn btn-ghost btn-sm" style="font-size:0.7rem" onclick="userImpersonate('${esc(u.id)}', '${esc(u.email||'')}')">Impersonate</button>
-              <button class="btn btn-ghost btn-sm" style="font-size:0.7rem" onclick="userResendWelcome('${esc(u.id)}', '${esc(u.email||'')}')">Re-send welcome</button>
-              <button class="btn btn-ghost btn-sm" style="font-size:0.7rem;color:var(--status-cancelled)" onclick="userSuspend('${esc(u.id)}', '${esc(u.email||'')}')">Suspend</button>
+              <button class="btn btn-ghost btn-sm" style="font-size:0.7rem" aria-label="Change role of ${esc(u.email||'user')} to ${flip}" onclick="userToggleRole('${esc(u.id)}','${flip}', '${esc(u.email||'')}')">Make ${flip}</button>
+              <button class="btn btn-ghost btn-sm" style="font-size:0.7rem" aria-label="Impersonate user ${esc(u.email||'')}" onclick="userImpersonate('${esc(u.id)}', '${esc(u.email||'')}')">Impersonate</button>
+              <button class="btn btn-ghost btn-sm" style="font-size:0.7rem" aria-label="Re-send welcome email to ${esc(u.email||'')}" onclick="userResendWelcome('${esc(u.id)}', '${esc(u.email||'')}')">Re-send welcome</button>
+              <button class="btn btn-ghost btn-sm" style="font-size:0.7rem;color:var(--status-cancelled)" aria-label="Suspend user ${esc(u.email||'')}" onclick="userSuspend('${esc(u.id)}', '${esc(u.email||'')}')">Suspend</button>
             </div>
           </div>
         `;
@@ -1291,7 +1291,7 @@
             <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-secondary);font-size:0.76rem">${esc(promoter)}</div>
             <div style="font-family:var(--font-mono);font-size:0.76rem">${fee}</div>
             <div><span style="font-family:var(--font-mono);font-size:0.68rem;padding:2px 8px;border-radius:999px;border:1px solid ${statusClr};color:${statusClr}">${esc(b.status || '—')}</span></div>
-            <div>${isCancelled ? '<span style="font-size:0.72rem;color:var(--text-tertiary)">—</span>' : `<button class="btn btn-ghost btn-sm" style="font-size:0.72rem;color:var(--status-cancelled)" onclick="bookingForceCancel('${esc(b.id)}','${esc(b.event_name || 'Event').replace(/'/g,'&#39;')}')">Force cancel</button>`}</div>
+            <div>${isCancelled ? '<span style="font-size:0.72rem;color:var(--text-tertiary)">—</span>' : `<button class="btn btn-ghost btn-sm" style="font-size:0.72rem;color:var(--status-cancelled)" aria-label="Force cancel booking ${esc(b.event_name || 'Event').replace(/'/g,'&#39;')}" onclick="bookingForceCancel('${esc(b.id)}','${esc(b.event_name || 'Event').replace(/'/g,'&#39;')}')">Force cancel</button>`}</div>
           </div>
         `;
       }).join('');

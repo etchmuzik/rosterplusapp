@@ -82,8 +82,8 @@
 # default mime detection serves an extensionless file as application/octet-stream
 # unless we override here.
 #
-# Before this works end-to-end the operator must replace __TEAMID__ in
-# web/.well-known/apple-app-site-association with the actual Apple Team ID.
+# AppID configured for team CHSAVJ5X6U (io.rosterplus.app). Verify after
+# deploy with: curl -I https://rosterplus.io/.well-known/apple-app-site-association
 [[headers]]
   for = "/.well-known/apple-app-site-association"
   [headers.values]
