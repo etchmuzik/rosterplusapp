@@ -264,9 +264,12 @@
       const displayName = data.stage_name || data.name || 'Artist';
       document.title = `${displayName} — EPK | ROSTR+`;
 
-      // Update OG / Twitter tags so WhatsApp, iMessage, Twitter, etc. unfurl nicely
-      const genres = Array.isArray(data.genre) ? data.genre.join(', ') : (data.genre || '');
-      const cityForMeta = (data.cities_active && data.cities_active[0]) || data.city || '';
+      // Update OG / Twitter tags so WhatsApp, iMessage, Twitter, etc. unfurl nicely.
+      // `genres` and `cityForMeta` are already in scope from the top of
+      // renderEPK (lines ~124-125). Re-declaring with `const` here used
+      // to throw `Identifier 'genres' has already been declared`, which
+      // killed the whole script tag at parse time and left every visitor
+      // stuck on "Loading EPK...". Reuse the existing locals.
       const desc = [genres, cityForMeta].filter(Boolean).join(' — ') || 'ROSTR+ GCC artist — bookings open.';
       const img = data.avatar_url || data.profiles?.avatar_url || 'https://rosterplus.io/icons/og-default.png';
       // Use ?id= so OG snippets, the share-bar URL, and the canonical
