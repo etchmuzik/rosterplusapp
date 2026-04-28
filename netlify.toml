@@ -35,7 +35,7 @@
     Permissions-Policy                = "camera=(), microphone=(), geolocation=()"
     Strict-Transport-Security         = "max-age=31536000; includeSubDomains; preload"
     X-XSS-Protection                  = "1; mode=block"
-    Content-Security-Policy           = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://plausible.io https://browser.sentry-cdn.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://plausible.io https://*.ingest.sentry.io; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://api.fontshare.com https://fonts.googleapis.com; font-src 'self' data: https://api.fontshare.com https://cdn.fontshare.com https://fonts.gstatic.com; frame-ancestors 'none'"
+    Content-Security-Policy           = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://plausible.io https://browser.sentry-cdn.com; worker-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://plausible.io https://*.ingest.sentry.io; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://api.fontshare.com https://fonts.googleapis.com; font-src 'self' data: https://api.fontshare.com https://cdn.fontshare.com https://fonts.gstatic.com; frame-ancestors 'none'"
 
 # ── Cache-Control ──
 # Matches the .htaccess strategy:
@@ -74,6 +74,21 @@
   for = "/icons/*"
   [headers.values]
     Cache-Control = "public, max-age=2592000"
+
+# ── Apple App Site Association ──
+# iOS reads /.well-known/apple-app-site-association to enable universal
+# links into the ROSTR+ iOS app. Apple requires Content-Type: application/json
+# (NOT text/plain) and the file must be served with no extension. Netlify's
+# default mime detection serves an extensionless file as application/octet-stream
+# unless we override here.
+#
+# Before this works end-to-end the operator must replace __TEAMID__ in
+# web/.well-known/apple-app-site-association with the actual Apple Team ID.
+[[headers]]
+  for = "/.well-known/apple-app-site-association"
+  [headers.values]
+    Content-Type  = "application/json"
+    Cache-Control = "public, max-age=3600"
 
 # ── 404 handler ──
 # Apache used `ErrorDocument 404 /404.html`. Netlify equivalent:

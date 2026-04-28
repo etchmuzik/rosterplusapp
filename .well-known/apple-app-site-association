@@ -1,0 +1,24 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": ["CHSAVJ5X6U.io.rosterplus.app"],
+        "components": [
+          { "/": "/bookings/*",      "comment": "Open booking detail in app" },
+          { "/": "/threads/*",       "comment": "Open thread in app" },
+          { "/": "/contracts/*",     "comment": "Open contract in app" },
+          { "/": "/invoices/*",      "comment": "Open invoice in app" },
+          { "/": "/reviews/*",       "comment": "Open review prompt in app" },
+          { "/": "/artists/*",       "comment": "Open artist profile in app" },
+          { "/": "/epk/*",           "comment": "Open public EPK in app" },
+          { "/": "/epks/*",          "comment": "Open public EPK in app (plural)" },
+          { "/": "/notifications",   "comment": "Open notifications in app" }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["CHSAVJ5X6U.io.rosterplus.app"]
+  }
+}
