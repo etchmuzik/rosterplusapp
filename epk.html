@@ -269,7 +269,11 @@
       const cityForMeta = (data.cities_active && data.cities_active[0]) || data.city || '';
       const desc = [genres, cityForMeta].filter(Boolean).join(' — ') || 'ROSTR+ GCC artist — bookings open.';
       const img = data.avatar_url || data.profiles?.avatar_url || 'https://rosterplus.io/icons/og-default.png';
-      const url = `https://rosterplus.io/epk.html?artist=${encodeURIComponent(_artistId || '')}`;
+      // Use ?id= so OG snippets, the share-bar URL, and the canonical
+      // <link> all match what the rest of the platform emits (artist
+      // dashboard, drip emails, iOS share sheet). See the param-read
+      // note further down for the back-compat history.
+      const url = `https://rosterplus.io/epk.html?id=${encodeURIComponent(_artistId || '')}`;
       const setMeta = (sel, val) => { const el = document.querySelector(sel); if (el) el.setAttribute('content', val); };
       setMeta('meta[property="og:title"]',       `${displayName} — EPK`);
       setMeta('meta[property="og:description"]', desc);
@@ -369,10 +373,16 @@
       if (typeof hydrateIcons === 'function') hydrateIcons();
 
       const params = new URLSearchParams(window.location.search);
-      _artistId = params.get('artist');
+      // Accept both ?id= (the consensus shape used by artist-dashboard's
+      // share button, the send-artist-onboarding-drip welcome email, and
+      // the iOS share sheet) AND ?artist= (the legacy shape this page
+      // used to emit). Either parameter resolves the same artist row.
+      // Five producers ship ?id= URLs; previously only ?artist= worked
+      // here, so every shared link silently bounced to /directory.html.
+      _artistId = params.get('id') || params.get('artist');
 
       if (_artistId) {
-        // Public view mode — anyone can hit /epk.html?artist=<id>
+        // Public view mode — anyone can hit /epk.html?id=<id>
         const result = await DB.getArtistEPK(_artistId);
         if (result.success && result.data) {
           _epkData = result.data;          // ← was missing; submitInquiry depends on it
