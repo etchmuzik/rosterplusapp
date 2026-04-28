@@ -5,6 +5,11 @@ Playwright suite. Two kinds of tests:
 1. **Smoke tests** (`@smoke` tag) — functional assertions on key pages. Run on every CI push + PR.
 2. **Visual regression** (`@visual` tag) — pixel-diff screenshots of public pages. Runs on every PR.
 
+EPK URL contract is guarded by `tests/epk.spec.js` — the spec mocks
+the Supabase REST call via `page.route()` so CI doesn't depend on a
+specific live row or hit the production project. Update this spec
+whenever you change `/epk.html` URL handling.
+
 ## Running locally
 
 ```bash
