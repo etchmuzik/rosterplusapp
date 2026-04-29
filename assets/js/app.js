@@ -2180,66 +2180,6 @@ const DB = {
     } catch(e) { return { success: false, data: [], error: String(e) }; }
   },
 
-  // ── Reviews ──
-  // Create or update a review on a booking. Server RPC enforces:
-  //   1. Reviewer is the promoter or the artist for this booking
-  //   2. Booking is in a reviewable state (confirmed/contracted/completed)
-  //   3. Event date is in the past
-  //   4. Target is the OTHER party
-  // Upserts on (booking_id, reviewer_id) so editing an existing review
-  // just updates the rating + comment.
-  async createReview(bookingId, rating, comment) {
-    if (DEMO_MODE) return { success: false, error: 'Offline' };
-    if (!Auth.user) return { success: false, error: 'Not authenticated' };
-    try {
-      const { data, error } = await _sb.rpc('create_review', {
-        p_booking_id: bookingId,
-        p_rating: rating,
-        p_comment: comment || null,
-      });
-      if (error) {
-        // Translate server exception codes into friendly messages
-        const msg = String(error.message || '');
-        const friendly = {
-          booking_not_found:       'That booking no longer exists.',
-          booking_not_reviewable:  'The booking has to be confirmed or completed before you can review.',
-          event_not_yet_happened:  'You can review after the event date.',
-          not_a_party_to_booking:  'Only the promoter or the artist can review this booking.',
-          target_missing:          'The other party hasn\u2019t linked an account yet.',
-          not_authenticated:       'Please sign in first.',
-        };
-        const friendlyMsg = Object.entries(friendly).find(([k]) => msg.includes(k));
-        return { success: false, error: friendlyMsg ? friendlyMsg[1] : msg };
-      }
-      _auditImpersonatedAction('review.create', 'booking', bookingId, { rating });
-      return { success: true, id: data };
-    } catch (e) { return { success: false, error: String(e) }; }
-  },
-
-  // Aggregate review stats (count + avg rating) for a given auth user.
-  // For artist profiles, pass the artist's profile_id (= their auth.users.id).
-  async reviewStatsForUser(userId) {
-    if (!userId || DEMO_MODE) return { success: true, data: { review_count: 0, avg_rating: 0 } };
-    try {
-      const { data, error } = await _sb.rpc('review_stats_for_user', { p_user_id: userId });
-      if (error) return { success: false, error: error.message };
-      // RPC returns an array of rows (always length 1 for this shape).
-      const row = Array.isArray(data) ? data[0] : data;
-      return { success: true, data: row || { review_count: 0, avg_rating: 0 } };
-    } catch (e) { return { success: false, error: String(e) }; }
-  },
-
-  // Most recent reviews for a target user. Limited to 20 by default to
-  // keep the profile page payload small.
-  async reviewsForUser(userId, limit = 20) {
-    if (!userId || DEMO_MODE) return { success: true, data: [] };
-    try {
-      const { data, error } = await _sb.rpc('reviews_for_user', { p_user_id: userId, p_limit: limit });
-      if (error) return { success: false, data: [], error: error.message };
-      return { success: true, data: data || [] };
-    } catch (e) { return { success: false, data: [], error: String(e) }; }
-  },
-
   // Claim an unclaimed artist row. Runs the SECURITY DEFINER RPC that
   // enforces: caller is an artist, row is unclaimed, caller has no prior row.
   async claimArtistProfile(artistId) {
