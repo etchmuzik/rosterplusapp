@@ -44,9 +44,11 @@ set -a; source "$ENV_FILE"; set +a
 
 # ── Flags ─────────────────────────────────────────────────
 DRY_RUN=0
+SKIP_CHECKS=0
 for arg in "$@"; do
   case "$arg" in
     --dry|--dry-run) DRY_RUN=1 ;;
+    --skip-checks) SKIP_CHECKS=1 ;;
     *) echo "Unknown flag: $arg"; exit 1 ;;
   esac
 done
@@ -58,10 +60,6 @@ cd "$REPO_ROOT"
 # anything. Catches typos, truncated files, malformed HTML — the
 # class of 1am site-down incidents. Skip with --skip-checks if you
 # absolutely must (emergency hotfix, etc).
-SKIP_CHECKS=0
-for arg in "$@"; do
-  case "$arg" in --skip-checks) SKIP_CHECKS=1 ;; esac
-done
 
 if (( ! SKIP_CHECKS )); then
   echo "=== Pre-deploy checks ==="
