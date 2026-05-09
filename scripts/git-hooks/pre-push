@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+#
+# pre-push hook — deploy to Hostinger before letting the push proceed.
+#
+# Why this exists:
+#   GitHub Actions auto-deploy is wired (see .github/workflows/ci.yml)
+#   but currently blocked by an account billing lockout. While billing
+#   is locked, `git push origin main` would silently let main drift
+#   ahead of the live site — the exact failure mode of the 2026-04-30
+#   EPK incident.
+#
+# What this does:
+#   When pushing to main from THIS clone, run scripts/deploy.sh BEFORE
+#   the push completes. If the deploy fails, the push is aborted and
+#   origin/main never advances ahead of what's live on Hostinger.
+#
+#   Pushes to other branches are not affected. CI runs and fresh
+#   checkouts don't have this hook (it's not tracked in git on
+#   purpose), so they fall back to whatever the canonical CI flow is.
+#
+# Bypass (use sparingly):
+#   SKIP_DEPLOY_HOOK=1 git push origin main
+#   git push --no-verify origin main
+#
+# Removal (when GitHub Actions billing is fixed and CI deploys are
+# working again, this hook becomes redundant):
+#   rm .git/hooks/pre-push
+#
+# Reinstall after fresh clone:
+#   bash scripts/install-hooks.sh
+
+set -e
+
+# Bypass — explicit env var for the rare case (e.g. emergency fix
+# while Hostinger is itself down). --no-verify on `git push` also
+# bypasses, but this is more visible in shell history.
+if [[ "${SKIP_DEPLOY_HOOK:-}" == "1" ]]; then
+  echo "pre-push: SKIP_DEPLOY_HOOK=1 set, skipping deploy" >&2
+  exit 0
+fi
+
+# Read stdin to find out which refs are being pushed. Format from git:
+#   <local ref> <local sha> <remote ref> <remote sha>
+# If we're not pushing main, exit silently and let git proceed.
+PUSHING_MAIN=0
+while read -r local_ref local_sha remote_ref remote_sha; do
+  case "$remote_ref" in
+    refs/heads/main) PUSHING_MAIN=1 ;;
+  esac
+done
+
+if (( ! PUSHING_MAIN )); then
+  exit 0
+fi
+
+# We're pushing main. Locate the repo root from the hook's $PWD (git
+# already cd'd us there) and run deploy.sh.
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+echo "pre-push: deploying to Hostinger before push completes…" >&2
+
+# --skip-checks because the same node --check / HTML / Playwright gate
+# also runs in GitHub Actions on the push. Running it twice locally
+# slows the dev loop without adding signal. If you want the local
+# checks too, run `bash scripts/deploy.sh` (no flag) manually.
+if ! bash scripts/deploy.sh --skip-checks >&2; then
+  echo "pre-push: ✗ deploy failed — push aborted" >&2
+  echo "pre-push:   • re-run when fixed: git push origin main" >&2
+  echo "pre-push:   • bypass (use sparingly): SKIP_DEPLOY_HOOK=1 git push origin main" >&2
+  exit 1
+fi
+
+echo "pre-push: ✓ deploy succeeded — letting push proceed" >&2
+exit 0

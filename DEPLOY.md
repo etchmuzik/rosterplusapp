@@ -33,12 +33,45 @@ propagation takes a few additional seconds.
 ```bash
 git add <files>
 git commit -m "feat: …"
-npm run ship          # = bash scripts/push.sh = git push + scripts/deploy.sh
+git push origin main      # ← pre-push hook deploys to Hostinger first
 ```
 
-`scripts/push.sh` is a thin wrapper that runs `git push origin main`,
-then (only if push succeeded) runs `bash scripts/deploy.sh --skip-checks`.
-Identical UX to the eventual GitHub Actions flow — push once, walk away.
+A `pre-push` git hook (installed by `bash scripts/install-hooks.sh`,
+see below) runs `bash scripts/deploy.sh --skip-checks` **before**
+allowing the push to complete. If the deploy fails, the push is
+aborted — `origin/main` cannot advance ahead of what's live.
+
+The hook fires only on pushes to `main`. Feature branch pushes are
+unaffected.
+
+`npm run ship` is still wired as a no-hook fallback (commit fd6c8d3),
+useful from machines that don't have the hook installed.
+
+### One-time setup after cloning
+
+```bash
+cd web
+bash scripts/install-hooks.sh
+```
+
+Copies `scripts/git-hooks/*` into `.git/hooks/`. Idempotent — re-run
+after pulling a hook change. Required only on machines that will
+deploy (need `web/.env.deploy` populated too).
+
+### Bypassing the hook
+
+When you legitimately need to push without deploying (Hostinger is
+down, you're pushing a `docs/` change you'll deploy in a batch later,
+etc.):
+
+```bash
+SKIP_DEPLOY_HOOK=1 git push origin main
+# or
+git push --no-verify origin main
+```
+
+Either form skips the deploy. Use sparingly — every bypass is an
+opportunity for `main` to drift ahead of the live site.
 
 ## Account billing
 
