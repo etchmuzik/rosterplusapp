@@ -1,8 +1,7 @@
 # Deploying ROSTR+
 
-**Push to `main` → Netlify deploys.** That's the whole flow. The
-old manual `lftp` script still works as an emergency-rollback path
-while Hostinger runs in parallel.
+**Push to `main` → GitHub Actions deploys to Hostinger via FTP.** That's
+the whole flow. No human runs anything by hand.
 
 ## Everyday flow
 
@@ -12,123 +11,130 @@ git commit -m "feat: …"
 git push origin main
 ```
 
-Done. Netlify picks up the push, runs `bash scripts/deploy-stamp.sh`
-(rotates `sw.js` `CACHE_NAME`, stamps `window.ROSTR_VERSION`, appends
-`?v=<sha>` to every `/assets/*` reference in HTML), then publishes.
-Site goes live in ~30 seconds. CDN propagation finishes within a few
-seconds of that.
+Done. The `deploy` job in [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)
+fires automatically. It runs **after** the `checks` job is green —
+broken JS, missing `</html>`, or a failing `@smoke` Playwright test
+fails CI before any FTP traffic happens.
 
-Visitors on a stale service-worker cache see the new build on their
-next navigation thanks to the `CACHE_NAME` rotation. Hard refresh
-(Cmd+Shift+R) is never required for end users.
+Live in ~3 minutes (Playwright suite is the slowest step). CDN
+propagation takes a few additional seconds.
 
-## What Netlify does on every push
+## What the deploy job does
 
-In order:
-
-1. **Pulls** `main` at the deploying SHA.
-2. **Runs** `bash scripts/deploy-stamp.sh` (the build command in
-   [`netlify.toml`](./netlify.toml)). The script writes the SHA into:
+1. **Checkout** at the deploying SHA.
+2. **Install** `lftp`.
+3. **Stamp** the build via `bash scripts/deploy-stamp.sh`:
    - `sw.js` → `CACHE_NAME = 'rostr-<sha>'`
    - `assets/js/app.js` → `window.ROSTR_VERSION = '<sha>'` at the top
    - Every `<link>` / `<script>` reference to `/assets/*.{css,js}` in
      every HTML file → `?v=<sha>` query string
-3. **Applies** headers + redirects from `netlify.toml`:
-   - Strict CSP, HSTS, anti-clickjacking, Permissions-Policy
-   - 1y immutable cache on `/assets/*`, no-cache on HTML / sw.js
-   - `/404.html` served on any unmatched path
-4. **Publishes** to the global CDN.
+4. **Build the file list** (same exclusions as
+   [`scripts/deploy.sh`](./scripts/deploy.sh) — no `node_modules/`,
+   `.git/`, `scripts/`, `supabase/`, `e2e/`, `docs/`, test artifacts).
+5. **Upload** every file to Hostinger via per-file `lftp put -O`. We
+   don't use `mirror --reverse` because Hostinger's FTP server returns
+   Arabic-locale timestamps that confuse lftp's diffing logic.
+6. **Verify** the live homepage shows the just-deployed
+   `ROSTR_VERSION = '<sha>'`. Mismatch logs a warning (Hostinger's
+   edge cache can lag a couple of minutes); upload itself has already
+   succeeded by this point.
 
-## CI gates (GitHub Actions)
+## Required GitHub Actions secrets
 
-Runs in parallel with the Netlify build, on every PR + every push to
-`main`. See [`.github/workflows/ci.yml`](./.github/workflows/ci.yml):
+Settings → Secrets and variables → Actions → Repository secrets:
+
+| Secret | Value | Notes |
+|---|---|---|
+| `FTP_HOST` | Hostinger FTP host | Same as `web/.env.deploy` |
+| `FTP_USER` | FTP user | Same |
+| `FTP_PASSWORD` | FTP password | Same |
+| `FTP_REMOTE_DIR` | `/` | Maps to public_html on Hostinger |
+
+These mirror `web/.env.deploy` (which is gitignored). Any rotation
+happens in **both** places — registry + GitHub secrets.
+
+## CI gates (run before deploy)
+
+The `checks` job in [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)
+runs on every push and PR:
 
 - `node --check` on `app.js`, `error-logger.js`, `sw.js`
 - HTML well-formed check (every `*.html` closes `</html>`)
 - Playwright `@smoke`-tagged tests against a local static server
-- Visual regression (8 pages × 2 viewports)
-- Lighthouse — accessibility ≥0.90, SEO ≥0.95
 
-A red CI run does **not** block the Netlify deploy — Netlify and
-GitHub Actions are independent. If you push something that fails CI
-but Netlify already published it, you have a few minutes to either:
-
-- Push a fix-forward commit (auto-deploys), or
-- Roll back via the Netlify dashboard (Deploys → click the previous
-  good build → "Publish deploy")
+The `visual` job (pixel-diff snapshots) and `lighthouse` job (PR-only)
+run in parallel. Only `checks` gates `deploy`.
 
 ## Rolling back
 
-Two paths:
+Three paths, fastest first:
 
-1. **Netlify dashboard** (preferred): Deploys → pick a previous
-   green build → "Publish deploy". Live in ~5 seconds. Doesn't
-   touch git history.
-2. **Git revert + push**: standard `git revert <sha>` + push,
-   triggers a fresh Netlify deploy.
+1. **Re-run the previous green deploy**: GitHub Actions → workflow run
+   on the last good commit → "Re-run all jobs". The deploy job
+   re-stamps and re-uploads. Live in ~3 minutes.
+2. **Git revert + push**: `git revert <sha> && git push origin main`
+   triggers a fresh deploy of the reverted state. Standard,
+   git-native, audit-trailed.
+3. **Manual emergency** (CI broken, GitHub down): from a dev machine
+   with `web/.env.deploy` populated:
+   ```bash
+   cd web
+   bash scripts/deploy.sh --skip-checks
+   ```
+   Same lftp logic the CI runs, just from your terminal.
 
 ## Custom domain
 
-`rosterplus.io` is configured at the registrar to point at Netlify's
-load balancer. SSL cert is provisioned + auto-renewed by Netlify (Let's
-Encrypt). HSTS preload is enforced via the
-[`netlify.toml`](./netlify.toml) headers block.
+`rosterplus.io` DNS is at Hostinger's nameservers
+(`{aurora,nebula}.dns-parking.com`). Apex points at Hostinger's CDN
+edge IPs. SSL cert is provisioned and auto-renewed by Hostinger.
 
-## Emergency manual deploy (Hostinger fallback)
+When the eventual Netlify cutover happens, this whole document
+shrinks to "Push to main → Netlify deploys" and the GitHub Actions
+deploy job becomes redundant — kill it then, not before.
 
-While Hostinger runs in parallel as a hot standby, the legacy
-[`scripts/deploy.sh`](./scripts/deploy.sh) still works:
+## Concurrency
 
-```bash
-npm run deploy
-```
-
-That uploads via FTP to Hostinger's filesystem. Useful only if
-Netlify is down, or for the few weeks after migration before we cut
-the Hostinger plan. Once Hostinger is decommissioned this section
-goes away.
+The `deploy` job is gated by a `concurrency: deploy-hostinger` group.
+Two pushes that land back-to-back **serialize** — the second waits
+for the first to finish, then runs against the latest commit. We
+never run two FTP uploads in parallel against the same target.
 
 ## Supabase edge functions
 
 Edge functions (`supabase/functions/*/index.ts`) are NOT touched by
-Netlify or the lftp script. They live on Supabase's infrastructure
-and ship via:
+this workflow. They ship separately:
 
 - **Supabase MCP** — `deploy_edge_function` tool from a Claude session
 - **Supabase CLI** — `supabase functions deploy <name>`
 
 Migrations under `supabase/migrations/` apply via MCP
 (`apply_migration`) or `supabase db push`. The repo files are mirrors
-of what's live — they exist for history + diffing.
+of what's live — they exist for history + diffing parity.
 
 ## Database
 
-Schema lives in Supabase. The `supabase/migrations/` directory is the
-source of truth for repo-level history; any schema change made from
-Claude / the dashboard should be mirrored into this directory as a
+Schema lives in Supabase. `supabase/migrations/` is the source of
+truth for repo-level history; any schema change made from Claude or
+the Supabase dashboard should be mirrored into this directory as a
 timestamped `.sql` file so git stays honest.
 
-See [`docs/BACKUP_RESTORE.md`](./docs/BACKUP_RESTORE.md) for backup
-strategy + quarterly restore drill.
+See [`docs/BACKUP_RESTORE.md`](./docs/BACKUP_RESTORE.md) for the
+backup strategy and quarterly restore drill.
 
-## Why this flow (vs. the old manual `lftp`)
+## Why this flow
 
-The previous flow was `npm run deploy` from a developer's Mac. It
-failed in two ways:
+Before this workflow existed, deploys were `npm run deploy` from a
+developer's Mac. That failed twice:
 
-1. **Bus factor**: only people with `.env.deploy` and lftp installed
-   could ship. Forgetting to deploy after pushing left GitHub `main`
-   ahead of the live site indefinitely (the audit on 2026-04-25
-   surfaced multiple commits still un-deployed).
-2. **Hostinger billing lock**: when the previous auto-deploy GitHub
-   Action existed, a billing lockout caused 10 days of silent failed
-   deploys before anyone noticed.
+1. **Bus factor**: only people with `.env.deploy` and lftp could
+   ship. Forgetting to deploy after pushing left `main` ahead of the
+   live site indefinitely. The 2026-04-30 EPK incident — five days of
+   committed-but-undeployed fixes that ended in a "page not working"
+   bug report — is the reference example.
+2. **Pre-deploy gates skipped**: a fix in a hurry skipped tests; the
+   live site picked up the regression.
 
-Netlify fixes both:
-- Push-to-deploy, no per-developer setup.
-- Free tier is generous enough that we don't hit billing edges. Plan
-  surfaces are visible from one dashboard, not buried in cPanel.
-
-The lftp script stays as the rollback path until we're confident
-Netlify is bulletproof for our workload.
+GitHub Actions fixes both: push-to-deploy, no per-developer setup,
+and the same `checks` job that runs on every PR also gates the live
+deploy. The lftp script stays as the rollback path.

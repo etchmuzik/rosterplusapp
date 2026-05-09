@@ -133,6 +133,149 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  deploy:
+    # Auto-deploys to Hostinger via lftp on every successful push to main.
+    # Runs only after `checks` is green — a typo or broken JS that would
+    # have failed scripts/deploy.sh's local pre-checks fails CI here too,
+    # and the FTP step never runs.
+    #
+    # This closes the deploy gap that caused the 2026-04-30 EPK incident:
+    # commits sat in `main` for 5 days because nobody ran scripts/deploy.sh.
+    # Push-to-main is now the deploy trigger.
+    #
+    # When the Netlify DNS cutover happens, this job becomes redundant
+    # (Netlify auto-deploys on push too). Until then, this is the bridge.
+    #
+    # Required GitHub Actions secrets (Settings → Secrets → Actions):
+    #   FTP_HOST       — Hostinger FTP host (mirrors web/.env.deploy)
+    #   FTP_USER       — FTP user
+    #   FTP_PASSWORD   — FTP password
+    #   FTP_REMOTE_DIR — remote root, usually "/" (Hostinger maps to public_html)
+    runs-on: ubuntu-latest
+    needs: checks
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    timeout-minutes: 15
+    concurrency:
+      # Serialize deploys — never run two in parallel against the same
+      # FTP target. A second push that lands while one is in flight
+      # waits, then runs against the latest commit.
+      group: deploy-hostinger
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # deploy-stamp.sh reads $COMMIT_REF for the SHA; checkout
+          # action doesn't set that, so we let the script fall through
+          # to `git rev-parse --short HEAD`. Need the full ref for that.
+          fetch-depth: 1
+
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+      - name: Stamp build SHA into sw.js / app.js / HTML asset refs
+        # Reuses the same script Netlify would call on its build step.
+        # Idempotent — safe to re-run if a deploy is rerun manually.
+        run: bash scripts/deploy-stamp.sh
+
+      - name: Build file list
+        # Same find filter scripts/deploy.sh uses locally. We don't
+        # exclude scripts/ from the local script (it's needed there for
+        # bootstrap) but we DO exclude it here — Hostinger doesn't need
+        # the deploy scripts on the live tree.
+        id: files
+        run: |
+          set -euo pipefail
+          find . \
+            -type d \( \
+              -name '.git' -o -name '.github' -o -name '.claude' -o \
+              -name 'node_modules' -o -name 'scripts' -o -name 'supabase' -o -name 'e2e' -o \
+              -name 'docs' -o -name 'test-results' -o -name 'testsprite_tests' \
+            \) -prune -o \
+            -type f \
+            ! -name '.DS_Store' \
+            ! -name '.env' ! -name '.env.*' \
+            ! -name '.gitignore' \
+            ! -name 'package.json' ! -name 'package-lock.json' \
+            ! -name 'DEPLOY.md' ! -name 'README.md' \
+            ! -name 'netlify.toml' ! -name 'serve.js' \
+            ! -name 'supabase-schema.sql' ! -name '.mcp.json' \
+            ! -name '*.deploy-bak' ! -name '*.tmp' \
+            -print | sed 's|^\./||' | sort > /tmp/deploy-files.txt
+          COUNT=$(wc -l < /tmp/deploy-files.txt | tr -d ' ')
+          echo "Will upload $COUNT files"
+          head -20 /tmp/deploy-files.txt
+          echo "…"
+
+      - name: Upload to Hostinger via lftp
+        # Per-file `put -O` mirrors scripts/deploy.sh exactly. lftp's
+        # `mirror --reverse` chokes on Hostinger's Arabic-locale FTP
+        # timestamps and silently no-ops; per-file `put` sidesteps the
+        # remote directory listing entirely.
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_REMOTE_DIR: ${{ secrets.FTP_REMOTE_DIR }}
+        run: |
+          set -euo pipefail
+          : "${FTP_HOST:?FTP_HOST secret missing}"
+          : "${FTP_USER:?FTP_USER secret missing}"
+          : "${FTP_PASSWORD:?FTP_PASSWORD secret missing}"
+          : "${FTP_REMOTE_DIR:=/}"
+
+          LFTP_SCRIPT=$(mktemp)
+          {
+            echo "set ssl:verify-certificate no"
+            echo "set ftp:ssl-allow yes"
+            echo "set ftp:passive-mode yes"
+            echo "set net:max-retries 3"
+            echo "set net:timeout 30"
+            echo "set net:reconnect-interval-base 5"
+            echo "set cmd:parallel 1"
+            if [[ "$FTP_REMOTE_DIR" != "/" ]]; then
+              echo "mkdir -p $FTP_REMOTE_DIR"
+            fi
+            while IFS= read -r f; do
+              [[ -z "$f" ]] && continue
+              remote_dir=$(dirname "$f")
+              if [[ "$remote_dir" == "." ]]; then
+                remote_path="./"
+              else
+                remote_path="$remote_dir/"
+              fi
+              printf 'put -O "%s" "%s"\n' "$remote_path" "$f"
+            done < /tmp/deploy-files.txt
+            echo "bye"
+          } > "$LFTP_SCRIPT"
+
+          # Don't echo passwords. lftp's -u is masked from the run log
+          # by GitHub's secret scrubber as long as FTP_PASSWORD is a
+          # registered secret.
+          lftp -u "$FTP_USER","$FTP_PASSWORD" "ftp://$FTP_HOST" < "$LFTP_SCRIPT"
+
+      - name: Verify live deploy
+        # Hit the homepage and confirm the SHA stamped a few minutes ago
+        # is actually live. Catches CDN cache misses and wrong-target
+        # uploads.
+        run: |
+          set -euo pipefail
+          SHA="${GITHUB_SHA:0:7}"
+          # Hostinger has a CDN edge cache; give it a moment to flush.
+          sleep 5
+          # Query the live page and confirm window.ROSTR_VERSION matches
+          # the commit we just deployed. -L follows redirects.
+          if curl -sL https://rosterplus.io/ | grep -qF "ROSTR_VERSION = '$SHA'"; then
+            echo "✓ Live homepage shows ROSTR_VERSION=$SHA"
+          else
+            echo "::warning::ROSTR_VERSION mismatch — CDN may be stale or upload failed"
+            echo "Expected: $SHA"
+            echo "Live response (first 500 chars):"
+            curl -sL https://rosterplus.io/ | head -c 500
+            # Don't fail the job on this — Hostinger's edge can take
+            # minutes to flush. The upload itself succeeded by this
+            # point. Make it a warning, surface it for ops.
+          fi
+
   lighthouse:
     # Runs separately so a flaky perf blip doesn't block a functional
     # deploy. Reports scores as a comment on the PR — thresholds
