@@ -1035,6 +1035,67 @@ tr:hover td { background: rgba(255,255,255,0.015); }
 .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .relative { position: relative; }
 
+/* ── Admin / list utilities ──
+   Tokens for the patterns that recur across admin.html, dashboard.html,
+   artist-dashboard.html. Cosmetic-only; no behaviour change. */
+
+/* Tiny type scale */
+.fs-2xs { font-size: 0.7rem; }
+.fs-xs  { font-size: 0.75rem; }
+.fs-tiny { font-size: 0.76rem; }
+.fs-sm  { font-size: 0.82rem; }
+.fs-md  { font-size: 0.88rem; }
+
+/* Push to right inside a flex row */
+.ml-auto { margin-left: auto; }
+
+/* Inline list message — one-line "loading" / "no rows" / "error"
+   placeholder rendered inside a scrollable list container. The richer
+   .empty-state up around line 814 is for full-card empties; this is
+   for inline messages within already-laid-out lists. */
+.list-msg        { padding: var(--space-md); font-size: 0.82rem; }
+.list-msg-muted  { color: var(--text-tertiary); }
+.list-msg-error  { color: var(--status-cancelled); }
+
+/* Cancelled / destructive text */
+.text-status-cancelled { color: var(--status-cancelled); }
+
+/* Section card — bordered surface that wraps an admin list */
+.section-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+/* Toolbar above an admin list (search + actions) */
+.toolbar-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: var(--space-sm);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Compact form input variant — used inside .toolbar-row */
+.form-input-compact,
+.form-select-compact {
+  font-size: 0.82rem;
+  padding: 6px 10px;
+}
+
+/* Compact button variant — admin export / refresh buttons */
+.btn-compact {
+  font-size: 0.76rem;
+}
+
+/* Inline code snippet inside admin help text */
+.code-mono {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-primary);
+}
+
 /* ═══════════════════════════════════════════════════════════
    Phase-2 landing components (from the new design bundle).
    Also reusable on profile / dashboard pages.

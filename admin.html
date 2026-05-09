@@ -188,20 +188,20 @@
 
       <!-- ═══ Tab: Users ═══ -->
       <section class="admin-panel" data-panel="users">
-        <div style="display:flex;gap:8px;margin-bottom:var(--space-sm);align-items:center;flex-wrap:wrap">
-          <div style="font-size:0.88rem;color:var(--text-secondary)">All registered accounts. Change role only when you understand the consequences.</div>
+        <div class="toolbar-row">
+          <div class="fs-md text-secondary">All registered accounts. Change role only when you understand the consequences.</div>
           <input type="text" id="user-search" placeholder="Search email or name" oninput="renderUsers()" class="form-input" style="max-width:260px;margin-left:auto;font-size:0.82rem;padding:6px 10px">
-          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" aria-label="Export users to CSV" onclick="exportUsersCSV()">↓ CSV</button>
-          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" aria-label="Refresh users list" onclick="renderUsers()">Refresh</button>
+          <button class="btn btn-ghost btn-sm fs-tiny" aria-label="Export users to CSV" onclick="exportUsersCSV()">↓ CSV</button>
+          <button class="btn btn-ghost btn-sm fs-tiny" aria-label="Refresh users list" onclick="renderUsers()">Refresh</button>
         </div>
-        <div id="users-list" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);overflow:hidden"></div>
+        <div id="users-list" class="section-card"></div>
       </section>
 
       <!-- ═══ Tab: Bookings moderation ═══ -->
       <section class="admin-panel" data-panel="bookings-mod">
-        <div style="display:flex;gap:8px;margin-bottom:var(--space-sm);align-items:center;flex-wrap:wrap">
-          <div style="font-size:0.88rem;color:var(--text-secondary)">All bookings across the platform. Force-cancel is audited.</div>
-          <select id="bookings-mod-filter" class="form-select" style="margin-left:auto;font-size:0.82rem;padding:6px 10px" onchange="renderBookingsMod()">
+        <div class="toolbar-row">
+          <div class="fs-md text-secondary">All bookings across the platform. Force-cancel is audited.</div>
+          <select id="bookings-mod-filter" class="form-select ml-auto form-input-compact" onchange="renderBookingsMod()">
             <option value="all">All statuses</option>
             <option value="pending">Pending</option>
             <option value="confirmed">Confirmed</option>
@@ -209,18 +209,18 @@
             <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
           </select>
-          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" aria-label="Export bookings to CSV" onclick="exportBookingsModCSV()">↓ CSV</button>
-          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" aria-label="Refresh bookings list" onclick="renderBookingsMod()">Refresh</button>
+          <button class="btn btn-ghost btn-sm fs-tiny" aria-label="Export bookings to CSV" onclick="exportBookingsModCSV()">↓ CSV</button>
+          <button class="btn btn-ghost btn-sm fs-tiny" aria-label="Refresh bookings list" onclick="renderBookingsMod()">Refresh</button>
         </div>
-        <div id="bookings-mod-list" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);overflow:hidden"></div>
+        <div id="bookings-mod-list" class="section-card"></div>
       </section>
 
       <!-- ═══ Tab: Bulk import ═══ -->
       <section class="admin-panel" data-panel="import">
         <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:var(--space-md);line-height:1.6">
           Drop a CSV with artists to add them all as unclaimed rows. Columns:
-          <code style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-primary)">stage_name</code> (required) +
-          <code style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-primary)">genre, city, instagram, soundcloud, spotify, status, verified, base_fee</code> (optional).
+          <code class="code-mono">stage_name</code> (required) +
+          <code class="code-mono">genre, city, instagram, soundcloud, spotify, status, verified, base_fee</code> (optional).
         </p>
         <p style="font-size:0.82rem;margin-bottom:var(--space-md)">
           <a href="assets/artist-import-template.csv" download style="color:var(--accent-soft)">Download template CSV →</a>
@@ -232,7 +232,7 @@
           <div id="admin-csv-filename" style="color:var(--text-tertiary);font-size:0.75rem;margin-top:4px;font-family:var(--font-mono)"></div>
         </div>
 
-        <div id="admin-csv-preview" style="margin-top:var(--space-md);display:none">
+        <div id="admin-csv-preview" class="mt-md is-hidden">
           <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:var(--space-sm)">
             <span id="admin-csv-count">0</span> row<span id="admin-csv-plural">s</span> ready. Review below, then import.
           </div>
@@ -243,7 +243,7 @@
           </div>
         </div>
 
-        <div id="admin-csv-results" style="margin-top:var(--space-md);display:none"></div>
+        <div id="admin-csv-results" class="mt-md is-hidden"></div>
       </section>
 
       <!-- ═══ Tab: Broadcast ═══ -->
@@ -278,20 +278,20 @@
             <button class="btn btn-primary" id="bc-send-btn" onclick="broadcastSend()">Send broadcast</button>
             <div id="bc-preview-count" style="font-size:0.78rem;color:var(--text-tertiary)"></div>
           </div>
-          <div id="bc-result" style="margin-top:var(--space-md);display:none"></div>
+          <div id="bc-result" class="mt-md is-hidden"></div>
         </div>
       </section>
 
       <!-- ═══ Tab: Audit log ═══ -->
       <section class="admin-panel" data-panel="audit">
-        <div style="display:flex;gap:8px;margin-bottom:var(--space-sm);align-items:center;flex-wrap:wrap">
-          <div style="font-size:0.88rem;color:var(--text-secondary)">Admin actions. Up to 500 rows; use filters to narrow.</div>
-          <button class="btn btn-ghost btn-sm" style="margin-left:auto;font-size:0.76rem" aria-label="Export audit log to CSV" onclick="exportAuditLogCSV()">↓ CSV</button>
-          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" aria-label="Refresh audit log" onclick="refreshAuditLog()">Refresh</button>
+        <div class="toolbar-row">
+          <div class="fs-md text-secondary">Admin actions. Up to 500 rows; use filters to narrow.</div>
+          <button class="btn btn-ghost btn-sm ml-auto fs-tiny" aria-label="Export audit log to CSV" onclick="exportAuditLogCSV()">↓ CSV</button>
+          <button class="btn btn-ghost btn-sm fs-tiny" aria-label="Refresh audit log" onclick="refreshAuditLog()">Refresh</button>
         </div>
         <div style="display:flex;gap:8px;margin-bottom:var(--space-sm);flex-wrap:wrap;align-items:center">
           <input type="text" id="audit-actor" placeholder="Filter by actor email" oninput="applyAuditFilters()" class="form-input" style="max-width:260px;font-size:0.82rem;padding:6px 10px">
-          <select id="audit-action-filter" class="form-select" style="font-size:0.82rem;padding:6px 10px" onchange="applyAuditFilters()">
+          <select id="audit-action-filter" class="form-select form-input-compact" onchange="applyAuditFilters()">
             <option value="">All action types</option>
             <option value="artist.verify">Artist verify</option>
             <option value="artist.unverify">Artist unverify</option>
@@ -307,7 +307,7 @@
             <option value="booking.status_change">Booking status change</option>
             <option value="broadcast.sent">Broadcast sent</option>
           </select>
-          <select id="audit-range" class="form-select" style="font-size:0.82rem;padding:6px 10px" onchange="applyAuditFilters()">
+          <select id="audit-range" class="form-select form-input-compact" onchange="applyAuditFilters()">
             <option value="all">All time</option>
             <option value="24h">Last 24 hours</option>
             <option value="7d">Last 7 days</option>
@@ -320,15 +320,15 @@
 
       <!-- ═══ Tab: Emails ═══ -->
       <section class="admin-panel" data-panel="emails">
-        <div style="display:flex;gap:8px;margin-bottom:var(--space-sm);align-items:center;flex-wrap:wrap">
-          <div style="font-size:0.88rem;color:var(--text-secondary)">Resend webhook events. Deliverability at a glance.</div>
-          <select id="email-window" class="form-select" style="margin-left:auto;font-size:0.82rem;padding:6px 10px" onchange="renderEmails()">
+        <div class="toolbar-row">
+          <div class="fs-md text-secondary">Resend webhook events. Deliverability at a glance.</div>
+          <select id="email-window" class="form-select ml-auto form-input-compact" onchange="renderEmails()">
             <option value="24">Last 24 hours</option>
             <option value="168">Last 7 days</option>
             <option value="720">Last 30 days</option>
           </select>
-          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" aria-label="Export email events to CSV" onclick="exportEmailsCSV()">↓ CSV</button>
-          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" aria-label="Refresh email events" onclick="renderEmails()">Refresh</button>
+          <button class="btn btn-ghost btn-sm fs-tiny" aria-label="Export email events to CSV" onclick="exportEmailsCSV()">↓ CSV</button>
+          <button class="btn btn-ghost btn-sm fs-tiny" aria-label="Refresh email events" onclick="renderEmails()">Refresh</button>
         </div>
 
         <div id="email-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:var(--space-lg)"></div>
@@ -346,16 +346,16 @@
             <option value="email.clicked">Clicked</option>
           </select>
         </div>
-        <div id="email-events-list" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);overflow:hidden"></div>
+        <div id="email-events-list" class="section-card"></div>
 
         <details style="margin-top:var(--space-lg);padding:var(--space-md);background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm)">
           <summary style="cursor:pointer;font-size:0.82rem;color:var(--text-secondary)">Setup instructions</summary>
           <div style="margin-top:var(--space-sm);font-size:0.82rem;color:var(--text-secondary);line-height:1.6">
             <ol style="margin-left:var(--space-md)">
               <li>In Resend dashboard → Webhooks → Add Endpoint.</li>
-              <li>URL: <code style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-primary)">https://vgjmfpryobsuboukbemr.supabase.co/functions/v1/resend-webhook</code></li>
+              <li>URL: <code class="code-mono">https://vgjmfpryobsuboukbemr.supabase.co/functions/v1/resend-webhook</code></li>
               <li>Events: email.sent, email.delivered, email.bounced, email.complained, email.opened, email.clicked, email.delivery_delayed</li>
-              <li>Copy the signing secret into Supabase → Edge Functions → Secrets as <code style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-primary)">RESEND_WEBHOOK_SECRET</code>.</li>
+              <li>Copy the signing secret into Supabase → Edge Functions → Secrets as <code class="code-mono">RESEND_WEBHOOK_SECRET</code>.</li>
               <li>Until the secret is set, events still land here but with a <code>webhook_secret_not_configured</code> warning in edge logs.</li>
             </ol>
           </div>
@@ -364,17 +364,17 @@
 
       <!-- ═══ Tab: Errors ═══ -->
       <section class="admin-panel" data-panel="errors">
-        <div style="display:flex;gap:8px;margin-bottom:var(--space-sm);align-items:center;flex-wrap:wrap">
-          <div style="font-size:0.88rem;color:var(--text-secondary)">Client errors captured by the browser logger</div>
+        <div class="toolbar-row">
+          <div class="fs-md text-secondary">Client errors captured by the browser logger</div>
           <select id="err-range" class="form-select" style="margin-left:auto;font-size:0.78rem;padding:4px 8px" onchange="renderErrors()">
             <option value="24h" selected>Last 24 hours</option>
             <option value="7d">Last 7 days</option>
             <option value="all">All (30-day window)</option>
           </select>
-          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" aria-label="Export client errors to CSV" onclick="exportErrorsCSV()">↓ CSV</button>
-          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" aria-label="Refresh client errors" onclick="renderErrors()">Refresh</button>
+          <button class="btn btn-ghost btn-sm fs-tiny" aria-label="Export client errors to CSV" onclick="exportErrorsCSV()">↓ CSV</button>
+          <button class="btn btn-ghost btn-sm fs-tiny" aria-label="Refresh client errors" onclick="renderErrors()">Refresh</button>
         </div>
-        <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);overflow:hidden">
+        <div class="section-card">
           <div class="err-row" style="background:var(--bg-raised);font-family:var(--font-mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);cursor:default">
             <div>Time</div>
             <div>Build</div>
@@ -388,9 +388,9 @@
       <!-- ═══ Tab: Health ═══ -->
       <section class="admin-panel" data-panel="health">
         <div style="display:flex;gap:8px;margin-bottom:var(--space-lg);align-items:center">
-          <div style="font-size:0.88rem;color:var(--text-secondary)">Platform health snapshot</div>
-          <button class="btn btn-ghost btn-sm" style="margin-left:auto;font-size:0.76rem" aria-label="Export cron run history to CSV" onclick="exportCronRunsCSV()">↓ CSV</button>
-          <button class="btn btn-ghost btn-sm" style="font-size:0.76rem" aria-label="Refresh cron health" onclick="renderHealth()">Refresh</button>
+          <div class="fs-md text-secondary">Platform health snapshot</div>
+          <button class="btn btn-ghost btn-sm ml-auto fs-tiny" aria-label="Export cron run history to CSV" onclick="exportCronRunsCSV()">↓ CSV</button>
+          <button class="btn btn-ghost btn-sm fs-tiny" aria-label="Refresh cron health" onclick="renderHealth()">Refresh</button>
         </div>
 
         <div id="health-summary" class="health-card">Loading…</div>
@@ -399,7 +399,7 @@
         <div id="cron-health-grid" style="display:flex;flex-direction:column;gap:var(--space-sm);margin-bottom:var(--space-xl)"></div>
 
         <h3 style="font-size:1rem;margin-bottom:var(--space-sm)">Last 20 cron runs</h3>
-        <div id="cron-runs-list" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);overflow:hidden"></div>
+        <div id="cron-runs-list" class="section-card"></div>
       </section>
     </div>
   </div>
@@ -428,10 +428,10 @@
     async function refreshAuditLog() {
       const host = document.getElementById('admin-audit-log');
       if (!host) return;
-      host.innerHTML = '<div class="text-tertiary" style="padding:var(--space-md);font-size:0.82rem">Loading…</div>';
+      host.innerHTML = '<div class="text-tertiary list-msg">Loading…</div>';
       const res = await DB.adminListAuditLog({ limit: 500 });
       if (!res.success) {
-        host.innerHTML = `<div class="text-tertiary" style="padding:var(--space-md);font-size:0.82rem">Failed to load: ${res.error || 'unknown'}</div>`;
+        host.innerHTML = `<div class="text-tertiary list-msg">Failed to load: ${res.error || 'unknown'}</div>`;
         return;
       }
       _auditRows = res.data || [];
@@ -504,16 +504,16 @@
           delta = keys.map(k => {
             const bef = fmtVal(row.before_value[k]);
             const aft = fmtVal(row.after_value[k]);
-            return `<span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary)">${esc(k)}: <span style="text-decoration:line-through;opacity:0.7">${esc(bef)}</span> → <span style="color:var(--text-secondary)">${esc(aft)}</span></span>`;
+            return `<span class="label-mono">${esc(k)}: <span style="text-decoration:line-through;opacity:0.7">${esc(bef)}</span> → <span style="color:var(--text-secondary)">${esc(aft)}</span></span>`;
           }).join('<span style="color:var(--text-tertiary);margin:0 6px">·</span>');
         } else if (row.action === 'artist.bulk_import' && row.meta) {
           const m = row.meta;
-          delta = `<span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary)">${m.succeeded || 0} imported · ${m.failed || 0} failed · ${m.total || 0} total</span>`;
+          delta = `<span class="label-mono">${m.succeeded || 0} imported · ${m.failed || 0} failed · ${m.total || 0} total</span>`;
         } else if (row.action === 'broadcast.sent' && row.after_value) {
-          delta = `<span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary)">${row.after_value.recipients || 0} recipients · "${esc((row.meta?.title || '').slice(0, 60))}"${row.meta?.role_filter ? ' · role=' + esc(row.meta.role_filter) : ''}</span>`;
+          delta = `<span class="label-mono">${row.after_value.recipients || 0} recipients · "${esc((row.meta?.title || '').slice(0, 60))}"${row.meta?.role_filter ? ' · role=' + esc(row.meta.role_filter) : ''}</span>`;
         } else if (row.after_value && Object.keys(row.after_value).length) {
           const parts = Object.entries(row.after_value).map(([k,v]) => `${esc(k)}=${esc(fmtVal(v))}`);
-          delta = `<span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary)">${parts.join(' · ')}</span>`;
+          delta = `<span class="label-mono">${parts.join(' · ')}</span>`;
         }
 
         // Only offer Undo on actions where the RPC knows how to reverse
@@ -601,8 +601,8 @@
               </div>
             </div>
             <div style="display:flex;gap:4px;flex-wrap:wrap">
-              ${!a.verified ? `<button class="btn btn-primary btn-sm" style="font-size:0.72rem" aria-label="Approve artist ${esc(a.stage_name || 'unnamed')}" onclick="queueApprove('${esc(a.id)}')">Approve</button>` : ''}
-              ${a.status !== 'active' ? `<button class="btn btn-secondary btn-sm" style="font-size:0.72rem" aria-label="Activate artist ${esc(a.stage_name || 'unnamed')}" onclick="queueActivate('${esc(a.id)}')">Activate</button>` : ''}
+              ${!a.verified ? `<button class="btn btn-primary btn-sm fs-2xs" aria-label="Approve artist ${esc(a.stage_name || 'unnamed')}" onclick="queueApprove('${esc(a.id)}')">Approve</button>` : ''}
+              ${a.status !== 'active' ? `<button class="btn btn-secondary btn-sm fs-2xs" aria-label="Activate artist ${esc(a.stage_name || 'unnamed')}" onclick="queueActivate('${esc(a.id)}')">Activate</button>` : ''}
               <button class="btn btn-ghost btn-sm" style="font-size:0.72rem;color:var(--status-cancelled)" aria-label="Reject artist ${esc(a.stage_name || 'unnamed')}" onclick="queueReject('${esc(a.id)}')">Reject</button>
             </div>
           </div>
@@ -669,7 +669,7 @@
       list.innerHTML = res.data.map(a => {
         const genre = Array.isArray(a.genre) ? a.genre.join(', ') : (a.genre || '');
         const city = Array.isArray(a.cities_active) ? a.cities_active[0] : '';
-        const claimed = a.profile_id ? '<span style="color:var(--status-confirmed);font-size:0.75rem">claimed</span>' : '<span class="text-tertiary" style="font-size:0.75rem">unclaimed</span>';
+        const claimed = a.profile_id ? '<span style="color:var(--status-confirmed);font-size:0.75rem">claimed</span>' : '<span class="text-tertiary fs-xs">unclaimed</span>';
         const statusClr = a.status === 'active' ? 'var(--status-confirmed)' : a.status === 'pending' ? 'var(--status-pending)' : 'var(--text-tertiary)';
         return `
           <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-sm);padding:var(--space-sm) var(--space-md);background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm)">
@@ -684,10 +684,10 @@
               </div>
             </div>
             <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
-              ${a.status !== 'active' ? `<button class="btn btn-ghost btn-sm" style="font-size:0.75rem" aria-label="Set artist ${esc(a.stage_name || 'unnamed')} to active" onclick="adminSetStatus('${esc(a.id)}','active')">Activate</button>` : ''}
-              ${a.status !== 'pending' ? `<button class="btn btn-ghost btn-sm" style="font-size:0.75rem" aria-label="Hide artist ${esc(a.stage_name || 'unnamed')} from directory" onclick="adminSetStatus('${esc(a.id)}','pending')">Hide</button>` : ''}
-              ${a.status !== 'inactive' ? `<button class="btn btn-ghost btn-sm" style="font-size:0.75rem" aria-label="Retire artist ${esc(a.stage_name || 'unnamed')}" onclick="adminSetStatus('${esc(a.id)}','inactive')">Retire</button>` : ''}
-              <button class="btn btn-ghost btn-sm" style="font-size:0.75rem" aria-label="${a.verified ? 'Remove verification from' : 'Verify'} artist ${esc(a.stage_name || 'unnamed')}" onclick="adminToggleVerified('${esc(a.id)}',${!a.verified})">${a.verified ? 'Unverify' : 'Verify'}</button>
+              ${a.status !== 'active' ? `<button class="btn btn-ghost btn-sm fs-xs" aria-label="Set artist ${esc(a.stage_name || 'unnamed')} to active" onclick="adminSetStatus('${esc(a.id)}','active')">Activate</button>` : ''}
+              ${a.status !== 'pending' ? `<button class="btn btn-ghost btn-sm fs-xs" aria-label="Hide artist ${esc(a.stage_name || 'unnamed')} from directory" onclick="adminSetStatus('${esc(a.id)}','pending')">Hide</button>` : ''}
+              ${a.status !== 'inactive' ? `<button class="btn btn-ghost btn-sm fs-xs" aria-label="Retire artist ${esc(a.stage_name || 'unnamed')}" onclick="adminSetStatus('${esc(a.id)}','inactive')">Retire</button>` : ''}
+              <button class="btn btn-ghost btn-sm fs-xs" aria-label="${a.verified ? 'Remove verification from' : 'Verify'} artist ${esc(a.stage_name || 'unnamed')}" onclick="adminToggleVerified('${esc(a.id)}',${!a.verified})">${a.verified ? 'Unverify' : 'Verify'}</button>
             </div>
           </div>
         `;
@@ -781,7 +781,7 @@
 
       if (count === 0) {
         document.getElementById('admin-csv-preview-table').innerHTML =
-          '<div style="color:var(--status-cancelled)">No valid rows found. Check the header row — stage_name is required.</div>';
+          '<div class="text-status-cancelled">No valid rows found. Check the header row — stage_name is required.</div>';
         document.getElementById('admin-csv-import').disabled = true;
         return;
       }
@@ -833,12 +833,12 @@
       const results = document.getElementById('admin-csv-results');
       let html = `<div style="font-size:0.88rem;margin-bottom:var(--space-sm)">
         <strong style="color:var(--status-confirmed)">${res.succeeded} added</strong>
-        ${res.failed > 0 ? `· <strong style="color:var(--status-cancelled)">${res.failed} failed</strong>` : ''}
+        ${res.failed > 0 ? `· <strong class="text-status-cancelled">${res.failed} failed</strong>` : ''}
       </div>`;
       if (res.failed > 0) {
         html += '<div style="background:var(--bg-1);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:var(--space-sm);font-family:var(--font-mono);font-size:0.78rem;max-height:160px;overflow:auto">';
         res.results.filter(r => !r.ok).forEach(r => {
-          html += `<div style="color:var(--status-cancelled)">${esc(r.stage_name)}: ${esc(r.error || 'unknown')}</div>`;
+          html += `<div class="text-status-cancelled">${esc(r.stage_name)}: ${esc(r.error || 'unknown')}</div>`;
         });
         html += '</div>';
       }
@@ -877,7 +877,7 @@
     async function renderErrors() {
       const host = document.getElementById('err-list');
       if (!host) return;
-      host.innerHTML = '<div style="padding:var(--space-md);color:var(--text-tertiary);font-size:0.82rem">Loading…</div>';
+      host.innerHTML = '<div class="list-msg list-msg-muted">Loading…</div>';
 
       const range = document.getElementById('err-range').value;
       let sinceHours = 24;
@@ -892,7 +892,7 @@
           .order('created_at', { ascending: false })
           .limit(200);
         if (error) {
-          host.innerHTML = `<div style="padding:var(--space-md);color:var(--status-cancelled);font-size:0.82rem">Failed: ${esc(error.message)}</div>`;
+          host.innerHTML = `<div class="list-msg list-msg-error">Failed: ${esc(error.message)}</div>`;
           return;
         }
         if (!data || data.length === 0) {
@@ -912,7 +912,7 @@
           `;
         }).join('');
       } catch (e) {
-        host.innerHTML = `<div style="padding:var(--space-md);color:var(--status-cancelled);font-size:0.82rem">Failed: ${esc(String(e))}</div>`;
+        host.innerHTML = `<div class="list-msg list-msg-error">Failed: ${esc(String(e))}</div>`;
       }
     }
     window.renderErrors = renderErrors;
@@ -927,16 +927,16 @@
     async function renderCronHealthGrid() {
       const host = document.getElementById('cron-health-grid');
       if (!host) return;
-      host.innerHTML = '<div style="padding:var(--space-md);color:var(--text-tertiary);font-size:0.82rem">Loading cron jobs…</div>';
+      host.innerHTML = '<div class="list-msg list-msg-muted">Loading cron jobs…</div>';
 
       const res = await DB.adminCronHealth();
       if (!res.success) {
-        host.innerHTML = `<div style="padding:var(--space-md);color:var(--status-cancelled);font-size:0.82rem">Failed: ${esc(res.error || 'unknown')}</div>`;
+        host.innerHTML = `<div class="list-msg list-msg-error">Failed: ${esc(res.error || 'unknown')}</div>`;
         return;
       }
       const jobs = res.data || [];
       if (jobs.length === 0) {
-        host.innerHTML = '<div style="padding:var(--space-md);color:var(--text-tertiary);font-size:0.82rem">No cron runs recorded yet.</div>';
+        host.innerHTML = '<div class="list-msg list-msg-muted">No cron runs recorded yet.</div>';
         return;
       }
 
@@ -1058,7 +1058,7 @@
           ${warnings}
         `;
       } catch (e) {
-        summary.innerHTML = `<div style="color:var(--status-cancelled)">Health endpoint failed: ${esc(String(e))}</div>`;
+        summary.innerHTML = `<div class="text-status-cancelled">Health endpoint failed: ${esc(String(e))}</div>`;
       }
 
       // 2) cron_runs tail
@@ -1068,7 +1068,7 @@
           .order('ran_at', { ascending: false })
           .limit(20);
         if (error || !data || data.length === 0) {
-          runsHost.innerHTML = '<div style="padding:var(--space-md);color:var(--text-tertiary);font-size:0.82rem">No cron runs yet.</div>';
+          runsHost.innerHTML = '<div class="list-msg list-msg-muted">No cron runs yet.</div>';
           return;
         }
         runsHost.innerHTML = data.map(r => {
@@ -1085,7 +1085,7 @@
           </div>`;
         }).join('');
       } catch (e) {
-        runsHost.innerHTML = `<div style="padding:var(--space-md);color:var(--status-cancelled);font-size:0.82rem">Failed: ${esc(String(e))}</div>`;
+        runsHost.innerHTML = `<div class="list-msg list-msg-error">Failed: ${esc(String(e))}</div>`;
       }
     }
     window.renderHealth = renderHealth;
@@ -1132,10 +1132,10 @@
     async function renderUsers() {
       const host = document.getElementById('users-list');
       if (!host) return;
-      host.innerHTML = '<div style="padding:var(--space-md);color:var(--text-tertiary);font-size:0.82rem">Loading…</div>';
+      host.innerHTML = '<div class="list-msg list-msg-muted">Loading…</div>';
       const res = await DB.adminListUsers();
       if (!res.success) {
-        host.innerHTML = `<div style="padding:var(--space-md);color:var(--status-cancelled);font-size:0.82rem">Failed: ${esc(res.error || '')}</div>`;
+        host.innerHTML = `<div class="list-msg list-msg-error">Failed: ${esc(res.error || '')}</div>`;
         return;
       }
       _allUsers = res.data || [];
@@ -1163,15 +1163,15 @@
         const flip = u.role === 'artist' ? 'promoter' : 'artist';
         return `
           <div style="display:grid;grid-template-columns:1fr 1fr 90px 90px 110px 320px;gap:var(--space-md);padding:10px 12px;border-bottom:1px solid var(--border-subtle);font-size:0.82rem;align-items:center">
-            <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(u.email || '')}</div>
-            <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(u.display_name || '')}</div>
+            <div class="truncate">${esc(u.email || '')}</div>
+            <div class="truncate">${esc(u.display_name || '')}</div>
             <div><span style="font-family:var(--font-mono);font-size:0.7rem;padding:2px 8px;border-radius:999px;background:var(--bg-card);border:1px solid var(--border-subtle);color:${u.role === 'artist' ? 'var(--status-info)' : 'var(--accent-soft)'}">${esc(u.role || '—')}</span></div>
             <div style="color:var(--text-tertiary);font-size:0.78rem">${esc(u.city || '—')}</div>
-            <div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary)">${lastSeen}</div>
+            <div class="label-mono">${lastSeen}</div>
             <div style="display:flex;gap:4px;flex-wrap:wrap">
-              <button class="btn btn-ghost btn-sm" style="font-size:0.7rem" aria-label="Change role of ${esc(u.email||'user')} to ${flip}" onclick="userToggleRole('${esc(u.id)}','${flip}', '${esc(u.email||'')}')">Make ${flip}</button>
-              <button class="btn btn-ghost btn-sm" style="font-size:0.7rem" aria-label="Impersonate user ${esc(u.email||'')}" onclick="userImpersonate('${esc(u.id)}', '${esc(u.email||'')}')">Impersonate</button>
-              <button class="btn btn-ghost btn-sm" style="font-size:0.7rem" aria-label="Re-send welcome email to ${esc(u.email||'')}" onclick="userResendWelcome('${esc(u.id)}', '${esc(u.email||'')}')">Re-send welcome</button>
+              <button class="btn btn-ghost btn-sm fs-2xs" aria-label="Change role of ${esc(u.email||'user')} to ${flip}" onclick="userToggleRole('${esc(u.id)}','${flip}', '${esc(u.email||'')}')">Make ${flip}</button>
+              <button class="btn btn-ghost btn-sm fs-2xs" aria-label="Impersonate user ${esc(u.email||'')}" onclick="userImpersonate('${esc(u.id)}', '${esc(u.email||'')}')">Impersonate</button>
+              <button class="btn btn-ghost btn-sm fs-2xs" aria-label="Re-send welcome email to ${esc(u.email||'')}" onclick="userResendWelcome('${esc(u.id)}', '${esc(u.email||'')}')">Re-send welcome</button>
               <button class="btn btn-ghost btn-sm" style="font-size:0.7rem;color:var(--status-cancelled)" aria-label="Suspend user ${esc(u.email||'')}" onclick="userSuspend('${esc(u.id)}', '${esc(u.email||'')}')">Suspend</button>
             </div>
           </div>
@@ -1246,10 +1246,10 @@
     async function renderBookingsMod() {
       const host = document.getElementById('bookings-mod-list');
       if (!host) return;
-      host.innerHTML = '<div style="padding:var(--space-md);color:var(--text-tertiary);font-size:0.82rem">Loading…</div>';
+      host.innerHTML = '<div class="list-msg list-msg-muted">Loading…</div>';
       const res = await DB.adminListAllBookings({ limit: 200 });
       if (!res.success) {
-        host.innerHTML = `<div style="padding:var(--space-md);color:var(--status-cancelled);font-size:0.82rem">Failed: ${esc(res.error || '')}</div>`;
+        host.innerHTML = `<div class="list-msg list-msg-error">Failed: ${esc(res.error || '')}</div>`;
         return;
       }
       _allModBookings = res.data || [];
@@ -1286,7 +1286,7 @@
         return `
           <div style="display:grid;grid-template-columns:100px 1fr 1fr 100px 100px 110px 100px;gap:var(--space-md);padding:10px 12px;border-bottom:1px solid var(--border-subtle);font-size:0.82rem;align-items:center">
             <div style="font-family:var(--font-mono);font-size:0.76rem">${date}</div>
-            <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><a href="/booking-detail.html?id=${esc(b.id)}" style="color:var(--text-primary);text-decoration:none">${esc(b.event_name || b.venue_name || 'Event')}</a></div>
+            <div class="truncate"><a href="/booking-detail.html?id=${esc(b.id)}" style="color:var(--text-primary);text-decoration:none">${esc(b.event_name || b.venue_name || 'Event')}</a></div>
             <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-secondary)">${esc(artist)}</div>
             <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-secondary);font-size:0.76rem">${esc(promoter)}</div>
             <div style="font-family:var(--font-mono);font-size:0.76rem">${fee}</div>
@@ -1344,7 +1344,7 @@
       const typeFilter = document.getElementById('email-type-filter').value || null;
 
       statsHost.innerHTML = '<div style="color:var(--text-tertiary);font-size:0.82rem;padding:var(--space-sm)">Loading\u2026</div>';
-      listHost.innerHTML  = '<div style="padding:var(--space-md);color:var(--text-tertiary);font-size:0.82rem">Loading\u2026</div>';
+      listHost.innerHTML  = '<div class="list-msg list-msg-muted">Loading\u2026</div>';
 
       // Stats
       const statsRes = await DB.adminEmailStats(hours);
@@ -1377,7 +1377,7 @@
       // Event list
       const res = await DB.adminListEmailEvents({ limit: 100, typeFilter });
       if (!res.success) {
-        listHost.innerHTML = `<div style="padding:var(--space-md);color:var(--status-cancelled);font-size:0.82rem">Failed: ${esc(res.error || '')}</div>`;
+        listHost.innerHTML = `<div class="list-msg list-msg-error">Failed: ${esc(res.error || '')}</div>`;
         return;
       }
       if (!res.data || res.data.length === 0) {
@@ -1401,7 +1401,7 @@
           <div style="display:grid;grid-template-columns:140px 120px 1fr 1fr 150px;gap:var(--space-md);padding:8px 12px;border-bottom:1px solid var(--border-subtle);font-size:0.82rem;align-items:center">
             <div style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-tertiary)">${when}</div>
             <div><span style="font-family:var(--font-mono);font-size:0.68rem;padding:2px 8px;border-radius:999px;border:1px solid ${clr};color:${clr}">${esc(short)}</span></div>
-            <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(ev.to_email || '')}</div>
+            <div class="truncate">${esc(ev.to_email || '')}</div>
             <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-tertiary)">${esc(ev.subject || '')}</div>
             <div style="font-family:var(--font-mono);font-size:0.68rem;color:var(--text-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc((ev.resend_id || '').slice(0, 12))}</div>
           </div>

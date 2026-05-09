@@ -10,6 +10,18 @@ e2e/test-results/
 e2e/playwright-report/
 e2e/results.json
 
+# Top-level Playwright outputs (when run from web/ root, not e2e/)
+test-results/
+playwright-report/
+
+# TestSprite runtime outputs — spec sources tracked, runtime tmp ignored
+testsprite_tests/tmp/
+
+# npm lockfile — this repo has no build step; package.json is for
+# Playwright-only dev deps and the lockfile is regeneratable, but it
+# should not be checked in alongside a static-deploy site.
+package-lock.json
+
 serve.js
 *.log
 
