@@ -180,7 +180,8 @@ trap cleanup_stamps EXIT
 FILES=$(find . \
   -type d \( \
     -name '.git' -o -name '.github' -o -name '.claude' -o \
-    -name 'node_modules' -o -name 'scripts' -o -name 'supabase' -o -name 'e2e' \
+    -name 'node_modules' -o -name 'scripts' -o -name 'supabase' -o -name 'e2e' -o \
+    -name 'docs' -o -name 'test-results' -o -name 'testsprite_tests' \
   \) -prune -o \
   -type f \
   ! -name '.DS_Store' \
