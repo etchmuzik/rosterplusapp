@@ -1,9 +1,18 @@
 # Deploying ROSTR+
 
 **Push to `main` → GitHub Actions deploys to Hostinger via FTP.** That's
-the whole flow. No human runs anything by hand.
+the design. There is currently a **billing lockout on the GitHub
+Actions account** (see [Account billing](#account-billing) below)
+which blocks the auto-deploy. Until that's resolved, use:
 
-## Everyday flow
+```bash
+npm run ship
+```
+
+…from `web/`, which pushes `main` and then runs the FTP deploy
+locally. Same end result, no humans-in-the-loop except yourself.
+
+## Everyday flow (target state)
 
 ```bash
 git add <files>
@@ -18,6 +27,34 @@ fails CI before any FTP traffic happens.
 
 Live in ~3 minutes (Playwright suite is the slowest step). CDN
 propagation takes a few additional seconds.
+
+## Everyday flow (current state, while Actions is billing-locked)
+
+```bash
+git add <files>
+git commit -m "feat: …"
+npm run ship          # = bash scripts/push.sh = git push + scripts/deploy.sh
+```
+
+`scripts/push.sh` is a thin wrapper that runs `git push origin main`,
+then (only if push succeeded) runs `bash scripts/deploy.sh --skip-checks`.
+Identical UX to the eventual GitHub Actions flow — push once, walk away.
+
+## Account billing
+
+GitHub Actions runs on this repo are currently failing with
+`The job was not started because your account is locked due to a
+billing issue`. Every push since 2026-04-29 has failed CI for the same
+reason; this is what made the 2026-04-30 EPK incident possible (no
+deploy, no test gate, no signal).
+
+Fix:
+1. Go to https://github.com/settings/billing
+2. Resolve the outstanding charge or update the payment method
+3. Re-run the latest workflow on the Actions tab
+
+Once that's clear, every subsequent push deploys automatically and
+`npm run ship` becomes redundant (delete `scripts/push.sh` then).
 
 ## What the deploy job does
 
