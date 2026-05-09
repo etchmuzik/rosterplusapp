@@ -159,11 +159,28 @@
           <!-- Featured artist card (populated via JS with a live active artist) -->
           <div class="lp-mini-card" id="lp-featured">
             <div class="lp-mini-visual">
+              <!-- Background photo placeholder. Drop a 1600x1200 lifestyle/atmosphere
+                   shot at the path below; it sits behind the existing gradient
+                   overlay (::after). onerror removes itself so the gradient stays
+                   visible during local-file rotation. -->
+              <img class="lp-mini-bg" id="lp-featured-bg"
+                   src="/assets/images/placeholders/hero-featured.jpg"
+                   alt="" aria-hidden="true" loading="eager" decoding="async"
+                   onerror="this.remove()">
               <div class="lp-mini-badge">
                 <span class="lp-mini-pulse"></span>
                 Live on roster
               </div>
-              <div class="avatar" id="lp-featured-initials">—</div>
+              <div class="avatar" id="lp-featured-initials">
+                <!-- Photo placeholder for the featured artist's avatar.
+                     Drop an 800x800 square portrait. onerror removes the
+                     <img> on 404 so the initials span behind it stays visible. -->
+                <img id="lp-featured-photo"
+                     src="/assets/images/placeholders/featured-avatar.jpg"
+                     alt="" loading="eager" decoding="async"
+                     onerror="this.remove()">
+                <span class="avatar-initials">—</span>
+              </div>
               <div class="lp-mini-caption">
                 <div class="genre" id="lp-featured-genre">Loading…</div>
                 <div class="stage" id="lp-featured-name">—</div>
@@ -234,7 +251,35 @@
           </div>
           <div class="lp-feature-visual">
             <div id="lp-feature-gallery" style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px">
-              <!-- populated with 6 artist tiles via JS -->
+              <!-- Six static placeholder tiles. Visible immediately on load
+                   so the grid never appears empty. The hydration script
+                   below replaces these with live artist tiles when
+                   DB.getArtists resolves; if the query fails, these stay.
+                   Drop 600x600 portraits at the gallery-N.jpg paths. -->
+              <div class="lp-gallery-tile">
+                <img src="/assets/images/placeholders/gallery-1.jpg" alt="" loading="lazy" decoding="async" onerror="this.remove()">
+                <span class="lp-gallery-initials">01</span>
+              </div>
+              <div class="lp-gallery-tile">
+                <img src="/assets/images/placeholders/gallery-2.jpg" alt="" loading="lazy" decoding="async" onerror="this.remove()">
+                <span class="lp-gallery-initials">02</span>
+              </div>
+              <div class="lp-gallery-tile">
+                <img src="/assets/images/placeholders/gallery-3.jpg" alt="" loading="lazy" decoding="async" onerror="this.remove()">
+                <span class="lp-gallery-initials">03</span>
+              </div>
+              <div class="lp-gallery-tile">
+                <img src="/assets/images/placeholders/gallery-4.jpg" alt="" loading="lazy" decoding="async" onerror="this.remove()">
+                <span class="lp-gallery-initials">04</span>
+              </div>
+              <div class="lp-gallery-tile">
+                <img src="/assets/images/placeholders/gallery-5.jpg" alt="" loading="lazy" decoding="async" onerror="this.remove()">
+                <span class="lp-gallery-initials">05</span>
+              </div>
+              <div class="lp-gallery-tile">
+                <img src="/assets/images/placeholders/gallery-6.jpg" alt="" loading="lazy" decoding="async" onerror="this.remove()">
+                <span class="lp-gallery-initials">06</span>
+              </div>
             </div>
           </div>
         </div>
@@ -602,27 +647,36 @@
         if (featured) {
           const name = featured.name || featured.stage_name || 'Artist';
           const initials = name.split(/\s+/).map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
-          setText('lp-featured-initials', initials);
+          // Write initials into the inner <span>, not the wrapper, so we
+          // don't blow away the placeholder <img> sitting next to it.
+          const initialsSpan = document.querySelector('#lp-featured-initials .avatar-initials');
+          if (initialsSpan) initialsSpan.textContent = initials;
+          // Swap the avatar photo to the live artist's avatar_url when
+          // we have one. If the artist has no avatar, leave the static
+          // placeholder src in place so the local-file workflow stays
+          // self-contained. The onerror handler still removes the <img>
+          // on 404 so initials win.
+          const photo = document.getElementById('lp-featured-photo');
+          if (photo && featured.avatar_url) photo.src = featured.avatar_url;
           setText('lp-featured-name', name);
           setText('lp-featured-genre', 'Featured · ' + (featured.genre || 'Artist'));
           setText('lp-featured-city', featured.city || '—');
         }
 
-        // Feature-01 gallery — first 6 artists as gradient tiles
+        // Feature-01 gallery — first 6 artists. Each tile is a photo
+        // when the artist has avatar_url, falling back to the static
+        // placeholder at /assets/images/placeholders/gallery-N.jpg, and
+        // finally to the initials when neither resolves.
         const gallery = document.getElementById('lp-feature-gallery');
         if (gallery && count > 0) {
-          const tile = (a) => {
+          const tile = (a, i) => {
             const name = a.name || a.stage_name || '?';
             const initials = name.split(/\s+/).map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
-            // Deterministic subtle tint from the name
-            const hash = name.split('').reduce((h, c) => h + c.charCodeAt(0), 0);
-            const hue = hash % 360;
-            return `<div style="aspect-ratio:1/1;border-radius:10px;border:1px solid var(--border-subtle);
-              background:radial-gradient(ellipse at 30% 30%, hsla(${hue},18%,40%,0.35), transparent 60%),
-                         linear-gradient(180deg, var(--bg-2), var(--bg-base));
-              display:flex;align-items:center;justify-content:center;
-              font-family:var(--font-display);font-weight:700;font-size:1.1rem;
-              color:var(--text-primary);letter-spacing:-0.02em">${esc(initials)}</div>`;
+            const photoSrc = a.avatar_url || `/assets/images/placeholders/gallery-${i + 1}.jpg`;
+            return `<div class="lp-gallery-tile">
+              <img src="${esc(photoSrc)}" alt="${esc(name)}" loading="lazy" decoding="async" onerror="this.remove()">
+              <span class="lp-gallery-initials">${esc(initials)}</span>
+            </div>`;
           };
           gallery.innerHTML = artists.slice(0, 6).map(tile).join('');
         }

@@ -1277,6 +1277,37 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   background: rgba(0,0,0,0.25);
   border: 1px solid var(--border-subtle);
 }
+/* Feature-01 gallery tile. Photo on top of a deterministic gradient
+   fallback so a missing image still renders something. The initials
+   span is below the <img>; visible only when the <img> errors and
+   removes itself. */
+.lp-gallery-tile {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-base));
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+.lp-gallery-tile img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.lp-gallery-initials {
+  position: relative;
+  z-index: 0;
+}
 
 /* Featured artist card (MiniNowPlaying) */
 .lp-mini-card {
@@ -1298,6 +1329,19 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   position: absolute;
   inset: 0;
   background: linear-gradient(to bottom, transparent 40%, rgba(8,9,11,0.9));
+  z-index: 1;
+  pointer-events: none;
+}
+/* Background photo placeholder. Sits at the bottom of the stacking
+   context so the existing gradient (::after, z-index 1) and the
+   badge/avatar/caption (z-index 2) layer over it correctly. */
+.lp-mini-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
 }
 .lp-mini-visual .avatar {
   position: absolute;
@@ -1314,6 +1358,24 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   font-size: 2rem;
   font-weight: 700;
   color: var(--text-primary);
+  overflow: hidden;
+  z-index: 2;
+}
+/* Avatar photo: fills the circular wrapper, sits above the initials.
+   When the <img> errors and removes itself, the initials behind it
+   stay visible. */
+.lp-mini-visual .avatar img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+  z-index: 1;
+}
+.lp-mini-visual .avatar .avatar-initials {
+  position: relative;
+  z-index: 0;
 }
 .lp-mini-badge {
   position: absolute;

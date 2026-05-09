@@ -25,3 +25,12 @@ serve.js
 *.deploy-bak
 
 .mcp.json
+
+# Homepage placeholder photos — operator drops licensed photos in
+# locally; we don't want them accidentally shipped via git. Only the
+# README that documents the filename contract is tracked.
+assets/images/placeholders/*.jpg
+assets/images/placeholders/*.jpeg
+assets/images/placeholders/*.png
+assets/images/placeholders/*.webp
+!assets/images/placeholders/README.md
