@@ -235,6 +235,21 @@ jobs:
             if [[ "$FTP_REMOTE_DIR" != "/" ]]; then
               echo "mkdir -p $FTP_REMOTE_DIR"
             fi
+            # Pre-create every unique directory. Hostinger's `put -O`
+            # silently no-ops on dot-prefixed dirs (.well-known/) that
+            # don't yet exist; explicit `mkdir -p` fixes that. Same
+            # pattern as scripts/deploy.sh — uses sort -u instead of
+            # `declare -A SEEN_DIRS` so the script stays bash-3.2
+            # portable (macOS ships bash 3).
+            while IFS= read -r f; do
+              [[ -z "$f" ]] && continue
+              remote_dir=$(dirname "$f")
+              [[ "$remote_dir" == "." ]] && continue
+              echo "$remote_dir"
+            done < /tmp/deploy-files.txt | sort -u | while IFS= read -r d; do
+              printf 'mkdir -p "%s"\n' "$d"
+            done
+
             while IFS= read -r f; do
               [[ -z "$f" ]] && continue
               remote_dir=$(dirname "$f")

@@ -234,6 +234,25 @@ trap "rm -f $LFTP_SCRIPT" EXIT
   # leading slash) keeps uploads inside public_html where they belong.
   # That's why FTP_REMOTE_DIR should be kept as "/" (= home directory)
   # and all put -O paths should be relative.
+  #
+  # Second Hostinger quirk: `put -O ".well-known/"` silently fails on
+  # dot-prefixed dirs that don't yet exist — `put -O` claims to
+  # auto-create but in practice doesn't for hidden paths. We emit an
+  # explicit `mkdir` for every unique directory before the puts to
+  # cover that case (and any future dot-prefixed dir we add). `mkdir`
+  # of an existing dir is non-fatal in lftp.
+  #
+  # macOS ships bash 3.2 (no associative arrays), so we use sort -u
+  # on the dirname list instead of `declare -A SEEN_DIRS`.
+  while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
+    remote_dir=$(dirname "$f")
+    [[ "$remote_dir" == "." ]] && continue
+    echo "$remote_dir"
+  done <<< "$FILES" | sort -u | while IFS= read -r d; do
+    printf 'mkdir -p "%s"\n' "$d"
+  done
+
   while IFS= read -r f; do
     [[ -z "$f" ]] && continue
     remote_dir=$(dirname "$f")
