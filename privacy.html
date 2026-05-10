@@ -38,7 +38,7 @@
     <div id="nav-root"></div>
     <div class="legal-container">
       <h1>Privacy Policy</h1>
-      <p class="updated">Last updated: April 9, 2026</p>
+      <p class="updated">Last updated: May 11, 2026</p>
 
       <h2>1. Introduction</h2>
       <p>Beyond Concierge Events Co. LLC ("the Company," "we," "us") operates the ROSTR+ platform at rosterplus.io. This Privacy Policy explains how we collect, use, store, and protect your personal data in compliance with the UAE Federal Decree-Law No. 45/2021 on the Protection of Personal Data (PDPL) and applicable GCC data protection regulations.</p>
@@ -47,12 +47,14 @@
       <table>
         <thead><tr><th>Data Type</th><th>Examples</th><th>Purpose</th></tr></thead>
         <tbody>
-          <tr><td>Account Data</td><td>Name, email, password, role</td><td>Authentication, account management</td></tr>
-          <tr><td>Profile Data</td><td>Stage name, bio, photos, social links, city</td><td>Public profile display, artist discovery</td></tr>
+          <tr><td>Account Data</td><td>Name, email, password, role, phone number (optional)</td><td>Authentication, account management, contact for confirmed bookings</td></tr>
+          <tr><td>Profile Data</td><td>Stage name, bio, photos, audio/video samples, social links, self-reported city</td><td>Public profile display, artist discovery. We do <strong>not</strong> collect precise device location or GPS data.</td></tr>
           <tr><td>Booking Data</td><td>Event details, dates, venues, fees</td><td>Booking management, contracts</td></tr>
-          <tr><td>Payment Data</td><td>Transaction amounts, bank transfer references</td><td>Payment tracking, invoicing</td></tr>
+          <tr><td>Payment Data</td><td>Transaction amounts, bank transfer references. Card data is handled by Stripe and never stored by us.</td><td>Payment tracking, invoicing</td></tr>
           <tr><td>Communication Data</td><td>Messages between users</td><td>In-platform messaging</td></tr>
-          <tr><td>Usage Data</td><td>Pages visited, features used, device info</td><td>Platform improvement, analytics</td></tr>
+          <tr><td>Usage Data</td><td>Pages visited, features used, device info (browser, OS)</td><td>Platform improvement, analytics</td></tr>
+          <tr><td>Diagnostic Data</td><td>Crash reports, error logs, stack traces</td><td>Bug detection and fixing</td></tr>
+          <tr><td>Identifiers</td><td>User ID (Supabase Auth UUID), device push token (iOS only, with consent)</td><td>Authentication, push notification delivery</td></tr>
         </tbody>
       </table>
 
@@ -62,8 +64,9 @@
         <li>To match promoters with artists based on genre, location, and availability.</li>
         <li>To facilitate booking requests, contracts, and payment tracking.</li>
         <li>To send transactional emails (booking confirmations, contract notifications).</li>
+        <li>To deliver push notifications to your device when you grant permission in the iOS app (booking events, contract updates, messages).</li>
         <li>To prevent fraud and ensure platform security.</li>
-        <li>To improve the Platform based on usage patterns.</li>
+        <li>To improve the Platform based on usage patterns and to fix bugs detected through anonymous crash reports.</li>
       </ul>
 
       <h2>4. Legal Basis for Processing</h2>
@@ -79,7 +82,17 @@
       <p>We share your data only with:</p>
       <ul>
         <li><strong>Other users:</strong> Your public profile (name, bio, genre, rates) is visible to all platform users. Private data (email, phone) is shared only with confirmed booking partners.</li>
-        <li><strong>Service providers:</strong> Supabase (database hosting, EU region), Resend (transactional email delivery).</li>
+        <li><strong>Service providers:</strong>
+          <ul>
+            <li><strong>Supabase</strong> — database hosting, authentication, file storage. Data resides in the EU (eu-west-1).</li>
+            <li><strong>Resend</strong> — transactional email delivery (booking confirmations, password resets).</li>
+            <li><strong>Stripe</strong> — payment processing. Card data is handled directly by Stripe; ROSTR+ receives only payment status and reference numbers.</li>
+            <li><strong>Apple Push Notification service (APNs)</strong> — delivers push notifications to your iPhone when you grant permission in the iOS app. Push payloads contain only event-type identifiers (e.g. "new_booking"), never sensitive booking details.</li>
+            <li><strong>Sentry</strong> — anonymous crash and error reporting from the website and iOS app. Reports contain stack traces and device type; no personal data is intentionally included.</li>
+            <li><strong>Plausible Analytics</strong> — privacy-respecting page-view analytics. Plausible does not use cookies, does not track users across sites, and does not store personally identifiable information.</li>
+            <li><strong>Hostinger</strong> — static website hosting for rosterplus.io.</li>
+          </ul>
+        </li>
         <li><strong>Legal authorities:</strong> When required by UAE law or court order.</li>
       </ul>
       <p>We do not sell your personal data to third parties.</p>
@@ -114,7 +127,8 @@
       <p>To exercise these rights, contact <a href="mailto:hi@rosterplus.io">hi@rosterplus.io</a>.</p>
 
       <h2>9. Cookies and Tracking</h2>
-      <p>The Platform uses localStorage for session management. We do not use third-party tracking cookies. The service worker caches static assets for offline performance only.</p>
+      <p>The Platform uses localStorage for session management. We do not use third-party advertising cookies, and we do not track users across other websites or apps. The service worker caches static assets for offline performance only.</p>
+      <p>The only analytics we run is Plausible (see §5), which is cookieless and does not collect any personally identifiable information. Crash reports from Sentry are sent automatically when an error occurs in the app or website; these reports contain stack traces and device type but never the contents of your messages, bookings, or other personal data.</p>
 
       <h2>10. International Data Transfers</h2>
       <p>Your data may be processed outside the UAE (Supabase EU infrastructure). We ensure adequate protection through standard contractual clauses and the service provider's compliance with GDPR.</p>
