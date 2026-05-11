@@ -3,6 +3,45 @@ RewriteEngine On
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
+# ─── Link-preview bots get pre-rendered profile / EPK pages ────────
+#
+# Why this exists: the app is static HTML + client-side JS. When
+# WhatsApp / iMessage / Slack / Twitter / Facebook crawl a
+# /profile.html?id=X or /epk.html?id=X link, they read the server
+# response BEFORE any JS executes — so every artist link unfurls
+# with the same generic OG card. These rules redirect (302) those
+# specific crawlers to the `profile-share` Supabase edge function,
+# which queries the artist row and returns a tiny HTML doc with
+# artist-specific og:title / og:image / og:url. The bot reads the
+# meta and stops; the redirect target sets canonical back to
+# rosterplus.io so user-facing previews still link here.
+#
+# We do NOT redirect search-engine crawlers (Googlebot / Bingbot /
+# Applebot). Those execute JS, pick up profile.html's updateMeta()
+# rewrites, and redirecting them to a different-content URL is SEO
+# cloaking — explicitly forbidden by Google's webmaster guidelines.
+#
+# Uses 302 redirect rather than [P] mod_proxy because Hostinger's
+# shared hcdn (LiteSpeed-fronted) isn't reliable about [P] on the
+# shared tier. mod_rewrite is proven on this host by the HTTPS
+# upgrade rule above.
+#
+# Per 2026-05-12 profile audit · Option B.
+<IfModule mod_rewrite.c>
+  # /profile.html?id=<uuid>
+  RewriteCond %{QUERY_STRING}    ^(.*&)?id=([a-f0-9\-]+)(&.*)?$
+  RewriteCond %{REQUEST_URI}     ^/profile\.html$
+  RewriteCond %{HTTP_USER_AGENT} (WhatsApp|facebookexternalhit|Twitterbot|Slackbot|TelegramBot|Discordbot|LinkedInBot|Embedly|Pinterest|vkShare|redditbot|Skype) [NC]
+  RewriteRule ^profile\.html$ https://vgjmfpryobsuboukbemr.supabase.co/functions/v1/profile-share?id=%2 [R=302,L]
+
+  # /epk.html?id=<uuid> — same edge fn with path=epk so canonical
+  # points back to /epk.html, not /profile.html.
+  RewriteCond %{QUERY_STRING}    ^(.*&)?id=([a-f0-9\-]+)(&.*)?$
+  RewriteCond %{REQUEST_URI}     ^/epk\.html$
+  RewriteCond %{HTTP_USER_AGENT} (WhatsApp|facebookexternalhit|Twitterbot|Slackbot|TelegramBot|Discordbot|LinkedInBot|Embedly|Pinterest|vkShare|redditbot|Skype) [NC]
+  RewriteRule ^epk\.html$ https://vgjmfpryobsuboukbemr.supabase.co/functions/v1/profile-share?id=%2&path=epk [R=302,L]
+</IfModule>
+
 # Security headers
 <IfModule mod_headers.c>
   Header set X-Frame-Options "DENY"

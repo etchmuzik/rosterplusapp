@@ -339,6 +339,19 @@
         sameAs:      sameAs.length ? sameAs : undefined,
       };
 
+      // aggregateRating — only emit when we have real review data.
+      // `a.rating` is the avg from the artists table, `a.bookings` is
+      // total bookings ever (not reviews). Gate on rating > 0 so we
+      // don't ship an empty-rating block. Google ignores blocks
+      // without a ratingValue anyway. Per 2026-05-12 profile audit.
+      if (a.rating > 0 && a.bookings > 0) {
+        ld.aggregateRating = {
+          '@type': 'AggregateRating',
+          ratingValue: a.rating,
+          reviewCount: a.bookings,
+        };
+      }
+
       const ldEl = document.getElementById('artist-ld-json');
       if (ldEl) ldEl.textContent = JSON.stringify(ld);
     }
@@ -359,8 +372,11 @@
       if (!artist) { renderEmptyState(root); document.title = 'Artist Not Found — ROSTR+ GCC'; return; }
 
       const similar = await getSimilarArtists(artist);
-      renderProfile(artist, similar, root);
+      // Update <head> meta + JSON-LD BEFORE rendering the body so any
+      // crawler / preview-bot snapshotting mid-paint still reads
+      // artist-specific tags. Per 2026-05-12 profile audit (Option A).
       updateMeta(artist);
+      renderProfile(artist, similar, root);
     });
   </script>
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>

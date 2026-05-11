@@ -65,6 +65,13 @@ function page(opts: {
 Deno.serve(async (req) => {
   const url = new URL(req.url);
   const id = url.searchParams.get('id') || '';
+  // `path` query selects which canonical URL the rendered preview
+  // refers back to. Accept 'epk' for the EPK page; everything else
+  // (default 'profile') routes to /profile.html. Used by the
+  // .htaccess bot-rewrite rules so a WhatsApp preview of /epk.html
+  // unfurls with og:url pointing at the EPK page, not the profile.
+  const pathParam = (url.searchParams.get('path') || 'profile').toLowerCase();
+  const targetPath = pathParam === 'epk' ? 'epk.html' : 'profile.html';
 
   // Fallback: no id → generic
   if (!id) {
@@ -84,7 +91,7 @@ Deno.serve(async (req) => {
     .eq('id', id)
     .maybeSingle();
 
-  const redirectTo = `${SITE_URL}/profile.html?id=${encodeURIComponent(id)}`;
+  const redirectTo = `${SITE_URL}/${targetPath}?id=${encodeURIComponent(id)}`;
 
   if (error || !data) {
     return new Response(page({
