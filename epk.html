@@ -124,7 +124,21 @@
       const genres      = Array.isArray(data.genre) ? data.genre.join(', ') : (data.genre || '');
       const cityForMeta = (data.cities_active && data.cities_active[0]) || data.city || '';
       const bio = esc(data.bio || data.profiles?.bio || '');
-      const avatar = data.avatar_url || data.profiles?.avatar_url;
+      // Avatar fallback chain:
+      //   1. Claimed artists: profiles.avatar_url
+      //   2. Direct artist avatar_url (future schema option)
+      //   3. Slug-based local placeholder /assets/images/artists/<slug>.jpg
+      //      — gitignored, dropped in per artist. <img onerror> below
+      //      removes the img if the file 404s, falling back to initials.
+      const _rawName = data.stage_name || data.name || '';
+      const _slug = _rawName.toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+      const avatar = data.avatar_url
+                  || data.profiles?.avatar_url
+                  || (_slug ? `/assets/images/artists/${_slug}.jpg` : '');
       const social = data.social_links || data.social || {};
       const rating = data.rating || 0;
       const bookings = data.total_bookings || data.bookings || 0;
@@ -173,7 +187,7 @@
 
       document.getElementById('epk-content').innerHTML = `
         <div class="epk-hero">
-          <div class="avatar-xlarge">${avatar ? `<img src="${avatar}" alt="${name}">` : initials}</div>
+          <div class="avatar-xlarge">${initials}${avatar ? `<img src="${esc(avatar)}" alt="${name}" onerror="this.remove()">` : ''}</div>
           <div class="epk-name">${name}</div>
           <div class="epk-meta">${city} ${genre ? '· ' + genre : ''}</div>
           ${badgesHtml}

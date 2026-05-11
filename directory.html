@@ -126,6 +126,21 @@
                           linear-gradient(180deg, var(--bg-3), var(--bg-base));`;
     }
 
+    /* Slug the artist's stage name → /assets/images/artists/<slug>.jpg.
+       Lowercase, ASCII letters + digits, spaces → hyphens, all other
+       punctuation stripped. The image file is gitignored, dropped in
+       locally per artist. onerror in the markup removes the <img> if
+       the file is missing — gradient + initials remain visible. */
+    function artistImgSrc(name) {
+      const slug = (name || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+      return slug ? `/assets/images/artists/${slug}.jpg` : '';
+    }
+
     function initials(name) {
       return (name || '?')
         .split(/\s+/)
@@ -146,10 +161,20 @@
         const availLabel = avail === 'avail' ? 'Free' : 'Booked';
         const initialsHtml = `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:3rem;letter-spacing:-0.04em;color:rgba(255,255,255,0.18);z-index:1">${esc(initials(name))}</div>`;
 
+        const imgSrc = artistImgSrc(name);
+        // Photo overlay (if present locally). Layered ABOVE the
+        // gradient + initials so a real photo replaces both. onerror
+        // removes the <img> on 404, restoring the gradient view.
+        const imgHtml = imgSrc
+          ? `<img src="${esc(imgSrc)}" alt="${esc(name)}" loading="lazy" decoding="async"
+                  onerror="this.remove()"
+                  style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2">`
+          : '';
         return `
           <div class="artist-card lp-anim lp-d-${(i % 5) + 1}" onclick="window.location.href='profile.html?id=${esc(a.id)}'">
             <div class="cover" style="${coverStyle(name)}"></div>
             ${initialsHtml}
+            ${imgHtml}
             <div class="artist-card-content">
               <div class="artist-card-top">
                 <div class="availability-dot ${avail}">
@@ -181,9 +206,21 @@
         const city = a.city || '—';
         const avail = a.available === false ? 'booked' : 'avail';
         const availLabel = avail === 'avail' ? 'Free' : 'Booked';
+        const imgSrc = artistImgSrc(name);
+        // For list view the thumbnail is a 40-48px square. Same fallback
+        // chain as grid: gradient + initials by default, <img> overlay
+        // when a local file matches the slug; onerror removes the img.
+        const thumbImg = imgSrc
+          ? `<img src="${esc(imgSrc)}" alt="" loading="lazy" decoding="async"
+                  onerror="this.remove()"
+                  style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit">`
+          : '';
         return `
           <div class="dir-list-row" onclick="window.location.href='profile.html?id=${esc(a.id)}'">
-            <div class="dir-list-thumb" style="${coverStyle(name)}">${esc(initials(name))}</div>
+            <div class="dir-list-thumb" style="${coverStyle(name)};position:relative;overflow:hidden">
+              <span style="position:relative;z-index:0">${esc(initials(name))}</span>
+              ${thumbImg}
+            </div>
             <div>
               <div class="dir-list-name">
                 ${esc(name)}

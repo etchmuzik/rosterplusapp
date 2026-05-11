@@ -46,3 +46,11 @@ assets/images/placeholders/*.jpeg
 assets/images/placeholders/*.png
 assets/images/placeholders/*.webp
 !assets/images/placeholders/README.md
+
+# Per-artist photos for the directory + EPK pages. Same drop-zone
+# pattern as placeholders/. Filename = slugged stage_name + .jpg.
+assets/images/artists/*.jpg
+assets/images/artists/*.jpeg
+assets/images/artists/*.png
+assets/images/artists/*.webp
+!assets/images/artists/README.md
