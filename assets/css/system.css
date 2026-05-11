@@ -1269,6 +1269,83 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   margin-bottom: 8px;
 }
 
+/* Social-proof strip — sits between marquee and feature grid.
+   Per 2026-05-12 homepage audit (#7). Vertical "Booking nights at"
+   label on the left, six placeholder venue glyphs spread across.
+   Replace glyphs with real logo SVGs as you collect rights. */
+.lp-social-proof {
+  padding: var(--space-lg) var(--space-xl);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xl);
+}
+.lp-social-proof-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-tertiary);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  border-right: 1px solid var(--border-subtle);
+  padding-right: var(--space-md);
+  flex-shrink: 0;
+}
+.lp-social-proof-logos {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-around;
+  gap: var(--space-xl);
+  flex-wrap: wrap;
+}
+.lp-logo-mark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-secondary);
+  opacity: 0.85;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+.lp-logo-glyph {
+  width: 28px; height: 28px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+.lp-logo-glyph.lp-glyph-sq { border-radius: 4px; }
+.lp-logo-glyph.lp-glyph-dia {
+  border-radius: 0;
+  transform: rotate(45deg);
+}
+.lp-logo-glyph.lp-glyph-dia > span {
+  transform: rotate(-45deg);
+  display: block;
+}
+@media (max-width: 768px) {
+  .lp-social-proof { flex-direction: column; gap: var(--space-md); padding: var(--space-md); }
+  .lp-social-proof-label {
+    writing-mode: horizontal-tb;
+    transform: none;
+    border-right: none;
+    border-bottom: 1px solid var(--border-subtle);
+    padding-right: 0;
+    padding-bottom: var(--space-sm);
+    width: 100%;
+    text-align: center;
+  }
+  .lp-social-proof-logos { gap: var(--space-md); justify-content: center; }
+}
+
 /* Editorial feature grid
    ─── 1 hero item (spans 2 rows on the left) + 7 standard items
    that fill the remaining cells via grid auto-flow. The hero anchors
@@ -1784,6 +1861,77 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   .lp-pricing { grid-template-columns: 1fr; }
 }
 
+/* Two-card variant (2026-05-12 audit fix #6). Replaces the 3-equal
+   layout for the launch story; the future commission model lives in
+   .lp-future-strip below. */
+.lp-pricing-two { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 780px) {
+  .lp-pricing-two { grid-template-columns: 1fr; }
+}
+.lp-pricing-when {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: var(--space-md);
+  margin-top: calc(var(--space-md) * -1);
+  padding-bottom: var(--space-md);
+}
+
+/* Future-state strip — dashed border telegraphs "this is later,
+   not today". "Later" tag pill on the left, soft copy in the
+   middle, transparency note on the right. */
+.lp-future-strip {
+  margin-top: var(--space-lg);
+  padding: var(--space-md) var(--space-xl);
+  background: var(--bg-raised);
+  border: 1px dashed var(--border-medium);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+}
+.lp-future-l {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+.lp-future-tag {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-tertiary);
+  padding: 4px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 99px;
+}
+.lp-future-txt {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: var(--text-secondary);
+}
+.lp-future-txt b {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+.lp-future-r {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: right;
+  flex-shrink: 0;
+}
+@media (max-width: 780px) {
+  .lp-future-strip { flex-direction: column; align-items: flex-start; gap: var(--space-sm); }
+  .lp-future-r { text-align: left; }
+}
+
 /* Closing CTA panel */
 .lp-cta-panel {
   padding: var(--space-3xl) var(--space-2xl);
@@ -1819,6 +1967,43 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   margin-top: var(--space-lg);
   position: relative;
   flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Cohort variant (2026-05-12 audit fix #17): urgency pill above
+   the headline, em italic in the H2, "X claimed · closes Y" meta
+   after the buttons. */
+.lp-cta-cohort h2 em {
+  font-style: italic;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+.lp-urgency-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 7px 14px;
+  border: 1px solid var(--status-pending);
+  color: var(--status-pending);
+  background: rgba(233, 207, 146, 0.08);
+  border-radius: 99px;
+  margin-bottom: var(--space-md);
+  position: relative;
+}
+.lp-cohort-meta {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-left: 8px;
+}
+@media (max-width: 600px) {
+  .lp-cohort-meta { display: block; width: 100%; text-align: center; margin: var(--space-sm) 0 0; }
 }
 
 /* Intro-reveal animation utilities */

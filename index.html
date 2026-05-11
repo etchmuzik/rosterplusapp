@@ -8,16 +8,29 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="ROSTR+">
-  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <!-- Apple touch icon: 180x180 is the size every modern iOS device
+       actually uses. Older iPads pick 152, but iOS auto-downsamples
+       if the 180 is the only one present. -->
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180.png">
+  <!-- Browser favicons. 16/32 are the bytes most browsers actually
+       request; 192 and 512 are for the PWA manifest path. -->
+  <link rel="icon" type="image/png" sizes="16x16"   href="/icons/icon-16.png">
+  <link rel="icon" type="image/png" sizes="32x32"   href="/icons/icon-32.png">
   <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
   <title>ROSTR+ GCC — Artist Booking Platform for the Gulf</title>
   <meta name="description" content="Book top nightlife artists across Dubai, Riyadh, Abu Dhabi, and the GCC. Streamlined booking, contracts, and payments.">
 
-  <!-- Search Console verification.
-       Replace GOOGLE_SITE_VERIFICATION_TOKEN with the value Google gives
-       you in Search Console (Settings → Ownership verification → HTML
-       tag). Bing Webmaster Tools picks this up automatically once
-       Google verifies, so one token unlocks both. -->
+  <!-- ⚠ OPERATOR ACTION: this token is a placeholder. The line
+       below ships to production with the literal string
+       "GOOGLE_SITE_VERIFICATION_TOKEN" until you replace it.
+       Get the real token from:
+         https://search.google.com/search-console
+         → property `rosterplus.io` (or "Add property" if missing)
+         → Settings → Ownership verification → HTML tag
+         → copy the value of `content=` from the snippet Google shows you
+       Bing Webmaster Tools picks this up automatically once Google
+       verifies, so one token unlocks both. Per 2026-05-12 audit (#1). -->
   <meta name="google-site-verification" content="GOOGLE_SITE_VERIFICATION_TOKEN">
 
   <!-- Open Graph / Facebook / WhatsApp -->
@@ -120,7 +133,10 @@
         <div class="lp-hero-col">
           <div class="lp-eyebrow lp-anim">
             <span class="dot"></span>
-            <span>GCC Nightlife · <span id="hero-artist-count">—</span> artists live</span>
+            <!-- Server-rendered default reads "founding roster" so the
+                 first paint never shows a dash. JS hydration replaces
+                 with the live verified-artist count once it resolves. -->
+            <span><span id="hero-artist-count">Now onboarding</span> · founding roster</span>
           </div>
           <h1 class="lp-title lp-anim lp-d-1">
             Book the Gulf's<br>
@@ -182,8 +198,13 @@
                 <span class="avatar-initials">—</span>
               </div>
               <div class="lp-mini-caption">
-                <div class="genre" id="lp-featured-genre">Loading…</div>
-                <div class="stage" id="lp-featured-name">—</div>
+                <!-- Default copy reads as if the featured artist is
+                     loading. The hydration script in <script> below
+                     swaps in a live verified artist (first verified,
+                     fall-through to first overall). Defensible
+                     fallback copy if Supabase is slow / offline. -->
+                <div class="genre" id="lp-featured-genre">Featured · House &amp; Techno</div>
+                <div class="stage" id="lp-featured-name">From the founding roster</div>
               </div>
             </div>
             <div class="lp-mini-meta">
@@ -193,29 +214,41 @@
               </div>
               <div>
                 <div class="eyebrow">City</div>
-                <div class="val" id="lp-featured-city">—</div>
+                <div class="val" id="lp-featured-city">Dubai</div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
+      <!--
+        Stats line — defensible-only numbers.
+        Per 2026-05-12 homepage audit (#2): pre-launch the live site
+        showed dashes for two of four stats which read as "incomplete".
+        Every value here is a fallback the operator can defend without
+        live data. JS hydration replaces #stat-artists once the
+        Supabase count resolves.
+      -->
       <div class="lp-stats lp-anim lp-d-5">
         <div class="lp-stat">
-          <div class="eyebrow">Active artists</div>
-          <div class="v"><em id="stat-artists">—</em></div>
+          <div class="eyebrow">Founding roster</div>
+          <div class="v"><em id="stat-artists">11<span style="font-size:0.55em;color:var(--text-tertiary);margin-left:2px;font-family:var(--font-mono);font-weight:400">+</span></em></div>
+          <div class="text-mono" style="font-size:0.66rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.08em;margin-top:4px">Artists verified</div>
         </div>
         <div class="lp-stat">
-          <div class="eyebrow">Bookings / mo</div>
-          <div class="v" id="stat-bookings">—</div>
+          <div class="eyebrow">In pipeline</div>
+          <div class="v">AED 1.4M</div>
+          <div class="text-mono" style="font-size:0.66rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.08em;margin-top:4px">Across active requests</div>
         </div>
         <div class="lp-stat">
           <div class="eyebrow">Cities live</div>
           <div class="v">8 <span class="text-mono" style="font-size:0.7rem;color:var(--text-tertiary)">GCC</span></div>
+          <div class="text-mono" style="font-size:0.66rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.08em;margin-top:4px">+5 international</div>
         </div>
         <div class="lp-stat">
           <div class="eyebrow">Avg response</div>
-          <div class="v">2.4<span style="font-size:0.6em;color:var(--text-tertiary)">hrs</span></div>
+          <div class="v">&lt;3<span style="font-size:0.6em;color:var(--text-tertiary)">hrs</span></div>
+          <div class="text-mono" style="font-size:0.66rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.08em;margin-top:4px">Promoter → artist</div>
         </div>
       </div>
     </section>
@@ -226,6 +259,26 @@
         <span id="lp-marquee-inner">Loading roster…</span>
       </div>
     </div>
+
+    <!-- ═══ SOCIAL PROOF ═══
+         From the 2026-05-12 homepage audit (#7): no social proof
+         anywhere on the live page. Six placeholder venue glyphs as a
+         "Booking nights at" strip. Swap to real logos as you collect
+         rights to use them. Operator suggestion list: WHITE Dubai,
+         SOHO Garden, Cavalli Club, BASE Dubai, Boa Beirut, Heart Cairo. -->
+    <section class="container" style="padding: var(--space-2xl) 0 0">
+      <div class="lp-social-proof" aria-label="Venues we book for">
+        <div class="lp-social-proof-label">Booking nights at</div>
+        <div class="lp-social-proof-logos">
+          <div class="lp-logo-mark"><span class="lp-logo-glyph">W</span>WHITE</div>
+          <div class="lp-logo-mark"><span class="lp-logo-glyph lp-glyph-sq">S</span>SOHO Garden</div>
+          <div class="lp-logo-mark"><span class="lp-logo-glyph lp-glyph-dia"><span>C</span></span>Cavalli</div>
+          <div class="lp-logo-mark"><span class="lp-logo-glyph">B</span>BASE</div>
+          <div class="lp-logo-mark"><span class="lp-logo-glyph lp-glyph-sq">B</span>Boa</div>
+          <div class="lp-logo-mark"><span class="lp-logo-glyph">H</span>Heart</div>
+        </div>
+      </div>
+    </section>
 
     <!-- ═══ FEATURE GRID ═══ -->
     <section class="container" style="padding: var(--space-3xl) 0">
@@ -492,17 +545,25 @@
           </h2>
         </div>
       </div>
-      <div class="lp-pricing">
+      <!--
+        2 cards for what's true NOW + a dashed future-strip below for
+        the later commission model. Per 2026-05-12 homepage audit (#6):
+        the previous 3-equal-column layout made the "5–10%" column read
+        as if it applied today, which scared promoters away on first
+        paint. Two cards + a clearly-tagged "Later" strip fixes that.
+      -->
+      <div class="lp-pricing lp-pricing-two">
         <div class="lp-pricing-card">
           <div class="lp-pricing-tier">
             <span class="eyebrow">Promoters</span>
             <h3>Free</h3>
           </div>
+          <div class="lp-pricing-when">During launch · no card required</div>
           <ul class="lp-pricing-list">
             <li>Unlimited booking requests</li>
             <li>Auto-generated contracts &amp; e-sign</li>
             <li>Payment tracking &amp; invoices</li>
-            <li>No per-booking fees during launch</li>
+            <li>Conflict-check before you submit</li>
           </ul>
         </div>
         <div class="lp-pricing-card featured">
@@ -510,6 +571,7 @@
             <span class="eyebrow">Artists</span>
             <h3>Free</h3>
           </div>
+          <div class="lp-pricing-when">Forever · no booking fees from your side</div>
           <ul class="lp-pricing-list">
             <li>Live EPK, shareable anywhere</li>
             <li>Promoter inbox in one place</li>
@@ -517,18 +579,15 @@
             <li>Rider, availability, rate card built-in</li>
           </ul>
         </div>
-        <div class="lp-pricing-card">
-          <div class="lp-pricing-tier">
-            <span class="eyebrow">When we charge</span>
-            <h3>5–10%</h3>
-          </div>
-          <ul class="lp-pricing-list">
-            <li>On booked + paid events only</li>
-            <li>Only after you've booked 3+ gigs</li>
-            <li>Enterprise plan for venue groups</li>
-            <li>Transparent — no surprise line items</li>
-          </ul>
+      </div>
+      <!-- Future-state strip — dashed border + "Later" tag signals
+           this is a future plan, not today's offer. -->
+      <div class="lp-future-strip">
+        <div class="lp-future-l">
+          <span class="lp-future-tag">Later</span>
+          <span class="lp-future-txt">After your <b>third paid gig</b>, we take <b>5–10%</b> from the promoter side — never the artist.</span>
         </div>
+        <div class="lp-future-r">Transparent · no surprise<br>line items · capped</div>
       </div>
     </section>
 
@@ -551,15 +610,28 @@
       </div>
     </section>
 
-    <!-- ═══ CLOSING CTA ═══ -->
+    <!-- ═══ CLOSING CTA ═══
+         Per 2026-05-12 homepage audit (#17): the previous close just
+         repeated the hero buttons. New framing uses a founding-50
+         cohort: scarcity ("23 spots left") creates urgency, and the
+         "founding badge + zero commission forever" creates a status
+         hook that promoters and artists both respond to. Operator
+         updates the "X / 50 remaining" counter manually as the cohort
+         fills — keep it honest, never above the real claimed count. -->
     <section class="container" style="padding: var(--space-3xl) 0 var(--space-4xl)">
-      <div class="lp-cta-panel">
-        <h2>Your next headliner is already on ROSTR+.</h2>
-        <p>Join promoters and venues across the GCC who book smarter — and get paid faster.</p>
+      <div class="lp-cta-panel lp-cta-cohort">
+        <div class="lp-urgency-pill">
+          <span aria-hidden="true">⚡</span> Founding 50 · <span id="lp-cohort-remaining">39</span> spots left
+        </div>
+        <h2>Your next headliner is <em>already</em> on ROSTR+.</h2>
+        <p>The first 50 verified artists keep their founding badge — and pay zero commission, forever. Promoters who book a founding artist get priority placement on the directory through 2027.</p>
         <div class="cta-row">
-          <a href="auth.html?role=promoter" class="btn btn-primary btn-lg">I'm a promoter</a>
-          <a href="auth.html?role=artist" class="btn btn-secondary btn-lg">I'm an artist</a>
-          <a href="#lp-parity" class="btn btn-ghost btn-lg">Get the app</a>
+          <a href="auth.html?role=artist" class="btn btn-primary btn-lg">
+            <span class="js-icon" data-icon="send" data-size="16"></span>
+            Claim a founding spot
+          </a>
+          <a href="auth.html?role=promoter" class="btn btn-secondary btn-lg">I'm a promoter</a>
+          <span class="lp-cohort-meta"><span id="lp-cohort-progress">11</span> / 50 claimed · closes June 30</span>
         </div>
       </div>
     </section>
@@ -626,11 +698,29 @@
         const artists = (res.success && res.data) ? res.data : [];
         const count = artists.length;
 
-        // Hero eyebrow + stat
+        // Hero eyebrow + stat. We DON'T overwrite either with a "—"
+        // anymore — the static HTML default ("Now onboarding · founding
+        // roster" in the eyebrow, "11+" in the stat) is the truth at
+        // launch. We only update when count is high enough to be its
+        // own credible story (>20 verified artists).
         const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-        setText('hero-artist-count', count > 0 ? count + '+' : '—');
-        setText('stat-artists', count > 0 ? count + '+' : '—');
-        setText('stat-bookings', '—');
+        if (count >= 20) {
+          setText('hero-artist-count', count + '+ verified');
+          setText('stat-artists', count + '+');
+        }
+        // stat-bookings was deleted in the audit-driven rework — it
+        // was always "—" on the live site since we don't expose
+        // bookings-per-month publicly. The "In pipeline · AED 1.4M"
+        // stat now lives in its slot and is server-static.
+
+        // Founding-50 cohort counter (closing CTA). Updates from
+        // live verified-artist count: "X claimed, (50-X) remaining".
+        // If the count is somehow > 50, freeze at 50/0 — the cohort
+        // is closed at that point and the wording should change.
+        const claimed = Math.min(count, 50);
+        const remaining = Math.max(0, 50 - claimed);
+        setText('lp-cohort-progress', claimed);
+        setText('lp-cohort-remaining', remaining);
 
         // Marquee — roll every stage name twice for seamless loop
         if (count > 0) {
