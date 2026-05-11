@@ -28,18 +28,32 @@ RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 #
 # Per 2026-05-12 profile audit · Option B.
 <IfModule mod_rewrite.c>
+  # Implementation note: we use %{QUERY_STRING} appended directly
+  # to the rule's target, rather than capture-and-extract-uuid. The
+  # capture approach hit an Apache mod_rewrite quirk where the
+  # `%N` backref only refers to the LAST matched RewriteCond's
+  # groups — with three conds stacked, `%2` from the UA cond is
+  # the matched UA itself, not the UUID we wanted.
+  #
+  # Pass-through is also more permissive: any future query params
+  # (utm, ?ref=, etc.) flow through to the edge function. The edge
+  # function only reads `id` and `path`, so extras are harmless.
+  #
+  # `[NE]` (no-escape) preserves the literal `&` between original
+  # query and our `&path=epk` extension.
+
   # /profile.html?id=<uuid>
-  RewriteCond %{QUERY_STRING}    ^(.*&)?id=([a-f0-9\-]+)(&.*)?$
   RewriteCond %{REQUEST_URI}     ^/profile\.html$
+  RewriteCond %{QUERY_STRING}    (^|&)id=[a-f0-9\-]+(&|$)
   RewriteCond %{HTTP_USER_AGENT} (WhatsApp|facebookexternalhit|Twitterbot|Slackbot|TelegramBot|Discordbot|LinkedInBot|Embedly|Pinterest|vkShare|redditbot|Skype) [NC]
-  RewriteRule ^profile\.html$ https://vgjmfpryobsuboukbemr.supabase.co/functions/v1/profile-share?id=%2 [R=302,L]
+  RewriteRule ^profile\.html$ https://vgjmfpryobsuboukbemr.supabase.co/functions/v1/profile-share?%{QUERY_STRING} [R=302,L,NE]
 
   # /epk.html?id=<uuid> — same edge fn with path=epk so canonical
   # points back to /epk.html, not /profile.html.
-  RewriteCond %{QUERY_STRING}    ^(.*&)?id=([a-f0-9\-]+)(&.*)?$
   RewriteCond %{REQUEST_URI}     ^/epk\.html$
+  RewriteCond %{QUERY_STRING}    (^|&)id=[a-f0-9\-]+(&|$)
   RewriteCond %{HTTP_USER_AGENT} (WhatsApp|facebookexternalhit|Twitterbot|Slackbot|TelegramBot|Discordbot|LinkedInBot|Embedly|Pinterest|vkShare|redditbot|Skype) [NC]
-  RewriteRule ^epk\.html$ https://vgjmfpryobsuboukbemr.supabase.co/functions/v1/profile-share?id=%2&path=epk [R=302,L]
+  RewriteRule ^epk\.html$ https://vgjmfpryobsuboukbemr.supabase.co/functions/v1/profile-share?%{QUERY_STRING}&path=epk [R=302,L,NE]
 </IfModule>
 
 # Security headers
