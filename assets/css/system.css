@@ -1698,9 +1698,9 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* Subtle dim so the overlay text reads against the brightest
-     frame of the video without crushing the silhouette. */
-  filter: brightness(0.85);
+  /* No filter here — the brand-tint overlay (.lp-reach-stage::before)
+     handles dimming. Stacking a brightness filter on top crushed the
+     silhouette of the globe. */
   pointer-events: none;
 }
 
@@ -1714,16 +1714,26 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   padding-bottom: var(--space-2xl);
 }
 
-/* Soft top-fade so the overlay text never sits on a bright frame. */
+/* Brand-tinted overlay across the entire video stage.
+   Uses --bg-base (#08090b — the site's page background) at low
+   opacity so the globe video reads as part of the page, not as
+   a foreign embed. A gentler vertical gradient on top deepens
+   the dim around the headline area. Both layers sit between the
+   video (z:auto/0) and the overlay content (z:2). */
 .lp-reach-stage::before {
   content: "";
   position: absolute;
-  inset: 0 0 auto 0;
-  height: 45%;
-  background: linear-gradient(180deg,
-    rgba(8, 9, 11, 0.85) 0%,
-    rgba(8, 9, 11, 0.45) 50%,
-    rgba(8, 9, 11, 0) 100%);
+  inset: 0;
+  background:
+    /* Vertical accent — slightly darker at top, lighter mid, darker again
+       at bottom — pulls the eye to the headline + legend. */
+    linear-gradient(180deg,
+      rgba(8, 9, 11, 0.55) 0%,
+      rgba(8, 9, 11, 0.25) 45%,
+      rgba(8, 9, 11, 0.55) 100%),
+    /* Flat brand tint — site bg-base at low opacity. Keeps the
+       video visible but cool-tinted to match the page. */
+    rgba(8, 9, 11, 0.30);
   z-index: 1;
   pointer-events: none;
 }
