@@ -175,12 +175,14 @@
           <!-- Featured artist card (populated via JS with a live active artist) -->
           <div class="lp-mini-card" id="lp-featured">
             <div class="lp-mini-visual">
-              <!-- Background photo placeholder. Drop a 1600x1200 lifestyle/atmosphere
-                   shot at the path below; it sits behind the existing gradient
-                   overlay (::after). onerror removes itself so the gradient stays
-                   visible during local-file rotation. -->
+              <!-- Background photo. The hydration script below sets src
+                   from the featured artist's avatar_url or local handle
+                   photo (/assets/images/artists/<handle>.jpg). It sits
+                   behind the existing gradient overlay (::after); onerror
+                   removes the <img> on 404 so the gradient stays visible.
+                   Static src omitted on purpose — JS is the source of
+                   truth, and a missing src never paints a broken-image. -->
               <img class="lp-mini-bg" id="lp-featured-bg"
-                   src="/assets/images/placeholders/hero-featured.jpg"
                    alt="" aria-hidden="true" loading="eager" decoding="async"
                    onerror="this.remove()">
               <div class="lp-mini-badge">
@@ -188,11 +190,12 @@
                 Live on roster
               </div>
               <div class="avatar" id="lp-featured-initials">
-                <!-- Photo placeholder for the featured artist's avatar.
-                     Drop an 800x800 square portrait. onerror removes the
-                     <img> on 404 so the initials span behind it stays visible. -->
+                <!-- Featured artist's avatar. The hydration script below
+                     sets src via artistPhotoSrc(featured) — avatar_url,
+                     then /assets/images/artists/<handle>.jpg, then nothing.
+                     onerror removes the <img> on 404 so the initials span
+                     behind it stays visible. Static src omitted on purpose. -->
                 <img id="lp-featured-photo"
-                     src="/assets/images/placeholders/featured-avatar.jpg"
                      alt="" loading="eager" decoding="async"
                      onerror="this.remove()">
                 <span class="avatar-initials">—</span>
@@ -304,35 +307,19 @@
           </div>
           <div class="lp-feature-visual">
             <div id="lp-feature-gallery" style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px">
-              <!-- Six static placeholder tiles. Visible immediately on load
-                   so the grid never appears empty. The hydration script
-                   below replaces these with live artist tiles when
-                   DB.getArtists resolves; if the query fails, these stay.
-                   Drop 600x600 portraits at the gallery-N.jpg paths. -->
-              <div class="lp-gallery-tile">
-                <img src="/assets/images/placeholders/gallery-1.jpg" alt="" loading="lazy" decoding="async" onerror="this.remove()">
-                <span class="lp-gallery-initials">01</span>
-              </div>
-              <div class="lp-gallery-tile">
-                <img src="/assets/images/placeholders/gallery-2.jpg" alt="" loading="lazy" decoding="async" onerror="this.remove()">
-                <span class="lp-gallery-initials">02</span>
-              </div>
-              <div class="lp-gallery-tile">
-                <img src="/assets/images/placeholders/gallery-3.jpg" alt="" loading="lazy" decoding="async" onerror="this.remove()">
-                <span class="lp-gallery-initials">03</span>
-              </div>
-              <div class="lp-gallery-tile">
-                <img src="/assets/images/placeholders/gallery-4.jpg" alt="" loading="lazy" decoding="async" onerror="this.remove()">
-                <span class="lp-gallery-initials">04</span>
-              </div>
-              <div class="lp-gallery-tile">
-                <img src="/assets/images/placeholders/gallery-5.jpg" alt="" loading="lazy" decoding="async" onerror="this.remove()">
-                <span class="lp-gallery-initials">05</span>
-              </div>
-              <div class="lp-gallery-tile">
-                <img src="/assets/images/placeholders/gallery-6.jpg" alt="" loading="lazy" decoding="async" onerror="this.remove()">
-                <span class="lp-gallery-initials">06</span>
-              </div>
+              <!-- Six initials-only placeholder tiles. Visible immediately
+                   on load so the grid never appears empty. The hydration
+                   script below replaces these with live roster tiles
+                   (each tile points at /assets/images/artists/<handle>.jpg
+                   via the shared artistPhotoSrc() helper). If DB.getArtists
+                   fails, these initials stay. No generic gallery-N.jpg
+                   anymore — the per-artist photos read better. -->
+              <div class="lp-gallery-tile"><span class="lp-gallery-initials">01</span></div>
+              <div class="lp-gallery-tile"><span class="lp-gallery-initials">02</span></div>
+              <div class="lp-gallery-tile"><span class="lp-gallery-initials">03</span></div>
+              <div class="lp-gallery-tile"><span class="lp-gallery-initials">04</span></div>
+              <div class="lp-gallery-tile"><span class="lp-gallery-initials">05</span></div>
+              <div class="lp-gallery-tile"><span class="lp-gallery-initials">06</span></div>
             </div>
           </div>
         </div>
