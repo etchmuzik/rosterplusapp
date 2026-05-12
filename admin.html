@@ -327,7 +327,7 @@
 
       <!-- ═══ Tab: Roster ═══ -->
       <section class="admin-panel active" data-panel="roster">
-        <p class="text-secondary fs-md mb-space-md">
+        <p class="admin-intro">
           Promote pending artists, deactivate, or toggle verified status. All actions are audited.
         </p>
 
@@ -341,28 +341,33 @@
         <details class="mt-space-md">
           <summary class="summary-soft">+ Add new unclaimed artist</summary>
           <div class="admin-add-form">
-            <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-md);margin-bottom:var(--space-sm)">
+            <p class="admin-intro" style="margin-bottom: var(--space-md)">
+              Creates an unclaimed row in the roster. The artist can later claim it from their account via the EPK claim flow.
+            </p>
+            <div class="admin-form-grid">
               <div class="form-group">
-                <label class="form-label">Stage Name</label>
+                <label class="form-label" for="admin-new-name">Stage name</label>
                 <input type="text" class="form-input" id="admin-new-name" placeholder="e.g. DJ ETCH">
               </div>
               <div class="form-group">
-                <label class="form-label">Primary Genre</label>
-                <input type="text" class="form-input" id="admin-new-genre" placeholder="Tech House">
+                <label class="form-label" for="admin-new-genre">Primary genre</label>
+                <input type="text" class="form-input" id="admin-new-genre" placeholder="Tech house">
               </div>
               <div class="form-group">
-                <label class="form-label">City</label>
+                <label class="form-label" for="admin-new-city">City</label>
                 <input type="text" class="form-input" id="admin-new-city" placeholder="Dubai">
               </div>
               <div class="form-group">
-                <label class="form-label">Status</label>
+                <label class="form-label" for="admin-new-status">Status</label>
                 <select class="form-select" id="admin-new-status">
                   <option value="pending">Pending (hidden)</option>
                   <option value="active">Active (public)</option>
                 </select>
               </div>
             </div>
-            <button class="btn btn-primary btn-sm" onclick="adminCreateArtist()">Create unclaimed artist</button>
+            <div class="admin-form-actions">
+              <button class="btn btn-primary btn-sm" onclick="adminCreateArtist()">Create unclaimed artist</button>
+            </div>
           </div>
         </details>
       </section>
@@ -398,13 +403,11 @@
 
       <!-- ═══ Tab: Bulk import ═══ -->
       <section class="admin-panel" data-panel="import">
-        <p class="help-text">
+        <p class="admin-intro">
           Drop a CSV with artists to add them all as unclaimed rows. Columns:
-          <code class="code-mono">stage_name</code> (required) +
-          <code class="code-mono">genre, city, instagram, soundcloud, spotify, status, verified, base_fee</code> (optional).
-        </p>
-        <p class="fs-sm mb-space-md">
-          <a href="assets/artist-import-template.csv" download class="text-accent-soft">Download template CSV →</a>
+          <code>stage_name</code> (required) plus
+          <code>genre, city, instagram, soundcloud, spotify, status, verified, base_fee</code> (optional).
+          <a href="assets/artist-import-template.csv" download>Download template CSV →</a>
         </p>
 
         <input type="file" id="admin-csv-file" accept=".csv,text/csv" class="is-hidden">
@@ -430,8 +433,8 @@
       <!-- ═══ Tab: Broadcast ═══ -->
       <section class="admin-panel" data-panel="broadcast">
         <div style="max-width:640px">
-          <p class="help-text">
-            Send a one-shot notification to every user or just one role. This writes a notifications row for each recipient — they see it on next page load + Realtime tray. It does NOT send email; for that, add to the <code class="mono-sm">send-email</code> edge function.
+          <p class="admin-intro">
+            Send a one-shot notification to every user or just one role. This writes a notifications row for each recipient — they see it on next page load + Realtime tray. It does NOT send email; for that, add to the <code>send-email</code> edge function.
           </p>
           <div class="form-group mb-space-md">
             <label class="form-label">Title <span class="hint-faint">(max 200 chars)</span></label>
@@ -762,10 +765,19 @@
         (a.status === 'pending')               // any pending row
       );
       if (queue.length === 0) {
-        host.style.display = 'none';
-        host.innerHTML = '';
+        // Positive empty state — better than a blank panel that
+        // makes the operator wonder if the data even loaded.
+        host.classList.remove('is-hidden');
+        host.style.display = '';
+        host.innerHTML = `
+          <div class="admin-empty-soft">
+            <strong>Roster is fully reviewed</strong>
+            New verification requests will surface here.
+          </div>
+        `;
         return;
       }
+      host.classList.remove('is-hidden');
       host.style.display = '';
       const rows = queue.slice(0, 8).map(a => {
         const genre = Array.isArray(a.genre) ? a.genre[0] : (a.genre || '');
@@ -1369,13 +1381,22 @@
         </div>
       `;
 
+      // Sub-line copy: only render a sub-line when it adds information.
+      // Empty "0 / no bookings yet" / "0 / clean" reads redundant —
+      // the big "0" already says it.
+      const usersSub = d.users_total > 0
+        ? `${d.users_promoters} promoters · ${d.users_artists} artists`
+        : null;
+      const bookingsSub = d.bookings_total > 0
+        ? (d.bookings_confirmed > 0 ? `${d.bookings_confirmed} confirmed` : 'none confirmed yet')
+        : null;
+      const errorsSub = d.errors_24h > 0 ? 'see Errors tab' : null;
+
       const tiles = [
-        tile('Users', d.users_total, `${d.users_promoters} promoters · ${d.users_artists} artists`),
-        tile('Artists', d.artists_total, artistsSub),
-        tile('Bookings', d.bookings_total, d.bookings_confirmed > 0
-          ? `${d.bookings_confirmed} confirmed`
-          : (d.bookings_total > 0 ? 'none confirmed yet' : 'no bookings yet')),
-        tile('Errors 24h', d.errors_24h, d.errors_24h > 0 ? 'see Errors tab' : 'clean', { alert: d.errors_24h > 0 }),
+        tile('Users', d.users_total, usersSub),
+        tile('Artists', d.artists_total, d.artists_total > 0 ? artistsSub : null),
+        tile('Bookings', d.bookings_total, bookingsSub),
+        tile('Errors 24h', d.errors_24h, errorsSub, { alert: d.errors_24h > 0 }),
       ];
 
       // Add GMV tile ONLY when we have real revenue — hiding the "—"

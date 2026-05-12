@@ -1074,9 +1074,18 @@ tr:hover td { background: rgba(255,255,255,0.015); }
 .toolbar-row {
   display: flex;
   gap: 8px;
-  margin-bottom: var(--space-sm);
+  margin-bottom: var(--space-md);
   align-items: center;
   flex-wrap: wrap;
+}
+/* The first <div> inside a .toolbar-row is the explanatory label
+   (e.g. "All registered accounts."). Styling it here so every
+   admin tab toolbar reads the same without per-tab class overrides. */
+.toolbar-row > div:first-child {
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 /* Compact form input variant — used inside .toolbar-row */
@@ -4316,6 +4325,71 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   letter-spacing: 0.08em;
   text-transform: uppercase;
   margin-bottom: 2px;
+}
+
+/* Admin panel intro paragraph — used at the top of every
+   <section data-panel>. Standardised 2026-05-13 so the eight tabs
+   read in the same voice (was 3 different class combos before).
+   `code` callouts get a subtle pill treatment matching the rest
+   of the admin design vocabulary. */
+.admin-intro {
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  line-height: 1.55;
+  max-width: 70ch;
+  margin: 0 0 var(--space-lg);
+}
+.admin-intro code {
+  font-family: var(--font-mono);
+  font-size: 0.84em;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--bg-raised);
+  color: var(--text-primary);
+}
+.admin-intro a {
+  color: var(--accent-soft);
+  text-decoration: none;
+  border-bottom: 1px dashed currentColor;
+}
+.admin-intro a:hover { color: var(--accent); }
+
+/* Soft empty-state pill — used by the Verification queue when no
+   pending artists need review (so the section reads as "all
+   clear" rather than "did the page even load?"). */
+.admin-empty-soft {
+  padding: var(--space-md) var(--space-lg);
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-tertiary);
+  font-size: 0.88rem;
+  text-align: center;
+  background: var(--bg-card);
+  line-height: 1.5;
+}
+.admin-empty-soft strong {
+  display: block;
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+/* Reusable admin form grid — auto-fit columns at minmax(200px, 1fr).
+   Used by the Roster "Add new artist" form (and any future admin
+   form that needs the same shape). Pair with .admin-form-actions
+   for a right-aligned button row underneath. */
+.admin-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+.admin-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border-subtle);
 }
 
 /* Admin grid table — shared header + row scaffolding for the
