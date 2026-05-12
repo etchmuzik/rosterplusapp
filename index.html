@@ -256,12 +256,10 @@
       </div>
     </section>
 
-    <!-- ═══ MARQUEE ═══ -->
-    <div class="lp-marquee-wrap">
-      <div class="lp-marquee">
-        <span id="lp-marquee-inner">Loading roster…</span>
-      </div>
-    </div>
+    <!-- Marquee strip removed 2026-05-12 — operator call.
+         Hydration JS (artist-name roll + ✦ stars) also removed.
+         To restore: see git history commit 0c164b7^ for the
+         `.lp-marquee-wrap` + JS hydration block. -->
 
     <!-- Social-proof partner-logo strip removed 2026-05-12 — pending real
          white-on-transparent PNGs from the operator. When ready, restore
@@ -859,15 +857,10 @@
         setText('lp-cohort-progress', claimed);
         setText('lp-cohort-remaining', remaining);
 
-        // Marquee — roll every stage name twice for seamless loop
-        if (count > 0) {
-          const names = artists.map(a => a.name || a.stage_name).filter(Boolean);
-          const cycle = names.concat(names); // doubled for seamless wrap
-          const inner = document.getElementById('lp-marquee-inner');
-          if (inner) {
-            inner.innerHTML = cycle.map(n => `${esc(n)}<span class="star">✦</span>`).join('');
-          }
-        }
+        // Marquee hydration removed 2026-05-12 — the marquee strip
+        // itself was pulled (operator call). If restored, see git
+        // history for the cycle.concat(names) pattern that rolled
+        // every stage name twice for the seamless loop.
 
         // Photo-resolution helper. For every artist surface on the
         // homepage we want the same three-tier fallback:
