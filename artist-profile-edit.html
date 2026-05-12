@@ -67,12 +67,18 @@
       <p class="text-tertiary" style="margin-bottom:var(--space-2xl)">This info appears on your public profile and EPK</p>
 
       <!-- ═══ SHARE-LINK CARD ═══════════════════════════════════════
-           Per-artist Linktree URL the operator can paste into Instagram
-           bios, business cards, etc. Updates when the artist's handle
-           changes (handle is auto-derived from stage_name on save).
+           Per-artist Linktree URL. The handle was auto-derived from
+           stage_name at signup (migration 20260512_artists_handle.sql)
+           but the artist can change it here. DB-level guards:
+             - CHECK constraint: [a-z0-9-]{3,32}, no leading/trailing
+               or doubled hyphens
+             - partial unique index on lower(handle) for non-deleted rows
+           Client-side validates first so the artist sees a friendly
+           inline error rather than a 23505 from Postgres.
+
            Hidden by default until populateForm fills it in. -->
       <div id="share-link-card" style="display:none; margin-bottom:var(--space-2xl); padding:var(--space-lg); background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:var(--radius-lg);">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:var(--space-md); margin-bottom:var(--space-sm); flex-wrap:wrap;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:var(--space-md); margin-bottom:var(--space-md); flex-wrap:wrap;">
           <div>
             <div style="font-family:var(--font-mono); font-size:0.66rem; text-transform:uppercase; letter-spacing:0.12em; color:var(--text-tertiary);">Your link in bio</div>
             <div style="font-family:var(--font-display); font-size:1.1rem; font-weight:500; margin-top:2px;">Share this anywhere</div>
@@ -82,17 +88,42 @@
             <span class="js-icon" data-icon="chevronRight" data-size="12"></span>
           </a>
         </div>
-        <div style="display:flex; gap:var(--space-sm); align-items:stretch; flex-wrap:wrap;">
-          <input id="share-link-url" type="text" readonly
-                 style="flex:1; min-width:200px; padding:10px 14px; background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:var(--radius-sm); font-family:var(--font-mono); font-size:0.78rem; color:var(--text-secondary);">
-          <button type="button" class="btn btn-primary btn-sm" onclick="copyShareLink()">
-            <span class="js-icon" data-icon="grid" data-size="13"></span>
+
+        <!-- Editable handle row. The prefix is a visual cue that
+             everything after the slash is theirs to choose. -->
+        <div style="display:flex; align-items:stretch; gap:8px; flex-wrap:wrap;">
+          <div style="display:flex; align-items:stretch; flex:1; min-width:260px; border:1px solid var(--border-subtle); border-radius:var(--radius-sm); background:var(--bg-input); overflow:hidden;">
+            <span style="display:flex; align-items:center; padding:10px 0 10px 14px; font-family:var(--font-mono); font-size:0.78rem; color:var(--text-tertiary); white-space:nowrap;">rosterplus.io/a/</span>
+            <input id="handle-input"
+                   type="text"
+                   inputmode="latin"
+                   autocomplete="off"
+                   autocapitalize="none"
+                   spellcheck="false"
+                   maxlength="32"
+                   pattern="^[a-z0-9](?:[a-z0-9-]{1,30}[a-z0-9])?$"
+                   placeholder="your-handle"
+                   style="flex:1; min-width:80px; padding:10px 14px 10px 2px; background:transparent; border:0; outline:none; font-family:var(--font-mono); font-size:0.78rem; color:var(--text-primary);"
+                   oninput="onHandleInputChange()">
+          </div>
+          <button type="button" id="handle-save-btn" class="btn btn-primary btn-sm" disabled onclick="saveHandle()">
+            <span id="handle-save-label">Save</span>
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="copyShareLink()">
             <span id="share-link-copy-label">Copy link</span>
           </button>
         </div>
-        <p style="margin-top:var(--space-sm); font-size:0.78rem; color:var(--text-tertiary);">
-          The URL updates if you change your stage name. Old links keep working — they redirect to the new one.
-        </p>
+
+        <!-- Inline status: format error, uniqueness conflict, success. -->
+        <div id="handle-status" style="margin-top:var(--space-sm); font-size:0.78rem; min-height:1.2em;">
+          <span style="color:var(--text-tertiary);">Lowercase letters, numbers, hyphens. 3 – 32 characters. Old links keep working — they redirect to the new one.</span>
+        </div>
+
+        <!-- Hidden field kept for backwards compatibility with the
+             existing copyShareLink() implementation, which reads from
+             this input. The new editable handle input writes through
+             to this on every change. -->
+        <input id="share-link-url" type="hidden">
       </div>
 
       <form id="profile-form" onsubmit="saveProfile(event)">
@@ -489,16 +520,143 @@
       }
 
       // Share-link card. Handle was auto-derived in the
-      // 20260512_artists_handle migration; falls back to the artist's
-      // UUID for the rare unclaimed scout row that doesn't have one.
-      const handleForLink = data.handle
-                         || data.id
-                         || '';
+      // 20260512_artists_handle migration; the artist can edit it
+      // here. We track current values so:
+      //   - the Save button can stay disabled until value changes
+      //   - the uniqueness check can exclude the artist's own row
+      _currentHandle = data.handle || '';
+      _currentArtistId = data.id;
+      const handleForLink = data.handle || data.id || '';
       if (handleForLink) {
         const url = `https://rosterplus.io/a/${encodeURIComponent(handleForLink)}`;
         document.getElementById('share-link-url').value = url;
         document.getElementById('share-link-open').href = url;
+        document.getElementById('handle-input').value = data.handle || '';
         document.getElementById('share-link-card').style.display = '';
+      }
+    }
+
+    // ── Handle-edit state ─────────────────────────────────────────
+    // Currently-loaded values so the Save button can detect change.
+    // Module-scoped (one artist per page load) is fine; this page
+    // is single-artist anyway.
+    let _currentHandle = '';
+    let _currentArtistId = '';
+
+    const HANDLE_FORMAT_RE = /^[a-z0-9](?:[a-z0-9-]{1,30}[a-z0-9])?$/;
+    // Words people might pick that would collide with site routes.
+    // Reserved at the application layer (DB doesn't know about routes).
+    const HANDLE_RESERVED = new Set([
+      'a', 'admin', 'api', 'auth', 'book', 'booking', 'bookings',
+      'contract', 'contracts', 'dashboard', 'directory', 'epk', 'help',
+      'index', 'invite', 'invoice', 'link', 'login', 'logout', 'me',
+      'messages', 'payment', 'payments', 'press', 'privacy', 'profile',
+      'roster', 'settings', 'signup', 'status', 'support', 'terms',
+      'about', 'www', 'mail', 'email',
+    ]);
+
+    function setHandleStatus(msg, color) {
+      const el = document.getElementById('handle-status');
+      if (!el) return;
+      el.innerHTML = `<span style="color:${color || 'var(--text-tertiary)'};">${esc(msg)}</span>`;
+    }
+
+    function onHandleInputChange() {
+      const input = document.getElementById('handle-input');
+      const btn = document.getElementById('handle-save-btn');
+      // Coerce to lowercase as the artist types — DB stores lowercase,
+      // and this prevents a "save" that just lowercases.
+      const raw = input.value;
+      const normalized = raw.toLowerCase();
+      if (raw !== normalized) {
+        const pos = input.selectionStart;
+        input.value = normalized;
+        try { input.setSelectionRange(pos, pos); } catch (e) { /* noop */ }
+      }
+      const value = normalized.trim();
+
+      // Disable Save if nothing changed.
+      if (value === _currentHandle) {
+        btn.disabled = true;
+        setHandleStatus('Lowercase letters, numbers, hyphens. 3 – 32 characters. Old links keep working — they redirect to the new one.');
+        return;
+      }
+      // Format check.
+      if (!HANDLE_FORMAT_RE.test(value)) {
+        btn.disabled = true;
+        if (value.length < 3) {
+          setHandleStatus('Handle must be at least 3 characters.', 'var(--status-cancelled)');
+        } else if (value.length > 32) {
+          setHandleStatus('Handle must be 32 characters or fewer.', 'var(--status-cancelled)');
+        } else if (/--/.test(value)) {
+          setHandleStatus('No double hyphens.', 'var(--status-cancelled)');
+        } else if (/^-|-$/.test(value)) {
+          setHandleStatus('Cannot start or end with a hyphen.', 'var(--status-cancelled)');
+        } else {
+          setHandleStatus('Only lowercase letters, numbers, and hyphens.', 'var(--status-cancelled)');
+        }
+        return;
+      }
+      // Reserved-word check.
+      if (HANDLE_RESERVED.has(value)) {
+        btn.disabled = true;
+        setHandleStatus(`"${value}" is reserved for site routes — pick another.`, 'var(--status-cancelled)');
+        return;
+      }
+      // Format OK, different from current. Enable Save.
+      btn.disabled = false;
+      setHandleStatus('Looks good — click Save to update your link.', 'var(--status-confirmed)');
+    }
+
+    // Save a new handle. Uniqueness checked here against the live DB
+    // before the UPDATE fires, so the artist gets a clean error rather
+    // than a 23505 unique-violation from Postgres.
+    async function saveHandle() {
+      const input = document.getElementById('handle-input');
+      const btn = document.getElementById('handle-save-btn');
+      const label = document.getElementById('handle-save-label');
+      const value = input.value.trim().toLowerCase();
+      if (!HANDLE_FORMAT_RE.test(value) || HANDLE_RESERVED.has(value) || value === _currentHandle) {
+        return; // Defensive: button shouldn't have been clickable.
+      }
+      btn.disabled = true;
+      label.textContent = 'Saving…';
+      try {
+        // Uniqueness check — exclude the artist's own row, exclude
+        // soft-deleted rows (which freed their handle).
+        const dupCheck = await _sb.from('artists')
+          .select('id')
+          .ilike('handle', value)
+          .is('deleted_at', null)
+          .neq('id', _currentArtistId)
+          .maybeSingle();
+        if (dupCheck.data) {
+          setHandleStatus(`"${value}" is already taken. Try another.`, 'var(--status-cancelled)');
+          btn.disabled = false;
+          label.textContent = 'Save';
+          return;
+        }
+        // Write.
+        const res = await DB.updateArtistProfile({ handle: value });
+        if (!res.success) {
+          setHandleStatus(res.error || 'Save failed — try again.', 'var(--status-cancelled)');
+          btn.disabled = false;
+          label.textContent = 'Save';
+          return;
+        }
+        // Refresh the displayed URL + open-link target.
+        _currentHandle = value;
+        const url = `https://rosterplus.io/a/${encodeURIComponent(value)}`;
+        document.getElementById('share-link-url').value = url;
+        document.getElementById('share-link-open').href = url;
+        setHandleStatus(`Your link is now ${url}`, 'var(--status-confirmed)');
+        UI.toast('Link updated', 'success');
+        btn.disabled = true;
+        label.textContent = 'Save';
+      } catch (e) {
+        setHandleStatus('Couldn\'t reach the database. Try again.', 'var(--status-cancelled)');
+        btn.disabled = false;
+        label.textContent = 'Save';
       }
     }
 

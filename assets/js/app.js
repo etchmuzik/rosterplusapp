@@ -2262,6 +2262,44 @@ const DB = {
     } catch(e) { return { success: false, error: String(e) }; }
   },
 
+  // Operator-featured artist for /link.html. Pass `untilIso = null` to
+  // unfeature. Same RLS gate as status (only admin can write artists).
+  // Per 2026-05-12 web polish (#11).
+  async adminSetFeatured(artistId, untilIso) {
+    if (DEMO_MODE) return { success: true };
+    if (!Auth.user) return { success: false, error: 'Not authenticated' };
+    try {
+      const { data, error } = await _sb.from('artists')
+        .update({
+          featured_until: untilIso, // null clears the feature
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', artistId)
+        .select();
+      if (error) return { success: false, error: error.message };
+      if (!data || data.length === 0) return { success: false, error: 'Not allowed or not found' };
+      return { success: true, data: data[0] };
+    } catch(e) { return { success: false, error: String(e) }; }
+  },
+
+  // Returns the currently-featured artist (latest-expiring with
+  // featured_until > now()) or null. Called by /link.html before
+  // falling back to the ISO-week rotation.
+  async getCurrentlyFeatured() {
+    if (DEMO_MODE) return { success: false, data: null };
+    try {
+      const { data, error } = await _sb.from('artists')
+        .select('*, profiles(display_name, avatar_url, city, bio)')
+        .is('deleted_at', null)
+        .gt('featured_until', new Date().toISOString())
+        .order('featured_until', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) return { success: false, error: error.message, data: null };
+      return { success: true, data };
+    } catch(e) { return { success: false, error: String(e), data: null }; }
+  },
+
   // Toggle the verified checkmark. Same RLS gate as status.
   async adminSetArtistVerified(artistId, verified) {
     if (DEMO_MODE) return { success: true };
@@ -2627,6 +2665,11 @@ const DB = {
     try {
       const artistUpdate = {};
       if (data.stage_name !== undefined) artistUpdate.stage_name = data.stage_name;
+      // handle: URL slug for /a/<handle>. Format CHECK + partial unique
+      // index in 20260512_artists_handle.sql reject invalid/dup values
+      // at the DB layer; the edit form validates client-side first so
+      // the artist sees a friendly error.
+      if (data.handle !== undefined) artistUpdate.handle = data.handle;
       if (data.genre !== undefined) artistUpdate.genre = Array.isArray(data.genre) ? data.genre : [data.genre];
       if (data.subgenres !== undefined) artistUpdate.subgenres = data.subgenres;
       if (data.base_fee !== undefined) artistUpdate.base_fee = data.base_fee;

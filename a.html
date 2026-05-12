@@ -72,6 +72,18 @@
   </main>
 
   <script>
+    // Plausible click tracking for per-artist Linktree CTAs. Each
+    // CTA passes its event name + the artist's handle so analytics
+    // can break down by which artist's link drove the click. Same
+    // pattern as /link.html's trackLink helper.
+    function trackArtistCta(eventName, handle) {
+      try {
+        if (typeof window.plausible === 'function') {
+          window.plausible(eventName, { props: { handle: handle || '(none)' } });
+        }
+      } catch (e) { /* never block the click on a tracking failure */ }
+    }
+
     // Per-artist Linktree page (rosterplus.io/a/<handle>).
     //
     // URL shapes accepted:
@@ -168,7 +180,7 @@
 
       // Social row. We render only the channels the artist has filled
       // in — no placeholder buttons. Channel order matches /link.html.
-      const socialRow = renderSocialRow(social);
+      const socialRow = renderSocialRow(social, handle);
 
       // Update <head> meta. Crawlers hitting /a/ already get pre-
       // rendered HTML via the .htaccess bot-rewrite + profile-share
@@ -206,7 +218,7 @@
 
         <!-- Primary booking CTA — the page's reason for existing. -->
         <div class="lt-links">
-          <a class="lt-link lt-link-primary" href="/booking.html?artist=${encodeURIComponent(a.id)}">
+          <a class="lt-link lt-link-primary" href="/booking.html?artist=${encodeURIComponent(a.id)}" onclick="trackArtistCta('a_book','${esc(handle)}')">
             <span class="lt-link-ico">
               <span class="js-icon" data-icon="send" data-size="16"></span>
             </span>
@@ -219,7 +231,7 @@
             </span>
           </a>
 
-          <a class="lt-link" href="/epk.html?id=${encodeURIComponent(a.id)}">
+          <a class="lt-link" href="/epk.html?id=${encodeURIComponent(a.id)}" onclick="trackArtistCta('a_epk','${esc(handle)}')">
             <span class="lt-link-ico">
               <span class="js-icon" data-icon="fileText" data-size="16"></span>
             </span>
@@ -233,7 +245,7 @@
           </a>
 
           ${(a.profiles?.phone || social.whatsapp) ? `
-            <a class="lt-link" href="${esc(buildWhatsAppUrl(a.profiles?.phone || social.whatsapp, stageName))}" target="_blank" rel="noopener">
+            <a class="lt-link" href="${esc(buildWhatsAppUrl(a.profiles?.phone || social.whatsapp, stageName))}" target="_blank" rel="noopener" onclick="trackArtistCta('a_whatsapp','${esc(handle)}')">
               <span class="lt-link-ico" style="color:#25d366">
                 <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" aria-hidden="true">
                   <path d="M17.5 14.4c-.3-.2-1.7-.9-2-1-.3-.1-.5-.2-.7.2-.2.3-.8 1-.9 1.1-.2.2-.3.2-.6 0-.3-.2-1.2-.5-2.3-1.4-.9-.7-1.5-1.7-1.6-2-.2-.3 0-.5.1-.6.1-.1.3-.4.5-.5.1-.2.2-.3.3-.5.1-.2 0-.3 0-.5 0-.2-.7-1.7-1-2.3-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4 0 1.4 1 2.7 1.2 2.9.1.2 2 3 4.7 4.2.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.7-.7 1.9-1.4.3-.7.3-1.2.2-1.4-.1-.2-.3-.3-.6-.4Z"/>
@@ -305,7 +317,7 @@
       return `https://wa.me/${digits}?text=${msg}`;
     }
 
-    function renderSocialRow(social) {
+    function renderSocialRow(social, handle) {
       // Each entry: [key, svg, urlBuilder]. We render only entries
       // with a truthy URL.
       const entries = [
@@ -332,7 +344,7 @@
       if (!present.length) return '';
       return `<div class="lt-social">${
         present.map(([key, svg, url]) =>
-          `<a href="${esc(url)}" aria-label="${esc(key)}" target="_blank" rel="noopener">${svg}</a>`
+          `<a href="${esc(url)}" aria-label="${esc(key)}" target="_blank" rel="noopener" onclick="trackArtistCta('a_social_${key}','${esc(handle || '')}')">${svg}</a>`
         ).join('')
       }</div>`;
     }

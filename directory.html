@@ -101,7 +101,14 @@
         </div>
       </div>
 
-      <div class="dir-meta" id="resultsInfo">Loading artists…</div>
+      <!-- Two-line stats strip. Headline shows live verified-artist
+           + unique-city count from the currently-filtered view; mono
+           sub-line is the existing "X artists · sorted by relevance"
+           text. Per 2026-05-12 web polish (#15). -->
+      <div class="dir-stats-strip">
+        <div class="dir-stats-headline" id="dirStatsHeadline">Loading…</div>
+        <div class="dir-meta" id="resultsInfo">Sorting by relevance</div>
+      </div>
 
       <div id="artist-grid" class="dir-grid"></div>
       <div id="artist-list" class="dir-list" style="display: none"></div>
@@ -239,8 +246,26 @@
 
     function render() {
       const count = filteredArtists.length;
+
+      // Display-font headline ("11 verified · 8 cities") reflects the
+      // currently-filtered view. If 0 verified, falls back to the bare
+      // count so promoters narrowing the filter still see what they have.
+      const verified = filteredArtists.filter(a => a.verified).length;
+      const cities = new Set(
+        filteredArtists.map(a => a.city).filter(Boolean)
+      ).size;
+      const headline = document.getElementById('dirStatsHeadline');
+      if (headline) {
+        const head = verified > 0
+          ? `${verified} verified ${verified === 1 ? 'artist' : 'artists'}`
+          : `${count} ${count === 1 ? 'artist' : 'artists'}`;
+        const tail = cities > 0
+          ? `${cities} ${cities === 1 ? 'city' : 'cities'}`
+          : '';
+        headline.textContent = tail ? `${head} · ${tail}` : head;
+      }
       document.getElementById('resultsInfo').textContent =
-        count + ' artist' + (count === 1 ? '' : 's') + ' · sorted by relevance';
+        count + ' result' + (count === 1 ? '' : 's') + ' · sorted by relevance';
 
       const empty = count === 0;
       document.getElementById('empty-state').style.display = empty ? 'block' : 'none';

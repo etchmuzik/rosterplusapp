@@ -27,6 +27,12 @@
     <lastmod>2026-05-12</lastmod>
   </url>
   <url>
+    <loc>https://rosterplus.io/press.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+    <lastmod>2026-05-12</lastmod>
+  </url>
+  <url>
     <loc>https://rosterplus.io/auth.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>

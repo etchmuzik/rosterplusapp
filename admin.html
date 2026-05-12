@@ -688,6 +688,7 @@
               ${a.status !== 'pending' ? `<button class="btn btn-ghost btn-sm fs-xs" aria-label="Hide artist ${esc(a.stage_name || 'unnamed')} from directory" onclick="adminSetStatus('${esc(a.id)}','pending')">Hide</button>` : ''}
               ${a.status !== 'inactive' ? `<button class="btn btn-ghost btn-sm fs-xs" aria-label="Retire artist ${esc(a.stage_name || 'unnamed')}" onclick="adminSetStatus('${esc(a.id)}','inactive')">Retire</button>` : ''}
               <button class="btn btn-ghost btn-sm fs-xs" aria-label="${a.verified ? 'Remove verification from' : 'Verify'} artist ${esc(a.stage_name || 'unnamed')}" onclick="adminToggleVerified('${esc(a.id)}',${!a.verified})">${a.verified ? 'Unverify' : 'Verify'}</button>
+              ${renderFeaturedButtons(a)}
             </div>
           </div>
         `;
@@ -698,6 +699,48 @@
       const res = await DB.adminUpdateArtistStatus(artistId, status);
       if (!res.success) { UI.toast('Failed: ' + (res.error || ''), 'error'); return; }
       UI.toast(`Status → ${status}`, 'success');
+      renderAdminArtists();
+    }
+
+    // ── Featured-artist controls (2026-05-12 web polish #11) ──────
+    // Renders the per-row buttons. If `featured_until > now`, shows
+    // a single "Unfeature (Xd left)" button. Otherwise shows three
+    // duration presets: 24h, 7d, 30d.
+    function renderFeaturedButtons(a) {
+      const featuredUntil = a.featured_until ? new Date(a.featured_until) : null;
+      const stillFeatured = featuredUntil && featuredUntil > new Date();
+      const safeName = esc(a.stage_name || 'unnamed');
+      if (stillFeatured) {
+        const msLeft = featuredUntil - new Date();
+        const daysLeft = Math.max(1, Math.ceil(msLeft / 86400000));
+        const remaining = daysLeft >= 1
+          ? `${daysLeft}d`
+          : `${Math.ceil(msLeft / 3600000)}h`;
+        return `<button class="btn btn-secondary btn-sm fs-xs"
+                  aria-label="Unfeature artist ${safeName}"
+                  style="border-color:var(--status-pending);color:var(--status-pending)"
+                  onclick="adminSetFeatured('${esc(a.id)}', null)">★ Unfeature (${remaining} left)</button>`;
+      }
+      // Three duration buttons. Each writes a future ISO timestamp.
+      return `
+        <button class="btn btn-ghost btn-sm fs-xs" aria-label="Feature ${safeName} for 24 hours"
+                onclick="adminSetFeatured('${esc(a.id)}', '24h')">Feature 24h</button>
+        <button class="btn btn-ghost btn-sm fs-xs" aria-label="Feature ${safeName} for 7 days"
+                onclick="adminSetFeatured('${esc(a.id)}', '7d')">7d</button>
+        <button class="btn btn-ghost btn-sm fs-xs" aria-label="Feature ${safeName} for 30 days"
+                onclick="adminSetFeatured('${esc(a.id)}', '30d')">30d</button>
+      `;
+    }
+
+    async function adminSetFeatured(artistId, preset) {
+      let untilIso = null;
+      if (preset === '24h') untilIso = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+      else if (preset === '7d') untilIso = new Date(Date.now() + 7 * 86400 * 1000).toISOString();
+      else if (preset === '30d') untilIso = new Date(Date.now() + 30 * 86400 * 1000).toISOString();
+      // null preset = unfeature.
+      const res = await DB.adminSetFeatured(artistId, untilIso);
+      if (!res.success) { UI.toast('Failed: ' + (res.error || ''), 'error'); return; }
+      UI.toast(untilIso ? `Featured · expires ${preset === '24h' ? 'tomorrow' : preset === '7d' ? 'in a week' : 'in 30 days'}` : 'Unfeatured', 'success');
       renderAdminArtists();
     }
 
