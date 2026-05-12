@@ -1041,8 +1041,10 @@ tr:hover td { background: rgba(255,255,255,0.015); }
 
 /* Tiny type scale */
 .fs-2xs { font-size: 0.7rem; }
+.fs-mxs { font-size: 0.72rem; }
 .fs-xs  { font-size: 0.75rem; }
 .fs-tiny { font-size: 0.76rem; }
+.fs-fine { font-size: 0.78rem; }
 .fs-sm  { font-size: 0.82rem; }
 .fs-md  { font-size: 0.88rem; }
 
@@ -1082,6 +1084,13 @@ tr:hover td { background: rgba(255,255,255,0.015); }
 .form-select-compact {
   font-size: 0.82rem;
   padding: 6px 10px;
+}
+
+/* Tiny dropdown variant — even denser, used by filter selects in
+   admin tabs (email-type-filter, err-range, etc). */
+.form-select-tiny {
+  font-size: 0.78rem;
+  padding: 4px 8px;
 }
 
 /* Compact button variant — admin export / refresh buttons */
@@ -4068,3 +4077,397 @@ tr:hover td { background: rgba(255,255,255,0.015); }
 .lt-footer a { color: var(--text-secondary); text-decoration: none; }
 .lt-footer a:hover { color: var(--text-primary); }
 .lt-footer .lt-footer-sep { opacity: 0.5; margin: 0 5px; }
+
+/* ═══════════════════════════════════════════════════════════
+   Admin console utilities — 2026-05-12
+   Extracted from admin.html (148 inline styles → utility classes).
+   Most are also reusable on dashboard/audit-style surfaces.
+   ═══════════════════════════════════════════════════════════ */
+
+/* Mono family alone, no size override */
+.font-mono { font-family: var(--font-mono); }
+
+/* Mono micro-text scale */
+.mono-2xs  { font-family: var(--font-mono); font-size: 0.68rem; }
+.mono-xxs  { font-family: var(--font-mono); font-size: 0.7rem; }
+.mono-xs   { font-family: var(--font-mono); font-size: 0.72rem; }
+.mono-tiny { font-family: var(--font-mono); font-size: 0.74rem; }
+.mono-fine { font-family: var(--font-mono); font-size: 0.76rem; }
+.mono-sm   { font-family: var(--font-mono); font-size: 0.78rem; }
+.mono-md   { font-family: var(--font-mono); font-size: 0.82rem; }
+.mono-lg   { font-family: var(--font-mono); font-size: 0.85rem; }
+
+/* Mono row meta — recurring "right-aligned mono timestamp" pattern */
+.meta-mono-right {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+  text-align: right;
+}
+
+/* Tertiary text micro — "X imported · Y failed", footer notes */
+.text-sub  { font-size: 0.68rem; color: var(--text-tertiary); margin-top: 2px; }
+
+/* Eyebrow variants — accent vs accent-soft above the page H1 */
+.eyebrow-soft {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent-soft);
+  margin-bottom: 6px;
+}
+.eyebrow-accent {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+}
+
+/* Help paragraph — 14px-ish body text used as page-section intro */
+.help-text {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-md);
+  line-height: 1.6;
+}
+
+/* Margin helpers using --space-* tokens (the .mb-md helper uses 8px;
+   these match the actual CSS variables for inline-style equivalence). */
+.mb-space-sm { margin-bottom: var(--space-sm); }
+.mb-space-md { margin-bottom: var(--space-md); }
+.mt-space-sm { margin-top: var(--space-sm); }
+.mt-space-md { margin-top: var(--space-md); }
+.mt-space-lg { margin-top: var(--space-lg); }
+.p-space-sm  { padding: var(--space-sm); }
+
+/* Generic flex-row + center alignment + gap helpers */
+.flex-center        { display: flex; align-items: center; }
+.flex-center-gap-sm { display: flex; align-items: center; gap: 8px; }
+.flex-center-gap-md { display: flex; align-items: center; gap: var(--space-md); }
+.flex-start-row     { display: flex; align-items: flex-start; gap: var(--space-md); }
+.flex-wrap          { flex-wrap: wrap; }
+.flex-end           { justify-content: flex-end; }
+.gap-3              { gap: 3px; }
+.gap-4              { gap: 4px; }
+.flex-actions       { display: flex; gap: 4px; flex-wrap: wrap; }
+
+/* Vertical stacks used for list containers */
+.stack-sm { display: flex; flex-direction: column; gap: var(--space-sm); }
+
+/* Form field hint — "(optional)" / "(max 200 chars)" after a label */
+.hint-faint { color: var(--text-tertiary); font-weight: 400; }
+
+/* Filters row — non-wrapping flex strip, 8px gap, sm-bottom margin */
+.filter-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: var(--space-sm);
+  align-items: center;
+}
+.filter-row--wrap { flex-wrap: wrap; }
+
+/* Stat tile — small bordered card with eyebrow + big number used by
+   admin stats strip and Emails tab. */
+.stat-tile {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+}
+.stat-tile-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+}
+.stat-tile-value {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-top: 2px;
+}
+
+/* Tiny uppercase column header — used inside cron grid cells */
+.col-eyebrow {
+  color: var(--text-tertiary);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+/* Admin grid table — shared header + row scaffolding for the
+   .admin-table-grid family. The grid-template-columns is set inline
+   per-table (different column counts), but everything else is shared. */
+.admin-table-head {
+  display: grid;
+  gap: var(--space-md);
+  padding: 8px 12px;
+  background: var(--bg-raised);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+}
+.admin-table-row {
+  display: grid;
+  gap: var(--space-md);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 0.82rem;
+  align-items: center;
+}
+
+/* Pill — bordered + transparent background. Status color set inline
+   via `color:` and `border-color:` because the value is JS-interpolated. */
+.pill-mono {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+}
+
+/* Role chip — solid bg + subtle border, color set inline. Used in users table. */
+.role-pill {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+}
+
+/* Verification queue — used only by the roster tab. Glow surface
+   around an accent-bordered card. */
+.admin-verify-card {
+  background: var(--bg-card);
+  border: 1px solid var(--accent-dim-20);
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-lg);
+  box-shadow: var(--accent-glow);
+}
+.admin-verify-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-md);
+  padding: 10px 14px;
+  background: var(--bg-raised);
+  border: 1px solid var(--accent-dim-20);
+  border-radius: var(--radius-sm);
+  margin-bottom: 6px;
+  align-items: center;
+}
+.admin-verify-chip-warn {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(243,191,36,0.1);
+  border: 1px solid rgba(243,191,36,0.3);
+  color: #f3bf24;
+}
+.admin-verify-chip-pending {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(251,146,60,0.1);
+  border: 1px solid rgba(251,146,60,0.3);
+  color: #fb923c;
+}
+
+/* Artist roster row card */
+.admin-roster-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+/* Audit log delta strike-through */
+.audit-strike { text-decoration: line-through; opacity: 0.7; }
+
+/* Audit feed row */
+.audit-row { padding: 10px 0; border-bottom: 1px solid var(--border-subtle); }
+
+/* Result banner (broadcast success/failure) */
+.result-ok {
+  padding: var(--space-md);
+  background: rgba(52,211,153,0.08);
+  border: 1px solid rgba(52,211,153,0.3);
+  border-radius: var(--radius-sm);
+  color: var(--status-confirmed);
+  font-size: 0.88rem;
+}
+.result-error {
+  padding: var(--space-md);
+  background: rgba(248,113,113,0.08);
+  border: 1px solid rgba(248,113,113,0.3);
+  border-radius: var(--radius-sm);
+  color: var(--status-cancelled);
+  font-size: 0.82rem;
+}
+.result-warn {
+  margin-top: var(--space-md);
+  padding: var(--space-sm);
+  background: rgba(251,191,36,0.08);
+  border: 1px solid rgba(251,191,36,0.3);
+  border-radius: var(--radius-sm);
+  color: var(--status-pending);
+  font-size: 0.82rem;
+}
+
+/* CSV import drop zone */
+.csv-drop {
+  padding: var(--space-lg);
+  border: 1px dashed var(--border-medium);
+  border-radius: var(--radius-sm);
+  text-align: center;
+  cursor: pointer;
+  background: var(--bg-card-hover);
+  transition: border-color var(--duration-fast);
+}
+
+/* CSV preview pane — scrolling mono panel */
+.csv-preview {
+  max-height: 240px;
+  overflow: auto;
+  background: var(--bg-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+.csv-table { width: 100%; border-collapse: collapse; }
+.csv-th {
+  text-align: left;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+}
+.csv-td {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.csv-more {
+  padding: 8px;
+  color: var(--text-tertiary);
+  text-align: center;
+  font-size: 0.82rem;
+}
+
+/* CSV results errors box */
+.csv-results {
+  background: var(--bg-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  max-height: 160px;
+  overflow: auto;
+}
+
+/* Audit-log scroll container */
+.audit-log-host {
+  max-height: 600px;
+  overflow-y: auto;
+  font-size: 0.82rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-lg);
+}
+
+/* Health sparkline cell */
+.spark-cell {
+  width: 10px;
+  height: 18px;
+  border-radius: 2px;
+  display: inline-block;
+}
+.spark-cell-empty { background: rgba(255,255,255,0.05); }
+
+/* Health pill — fallback (no last status yet) */
+.health-pill--neutral { background: rgba(255,255,255,0.08); color: var(--text-tertiary); }
+
+/* Cron job row — used in renderCronHealthGrid */
+.cron-row {
+  display: grid;
+  grid-template-columns: 1fr 120px 100px 100px 140px;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  align-items: center;
+}
+.cron-row--fail24 { border-color: rgba(248,113,113,0.4); }
+.cron-row--fail7  { border-color: rgba(251,191,36,0.35); }
+
+/* Last-error overflow line inside a cron row */
+.cron-last-error {
+  margin-top: 6px;
+  font-size: 0.76rem;
+  color: var(--status-cancelled);
+  font-family: var(--font-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Undo button — dashed border, tertiary text */
+.btn-undo {
+  font-size: 0.7rem;
+  margin-top: 6px;
+  color: var(--text-tertiary);
+  border: 1px dashed var(--border-subtle);
+}
+
+/* Button with pending-status outline (e.g. ★ Unfeature) */
+.btn-pending-outline { border-color: var(--status-pending); color: var(--status-pending); }
+
+/* Inline grid for the "+ Add unclaimed artist" details panel */
+.admin-add-form {
+  padding: var(--space-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  margin-top: var(--space-sm);
+}
+
+/* Setup-instructions details — neutral card sitting below the events list */
+.setup-details {
+  margin-top: var(--space-lg);
+  padding: var(--space-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+/* Pointer-cursor + secondary-color summary used by <details> blocks */
+.summary-soft { cursor: pointer; color: var(--text-secondary); font-size: 0.88rem; }
+.summary-md   { cursor: pointer; font-size: 0.82rem; color: var(--text-secondary); }
+
+/* Section heading inside admin tabs */
+.section-h3 { font-size: 1rem; margin-bottom: var(--space-sm); }
+.section-h3-spaced { font-size: 1rem; margin: var(--space-xl) 0 var(--space-sm); }

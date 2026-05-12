@@ -78,6 +78,15 @@
     .err-row .build { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-tertiary); }
     .err-row .msg { color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .err-row .url { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .err-row--head {
+      background: var(--bg-raised);
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-tertiary);
+      cursor: default;
+    }
     .err-detail {
       display: none;
       padding: var(--space-md);
@@ -121,11 +130,11 @@
     <div class="admin-container">
       <div class="admin-head">
         <div>
-          <div style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--accent-soft);margin-bottom:6px">Admin console</div>
+          <div class="eyebrow-soft">Admin console</div>
           <h1>Operate ROSTR+</h1>
           <p>Roster, imports, audit log, errors, cron health. Visible only to platform admins.</p>
         </div>
-        <div id="admin-who" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary);text-align:right"></div>
+        <div id="admin-who" class="meta-mono-right"></div>
       </div>
 
       <!-- Stats strip -->
@@ -146,20 +155,20 @@
 
       <!-- ═══ Tab: Roster ═══ -->
       <section class="admin-panel active" data-panel="roster">
-        <p class="text-secondary" style="font-size:0.88rem;margin-bottom:var(--space-md)">
+        <p class="text-secondary fs-md mb-space-md">
           Promote pending artists, deactivate, or toggle verified status. All actions are audited.
         </p>
 
         <!-- Verification queue — surfaces artists that need an admin
              decision before they become discoverable. Collapses when
              the queue is empty so it doesn't waste screen space. -->
-        <div id="verify-queue" style="display:none;margin-bottom:var(--space-md)"></div>
+        <div id="verify-queue" class="is-hidden mb-space-md"></div>
 
-        <div id="admin-artists-list" style="display:flex;flex-direction:column;gap:var(--space-sm);margin-bottom:var(--space-md)"></div>
+        <div id="admin-artists-list" class="stack-sm mb-space-md"></div>
 
-        <details style="margin-top:var(--space-md)">
-          <summary style="cursor:pointer;color:var(--text-secondary);font-size:0.88rem">+ Add new unclaimed artist</summary>
-          <div style="padding:var(--space-md);background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);margin-top:var(--space-sm)">
+        <details class="mt-space-md">
+          <summary class="summary-soft">+ Add new unclaimed artist</summary>
+          <div class="admin-add-form">
             <div class="form-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-md);margin-bottom:var(--space-sm)">
               <div class="form-group">
                 <label class="form-label">Stage Name</label>
@@ -190,7 +199,7 @@
       <section class="admin-panel" data-panel="users">
         <div class="toolbar-row">
           <div class="fs-md text-secondary">All registered accounts. Change role only when you understand the consequences.</div>
-          <input type="text" id="user-search" placeholder="Search email or name" oninput="renderUsers()" class="form-input" style="max-width:260px;margin-left:auto;font-size:0.82rem;padding:6px 10px">
+          <input type="text" id="user-search" placeholder="Search email or name" oninput="renderUsers()" class="form-input form-input-compact ml-auto" style="max-width:260px">
           <button class="btn btn-ghost btn-sm fs-tiny" aria-label="Export users to CSV" onclick="exportUsersCSV()">↓ CSV</button>
           <button class="btn btn-ghost btn-sm fs-tiny" aria-label="Refresh users list" onclick="renderUsers()">Refresh</button>
         </div>
@@ -217,27 +226,27 @@
 
       <!-- ═══ Tab: Bulk import ═══ -->
       <section class="admin-panel" data-panel="import">
-        <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:var(--space-md);line-height:1.6">
+        <p class="help-text">
           Drop a CSV with artists to add them all as unclaimed rows. Columns:
           <code class="code-mono">stage_name</code> (required) +
           <code class="code-mono">genre, city, instagram, soundcloud, spotify, status, verified, base_fee</code> (optional).
         </p>
-        <p style="font-size:0.82rem;margin-bottom:var(--space-md)">
-          <a href="assets/artist-import-template.csv" download style="color:var(--accent-soft)">Download template CSV →</a>
+        <p class="fs-sm mb-space-md">
+          <a href="assets/artist-import-template.csv" download class="text-accent-soft">Download template CSV →</a>
         </p>
 
-        <input type="file" id="admin-csv-file" accept=".csv,text/csv" style="display:none">
-        <div id="admin-csv-drop" style="padding:var(--space-lg);border:1px dashed var(--border-medium);border-radius:var(--radius-sm);text-align:center;cursor:pointer;background:var(--bg-card-hover);transition:border-color var(--duration-fast)">
-          <div style="color:var(--text-secondary);font-size:0.88rem">Drop CSV here, or click to pick a file</div>
-          <div id="admin-csv-filename" style="color:var(--text-tertiary);font-size:0.75rem;margin-top:4px;font-family:var(--font-mono)"></div>
+        <input type="file" id="admin-csv-file" accept=".csv,text/csv" class="is-hidden">
+        <div id="admin-csv-drop" class="csv-drop">
+          <div class="text-secondary fs-md">Drop CSV here, or click to pick a file</div>
+          <div id="admin-csv-filename" class="text-tertiary fs-xs mt-xs font-mono"></div>
         </div>
 
         <div id="admin-csv-preview" class="mt-md is-hidden">
-          <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:var(--space-sm)">
+          <div class="fs-sm text-secondary mb-space-sm">
             <span id="admin-csv-count">0</span> row<span id="admin-csv-plural">s</span> ready. Review below, then import.
           </div>
-          <div id="admin-csv-preview-table" style="max-height:240px;overflow:auto;background:var(--bg-1);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:var(--space-sm);font-family:var(--font-mono);font-size:0.78rem"></div>
-          <div style="display:flex;gap:var(--space-sm);margin-top:var(--space-md)">
+          <div id="admin-csv-preview-table" class="csv-preview"></div>
+          <div class="flex" style="gap:var(--space-sm);margin-top:var(--space-md)">
             <button class="btn btn-primary btn-sm" id="admin-csv-import">Import <span id="admin-csv-import-count">0</span> artists</button>
             <button class="btn btn-ghost btn-sm" onclick="adminResetCsv()">Clear</button>
           </div>
@@ -249,15 +258,15 @@
       <!-- ═══ Tab: Broadcast ═══ -->
       <section class="admin-panel" data-panel="broadcast">
         <div style="max-width:640px">
-          <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:var(--space-md);line-height:1.6">
-            Send a one-shot notification to every user or just one role. This writes a notifications row for each recipient — they see it on next page load + Realtime tray. It does NOT send email; for that, add to the <code style="font-family:var(--font-mono);font-size:0.78rem">send-email</code> edge function.
+          <p class="help-text">
+            Send a one-shot notification to every user or just one role. This writes a notifications row for each recipient — they see it on next page load + Realtime tray. It does NOT send email; for that, add to the <code class="mono-sm">send-email</code> edge function.
           </p>
-          <div class="form-group" style="margin-bottom:var(--space-md)">
-            <label class="form-label">Title <span style="color:var(--text-tertiary);font-weight:400">(max 200 chars)</span></label>
+          <div class="form-group mb-space-md">
+            <label class="form-label">Title <span class="hint-faint">(max 200 chars)</span></label>
             <input type="text" class="form-input" id="bc-title" placeholder="Scheduled maintenance tonight" maxlength="200">
           </div>
-          <div class="form-group" style="margin-bottom:var(--space-md)">
-            <label class="form-label">Body <span style="color:var(--text-tertiary);font-weight:400">(optional, max 1000 chars)</span></label>
+          <div class="form-group mb-space-md">
+            <label class="form-label">Body <span class="hint-faint">(optional, max 1000 chars)</span></label>
             <textarea class="form-input" id="bc-body" rows="3" maxlength="1000" placeholder="The platform will be unreachable from 02:00\u201302:30 UTC while we apply database migrations."></textarea>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-md);margin-bottom:var(--space-md)">
@@ -274,9 +283,9 @@
               </select>
             </div>
           </div>
-          <div style="display:flex;align-items:center;gap:var(--space-md);margin-top:var(--space-lg)">
+          <div class="flex-center-gap-md mt-space-lg">
             <button class="btn btn-primary" id="bc-send-btn" onclick="broadcastSend()">Send broadcast</button>
-            <div id="bc-preview-count" style="font-size:0.78rem;color:var(--text-tertiary)"></div>
+            <div id="bc-preview-count" class="mono-sm text-tertiary"></div>
           </div>
           <div id="bc-result" class="mt-md is-hidden"></div>
         </div>
@@ -289,8 +298,8 @@
           <button class="btn btn-ghost btn-sm ml-auto fs-tiny" aria-label="Export audit log to CSV" onclick="exportAuditLogCSV()">↓ CSV</button>
           <button class="btn btn-ghost btn-sm fs-tiny" aria-label="Refresh audit log" onclick="refreshAuditLog()">Refresh</button>
         </div>
-        <div style="display:flex;gap:8px;margin-bottom:var(--space-sm);flex-wrap:wrap;align-items:center">
-          <input type="text" id="audit-actor" placeholder="Filter by actor email" oninput="applyAuditFilters()" class="form-input" style="max-width:260px;font-size:0.82rem;padding:6px 10px">
+        <div class="filter-row filter-row--wrap">
+          <input type="text" id="audit-actor" placeholder="Filter by actor email" oninput="applyAuditFilters()" class="form-input form-input-compact" style="max-width:260px">
           <select id="audit-action-filter" class="form-select form-input-compact" onchange="applyAuditFilters()">
             <option value="">All action types</option>
             <option value="artist.verify">Artist verify</option>
@@ -313,9 +322,9 @@
             <option value="7d">Last 7 days</option>
             <option value="30d">Last 30 days</option>
           </select>
-          <div id="audit-count" style="font-size:0.76rem;color:var(--text-tertiary);font-family:var(--font-mono);margin-left:auto"></div>
+          <div id="audit-count" class="mono-fine text-tertiary ml-auto"></div>
         </div>
-        <div id="admin-audit-log" style="max-height:600px;overflow-y:auto;font-size:0.82rem;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:var(--space-md) var(--space-lg)"></div>
+        <div id="admin-audit-log" class="audit-log-host"></div>
       </section>
 
       <!-- ═══ Tab: Emails ═══ -->
@@ -333,9 +342,9 @@
 
         <div id="email-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:var(--space-lg)"></div>
 
-        <div style="display:flex;gap:8px;margin-bottom:var(--space-sm);align-items:center">
-          <div style="font-size:0.82rem;color:var(--text-secondary)">Recent events</div>
-          <select id="email-type-filter" class="form-select" style="margin-left:auto;font-size:0.78rem;padding:4px 8px" onchange="renderEmails()">
+        <div class="filter-row">
+          <div class="fs-sm text-secondary">Recent events</div>
+          <select id="email-type-filter" class="form-select form-select-tiny ml-auto" onchange="renderEmails()">
             <option value="">All event types</option>
             <option value="email.sent">Sent</option>
             <option value="email.delivered">Delivered</option>
@@ -348,9 +357,9 @@
         </div>
         <div id="email-events-list" class="section-card"></div>
 
-        <details style="margin-top:var(--space-lg);padding:var(--space-md);background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm)">
-          <summary style="cursor:pointer;font-size:0.82rem;color:var(--text-secondary)">Setup instructions</summary>
-          <div style="margin-top:var(--space-sm);font-size:0.82rem;color:var(--text-secondary);line-height:1.6">
+        <details class="setup-details">
+          <summary class="summary-md">Setup instructions</summary>
+          <div class="mt-space-sm fs-sm text-secondary" style="line-height:1.6">
             <ol style="margin-left:var(--space-md)">
               <li>In Resend dashboard → Webhooks → Add Endpoint.</li>
               <li>URL: <code class="code-mono">https://vgjmfpryobsuboukbemr.supabase.co/functions/v1/resend-webhook</code></li>
@@ -366,7 +375,7 @@
       <section class="admin-panel" data-panel="errors">
         <div class="toolbar-row">
           <div class="fs-md text-secondary">Client errors captured by the browser logger</div>
-          <select id="err-range" class="form-select" style="margin-left:auto;font-size:0.78rem;padding:4px 8px" onchange="renderErrors()">
+          <select id="err-range" class="form-select form-select-tiny ml-auto" onchange="renderErrors()">
             <option value="24h" selected>Last 24 hours</option>
             <option value="7d">Last 7 days</option>
             <option value="all">All (30-day window)</option>
@@ -375,7 +384,7 @@
           <button class="btn btn-ghost btn-sm fs-tiny" aria-label="Refresh client errors" onclick="renderErrors()">Refresh</button>
         </div>
         <div class="section-card">
-          <div class="err-row" style="background:var(--bg-raised);font-family:var(--font-mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);cursor:default">
+          <div class="err-row err-row--head">
             <div>Time</div>
             <div>Build</div>
             <div>Message</div>
@@ -387,7 +396,7 @@
 
       <!-- ═══ Tab: Health ═══ -->
       <section class="admin-panel" data-panel="health">
-        <div style="display:flex;gap:8px;margin-bottom:var(--space-lg);align-items:center">
+        <div class="flex-center" style="gap:8px;margin-bottom:var(--space-lg)">
           <div class="fs-md text-secondary">Platform health snapshot</div>
           <button class="btn btn-ghost btn-sm ml-auto fs-tiny" aria-label="Export cron run history to CSV" onclick="exportCronRunsCSV()">↓ CSV</button>
           <button class="btn btn-ghost btn-sm fs-tiny" aria-label="Refresh cron health" onclick="renderHealth()">Refresh</button>
@@ -395,10 +404,10 @@
 
         <div id="health-summary" class="health-card">Loading…</div>
 
-        <h3 style="font-size:1rem;margin:var(--space-xl) 0 var(--space-sm)">Per-job health</h3>
-        <div id="cron-health-grid" style="display:flex;flex-direction:column;gap:var(--space-sm);margin-bottom:var(--space-xl)"></div>
+        <h3 class="section-h3-spaced">Per-job health</h3>
+        <div id="cron-health-grid" class="stack-sm mb-xl"></div>
 
-        <h3 style="font-size:1rem;margin-bottom:var(--space-sm)">Last 20 cron runs</h3>
+        <h3 class="section-h3">Last 20 cron runs</h3>
         <div id="cron-runs-list" class="section-card"></div>
       </section>
     </div>
@@ -465,7 +474,7 @@
       if (countEl) countEl.textContent = `${rows.length} of ${_auditRows.length}`;
 
       if (rows.length === 0) {
-        host.innerHTML = '<div class="text-tertiary" style="padding:var(--space-md);font-size:0.82rem;text-align:center">No matching events.</div>';
+        host.innerHTML = '<div class="list-msg list-msg-muted text-center">No matching events.</div>';
         return;
       }
       const actionLabel = {
@@ -504,8 +513,8 @@
           delta = keys.map(k => {
             const bef = fmtVal(row.before_value[k]);
             const aft = fmtVal(row.after_value[k]);
-            return `<span class="label-mono">${esc(k)}: <span style="text-decoration:line-through;opacity:0.7">${esc(bef)}</span> → <span style="color:var(--text-secondary)">${esc(aft)}</span></span>`;
-          }).join('<span style="color:var(--text-tertiary);margin:0 6px">·</span>');
+            return `<span class="label-mono">${esc(k)}: <span class="audit-strike">${esc(bef)}</span> → <span class="text-secondary">${esc(aft)}</span></span>`;
+          }).join('<span class="text-tertiary" style="margin:0 6px">·</span>');
         } else if (row.action === 'artist.bulk_import' && row.meta) {
           const m = row.meta;
           delta = `<span class="label-mono">${m.succeeded || 0} imported · ${m.failed || 0} failed · ${m.total || 0} total</span>`;
@@ -524,16 +533,16 @@
            'user.role_change','booking.force_cancel','booking.status_change']
             .includes(row.action);
         const undoBtn = undoable
-          ? `<button class="btn btn-ghost btn-sm" style="font-size:0.7rem;margin-top:6px;color:var(--text-tertiary);border:1px dashed var(--border-subtle)" aria-label="Undo admin action ${esc(row.action)} on ${esc(row.target_type)}" onclick="auditUndo('${esc(row.target_type)}','${esc(row.target_id)}', '${esc(row.action)}')">↶ Undo</button>`
+          ? `<button class="btn btn-ghost btn-sm btn-undo" aria-label="Undo admin action ${esc(row.action)} on ${esc(row.target_type)}" onclick="auditUndo('${esc(row.target_type)}','${esc(row.target_id)}', '${esc(row.action)}')">↶ Undo</button>`
           : '';
 
         return `
-          <div style="padding:10px 0;border-bottom:1px solid var(--border-subtle)">
-            <div style="display:flex;align-items:flex-start;gap:var(--space-md)">
-              <div style="flex:1;min-width:0">
-                <div style="color:var(--text-primary)"><strong>${esc(label)}</strong>${stageName}</div>
-                ${delta ? `<div style="margin-top:4px">${delta}</div>` : ''}
-                <div style="font-size:0.72rem;color:var(--text-tertiary);margin-top:4px">
+          <div class="audit-row">
+            <div class="flex-start-row">
+              <div class="flex-1">
+                <div><strong>${esc(label)}</strong>${stageName}</div>
+                ${delta ? `<div class="mt-xs">${delta}</div>` : ''}
+                <div class="fs-mxs text-tertiary mt-xs">
                   ${esc(row.actor_email || 'unknown')} · ${whenStr}${reason}
                 </div>
               </div>
@@ -587,33 +596,33 @@
         const genre = Array.isArray(a.genre) ? a.genre[0] : (a.genre || '');
         const city = Array.isArray(a.cities_active) ? a.cities_active[0] : '';
         const reasonChips = [];
-        if (a.profile_id && !a.verified) reasonChips.push('<span style="font-family:var(--font-mono);font-size:0.64rem;padding:1px 6px;border-radius:999px;background:rgba(243,191,36,0.1);border:1px solid rgba(243,191,36,0.3);color:#f3bf24">claimed · unverified</span>');
-        if (a.status === 'pending')      reasonChips.push('<span style="font-family:var(--font-mono);font-size:0.64rem;padding:1px 6px;border-radius:999px;background:rgba(251,146,60,0.1);border:1px solid rgba(251,146,60,0.3);color:#fb923c">pending</span>');
+        if (a.profile_id && !a.verified) reasonChips.push('<span class="admin-verify-chip-warn">claimed · unverified</span>');
+        if (a.status === 'pending')      reasonChips.push('<span class="admin-verify-chip-pending">pending</span>');
         return `
-          <div style="display:grid;grid-template-columns:1fr auto;gap:var(--space-md);padding:10px 14px;background:var(--bg-raised);border:1px solid var(--accent-dim-20);border-radius:var(--radius-sm);margin-bottom:6px;align-items:center">
+          <div class="admin-verify-row">
             <div style="min-width:0">
-              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <div class="flex-center-gap-sm flex-wrap">
                 <strong>${esc(a.stage_name || 'Artist')}</strong>
                 ${reasonChips.join('')}
               </div>
-              <div style="font-size:0.72rem;color:var(--text-tertiary);margin-top:2px">
+              <div class="fs-mxs text-tertiary" style="margin-top:2px">
                 ${esc(genre)}${genre && city ? ' · ' : ''}${esc(city)}
               </div>
             </div>
-            <div style="display:flex;gap:4px;flex-wrap:wrap">
+            <div class="flex-actions">
               ${!a.verified ? `<button class="btn btn-primary btn-sm fs-2xs" aria-label="Approve artist ${esc(a.stage_name || 'unnamed')}" onclick="queueApprove('${esc(a.id)}')">Approve</button>` : ''}
               ${a.status !== 'active' ? `<button class="btn btn-secondary btn-sm fs-2xs" aria-label="Activate artist ${esc(a.stage_name || 'unnamed')}" onclick="queueActivate('${esc(a.id)}')">Activate</button>` : ''}
-              <button class="btn btn-ghost btn-sm" style="font-size:0.72rem;color:var(--status-cancelled)" aria-label="Reject artist ${esc(a.stage_name || 'unnamed')}" onclick="queueReject('${esc(a.id)}')">Reject</button>
+              <button class="btn btn-ghost btn-sm fs-mxs text-status-cancelled" aria-label="Reject artist ${esc(a.stage_name || 'unnamed')}" onclick="queueReject('${esc(a.id)}')">Reject</button>
             </div>
           </div>
         `;
       }).join('');
       host.innerHTML = `
-        <div style="background:var(--bg-card);border:1px solid var(--accent-dim-20);border-radius:var(--radius-md);padding:var(--space-md) var(--space-lg);box-shadow:var(--accent-glow)">
-          <div style="display:flex;align-items:center;gap:var(--space-md);margin-bottom:var(--space-md);flex-wrap:wrap">
-            <div style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--accent)">Verification queue</div>
+        <div class="admin-verify-card">
+          <div class="flex-center-gap-md flex-wrap" style="margin-bottom:var(--space-md)">
+            <div class="eyebrow-accent">Verification queue</div>
             <div style="font-size:1rem;font-weight:600;color:var(--text-primary)">${queue.length} artist${queue.length === 1 ? '' : 's'} waiting</div>
-            ${queue.length > 8 ? `<div style="margin-left:auto;font-size:0.72rem;color:var(--text-tertiary)">showing first 8</div>` : ''}
+            ${queue.length > 8 ? `<div class="ml-auto fs-mxs text-tertiary">showing first 8</div>` : ''}
           </div>
           ${rows}
         </div>
@@ -654,10 +663,10 @@
     async function renderAdminArtists() {
       const list = document.getElementById('admin-artists-list');
       if (!list) return;
-      list.innerHTML = '<div class="text-tertiary" style="font-size:0.85rem">Loading…</div>';
+      list.innerHTML = '<div class="text-tertiary text-sm">Loading…</div>';
       const res = await DB.adminListAllArtists();
       if (!res.success) {
-        list.innerHTML = `<div style="color:var(--status-cancelled);font-size:0.85rem">Failed to load: ${esc(res.error || '')}</div>`;
+        list.innerHTML = `<div class="text-status-cancelled text-sm">Failed to load: ${esc(res.error || '')}</div>`;
         return;
       }
       if (!res.data || res.data.length === 0) {
@@ -669,21 +678,21 @@
       list.innerHTML = res.data.map(a => {
         const genre = Array.isArray(a.genre) ? a.genre.join(', ') : (a.genre || '');
         const city = Array.isArray(a.cities_active) ? a.cities_active[0] : '';
-        const claimed = a.profile_id ? '<span style="color:var(--status-confirmed);font-size:0.75rem">claimed</span>' : '<span class="text-tertiary fs-xs">unclaimed</span>';
+        const claimed = a.profile_id ? '<span class="text-status-confirmed fs-xs">claimed</span>' : '<span class="text-tertiary fs-xs">unclaimed</span>';
         const statusClr = a.status === 'active' ? 'var(--status-confirmed)' : a.status === 'pending' ? 'var(--status-pending)' : 'var(--text-tertiary)';
         return `
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-sm);padding:var(--space-sm) var(--space-md);background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm)">
-            <div style="flex:1;min-width:0">
-              <div style="display:flex;align-items:center;gap:8px;font-weight:500">
+          <div class="admin-roster-row">
+            <div class="flex-1">
+              <div class="flex-center-gap-sm" style="font-weight:500">
                 ${esc(a.stage_name)}
-                ${a.verified ? '<span style="color:var(--accent-soft);font-size:0.75rem">✓ verified</span>' : ''}
+                ${a.verified ? '<span class="text-accent-soft fs-xs">✓ verified</span>' : ''}
                 ${claimed}
               </div>
-              <div style="font-size:0.75rem;color:var(--text-tertiary);margin-top:2px">
+              <div class="fs-xs text-tertiary" style="margin-top:2px">
                 ${esc(genre)}${genre && city ? ' · ' : ''}${esc(city)} · <span style="color:${statusClr}">${esc(a.status)}</span>
               </div>
             </div>
-            <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
+            <div class="flex-actions flex-end">
               ${a.status !== 'active' ? `<button class="btn btn-ghost btn-sm fs-xs" aria-label="Set artist ${esc(a.stage_name || 'unnamed')} to active" onclick="adminSetStatus('${esc(a.id)}','active')">Activate</button>` : ''}
               ${a.status !== 'pending' ? `<button class="btn btn-ghost btn-sm fs-xs" aria-label="Hide artist ${esc(a.stage_name || 'unnamed')} from directory" onclick="adminSetStatus('${esc(a.id)}','pending')">Hide</button>` : ''}
               ${a.status !== 'inactive' ? `<button class="btn btn-ghost btn-sm fs-xs" aria-label="Retire artist ${esc(a.stage_name || 'unnamed')}" onclick="adminSetStatus('${esc(a.id)}','inactive')">Retire</button>` : ''}
@@ -716,9 +725,8 @@
         const remaining = daysLeft >= 1
           ? `${daysLeft}d`
           : `${Math.ceil(msLeft / 3600000)}h`;
-        return `<button class="btn btn-secondary btn-sm fs-xs"
+        return `<button class="btn btn-secondary btn-sm fs-xs btn-pending-outline"
                   aria-label="Unfeature artist ${safeName}"
-                  style="border-color:var(--status-pending);color:var(--status-pending)"
                   onclick="adminSetFeatured('${esc(a.id)}', null)">★ Unfeature (${remaining} left)</button>`;
       }
       // Three duration buttons. Each writes a future ISO timestamp.
@@ -832,21 +840,21 @@
 
       const sample = rows.slice(0, 10);
       const cols = ['stage_name','genre','city','status','verified','base_fee','instagram'];
-      let html = '<table style="width:100%;border-collapse:collapse"><thead><tr>';
+      let html = '<table class="csv-table"><thead><tr>';
       cols.forEach(c => {
-        html += `<th style="text-align:left;padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:var(--text-tertiary);text-transform:uppercase;font-size:0.7rem;letter-spacing:0.06em">${esc(c)}</th>`;
+        html += `<th class="csv-th">${esc(c)}</th>`;
       });
       html += '</tr></thead><tbody>';
       sample.forEach(r => {
         html += '<tr>';
         cols.forEach(c => {
           const v = r[c] || r[c.replace('_',' ')] || '';
-          html += `<td style="padding:4px 8px;border-bottom:1px solid var(--border-subtle);color:var(--text-primary);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(v)}</td>`;
+          html += `<td class="csv-td">${esc(v)}</td>`;
         });
         html += '</tr>';
       });
       html += '</tbody></table>';
-      if (count > 10) html += `<div style="padding:8px;color:var(--text-tertiary);text-align:center;font-size:0.82rem">+ ${count - 10} more row${count - 10 === 1 ? '' : 's'}</div>`;
+      if (count > 10) html += `<div class="csv-more">+ ${count - 10} more row${count - 10 === 1 ? '' : 's'}</div>`;
       document.getElementById('admin-csv-preview-table').innerHTML = html;
     }
 
@@ -874,12 +882,12 @@
       if (!res.success) { UI.toast('Import failed: ' + (res.error || ''), 'error'); return; }
 
       const results = document.getElementById('admin-csv-results');
-      let html = `<div style="font-size:0.88rem;margin-bottom:var(--space-sm)">
-        <strong style="color:var(--status-confirmed)">${res.succeeded} added</strong>
+      let html = `<div class="fs-md mb-space-sm">
+        <strong class="text-status-confirmed">${res.succeeded} added</strong>
         ${res.failed > 0 ? `· <strong class="text-status-cancelled">${res.failed} failed</strong>` : ''}
       </div>`;
       if (res.failed > 0) {
-        html += '<div style="background:var(--bg-1);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:var(--space-sm);font-family:var(--font-mono);font-size:0.78rem;max-height:160px;overflow:auto">';
+        html += '<div class="csv-results">';
         res.results.filter(r => !r.ok).forEach(r => {
           html += `<div class="text-status-cancelled">${esc(r.stage_name)}: ${esc(r.error || 'unknown')}</div>`;
         });
@@ -992,17 +1000,17 @@
         for (let i = 0; i < 10; i++) {
           const r = runs[i];
           if (!r) {
-            cells.push('<span title="no run" style="width:10px;height:18px;background:rgba(255,255,255,0.05);border-radius:2px;display:inline-block"></span>');
+            cells.push('<span title="no run" class="spark-cell spark-cell-empty"></span>');
           } else {
             const bg = r.status === 'ok'
               ? 'rgba(52,211,153,0.55)'
               : 'rgba(248,113,113,0.65)';
             const err = r.error ? ' — ' + String(r.error).slice(0, 80) : '';
             const when = r.ran_at ? new Date(r.ran_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
-            cells.push(`<span title="${esc(r.status || '—')} · ${esc(when)}${esc(err)}" style="width:10px;height:18px;background:${bg};border-radius:2px;display:inline-block"></span>`);
+            cells.push(`<span title="${esc(r.status || '—')} · ${esc(when)}${esc(err)}" class="spark-cell" style="background:${bg}"></span>`);
           }
         }
-        return `<div style="display:flex;gap:3px">${cells.join('')}</div>`;
+        return `<div class="flex gap-3">${cells.join('')}</div>`;
       };
 
       const timeAgo = (iso) => {
@@ -1024,7 +1032,7 @@
           ? '<span class="health-pill health-pill--ok">OK</span>'
           : j.last_status === 'error'
             ? '<span class="health-pill health-pill--bad">ERR</span>'
-            : '<span class="health-pill" style="background:rgba(255,255,255,0.08);color:var(--text-tertiary)">—</span>';
+            : '<span class="health-pill health-pill--neutral">—</span>';
         const rate24 = Number(j.runs_24h) > 0
           ? `${Number(j.runs_24h) - Number(j.failures_24h)}/${Number(j.runs_24h)}`
           : '0/0';
@@ -1032,32 +1040,28 @@
           ? `${Number(j.runs_7d) - Number(j.failures_7d)}/${Number(j.runs_7d)}`
           : '0/0';
         const lastErr = j.last_error && j.last_status === 'error'
-          ? `<div style="margin-top:6px;font-size:0.76rem;color:var(--status-cancelled);font-family:var(--font-mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(String(j.last_error).slice(0, 160))}</div>`
+          ? `<div class="cron-last-error">${esc(String(j.last_error).slice(0, 160))}</div>`
           : '';
-        const border = fail24
-          ? 'border-color:rgba(248,113,113,0.4)'
-          : fail7
-            ? 'border-color:rgba(251,191,36,0.35)'
-            : '';
+        const rowCls = fail24 ? 'cron-row cron-row--fail24' : fail7 ? 'cron-row cron-row--fail7' : 'cron-row';
         return `
-          <div style="display:grid;grid-template-columns:1fr 120px 100px 100px 140px;gap:var(--space-md);padding:var(--space-md);background:var(--bg-card);border:1px solid var(--border-subtle);${border};border-radius:var(--radius-sm);align-items:center">
+          <div class="${rowCls}">
             <div>
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <div class="flex-center-gap-sm" style="margin-bottom:4px">
                 ${okPill}
-                <code style="font-family:var(--font-mono);font-size:0.85rem;color:var(--text-primary)">${esc(j.job)}</code>
+                <code class="mono-lg" style="color:var(--text-primary)">${esc(j.job)}</code>
               </div>
               ${lastErr}
             </div>
             <div>${spark(j.last_10)}</div>
-            <div style="font-family:var(--font-mono);font-size:0.78rem;color:${fail24 ? 'var(--status-cancelled)' : 'var(--text-secondary)'}">
-              <div style="color:var(--text-tertiary);font-size:0.68rem;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px">24h</div>
+            <div class="mono-sm" style="color:${fail24 ? 'var(--status-cancelled)' : 'var(--text-secondary)'}">
+              <div class="col-eyebrow">24h</div>
               ${rate24}
             </div>
-            <div style="font-family:var(--font-mono);font-size:0.78rem;color:${fail7 && !fail24 ? 'var(--status-pending)' : 'var(--text-secondary)'}">
-              <div style="color:var(--text-tertiary);font-size:0.68rem;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px">7d</div>
+            <div class="mono-sm" style="color:${fail7 && !fail24 ? 'var(--status-pending)' : 'var(--text-secondary)'}">
+              <div class="col-eyebrow">7d</div>
               ${rate7}
             </div>
-            <div style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-tertiary);text-align:right">
+            <div class="mono-sm text-tertiary" style="text-align:right">
               ${esc(timeAgo(j.last_ran_at))}
             </div>
           </div>`;
@@ -1071,7 +1075,7 @@
       const runsHost = document.getElementById('cron-runs-list');
       if (!summary || !runsHost) return;
 
-      summary.innerHTML = '<div style="color:var(--text-tertiary)">Loading…</div>';
+      summary.innerHTML = '<div class="text-tertiary">Loading…</div>';
       runsHost.innerHTML = '';
 
       // 1) Live health endpoint
@@ -1083,19 +1087,19 @@
           : '<span class="health-pill health-pill--bad">● DEGRADED</span>';
         const jobsHtml = Object.entries(h.crons || {}).map(([job, run]) => {
           const ok = run.status === 'ok';
-          return `<div style="display:flex;align-items:center;gap:12px;padding:6px 0">
+          return `<div class="flex-center" style="gap:12px;padding:6px 0">
             <span class="health-pill ${ok ? 'health-pill--ok' : 'health-pill--bad'}">${ok ? 'OK' : run.status}</span>
-            <code style="font-family:var(--font-mono);font-size:0.82rem">${esc(job)}</code>
-            <span style="font-size:0.78rem;color:var(--text-tertiary);margin-left:auto">ran ${timeAgo(run.ran_at)} · ${run.duration_ms || '—'}ms</span>
+            <code class="mono-md">${esc(job)}</code>
+            <span class="fs-fine text-tertiary ml-auto">ran ${timeAgo(run.ran_at)} · ${run.duration_ms || '—'}ms</span>
           </div>`;
-        }).join('') || '<div style="color:var(--text-tertiary);font-size:0.82rem">No cron runs on record yet.</div>';
+        }).join('') || '<div class="text-tertiary fs-sm">No cron runs on record yet.</div>';
         const warnings = (h.warnings || []).length
-          ? `<div style="margin-top:var(--space-md);padding:var(--space-sm);background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.3);border-radius:var(--radius-sm);color:var(--status-pending);font-size:0.82rem">⚠ ${(h.warnings).map(esc).join('<br>')}</div>`
+          ? `<div class="result-warn">⚠ ${(h.warnings).map(esc).join('<br>')}</div>`
           : '';
         summary.innerHTML = `
-          <div style="display:flex;align-items:center;gap:var(--space-md);margin-bottom:var(--space-md)">
+          <div class="flex-center-gap-md" style="margin-bottom:var(--space-md)">
             ${pill}
-            <div style="font-size:0.78rem;color:var(--text-tertiary);margin-left:auto">latency ${h.latency_ms || '—'}ms · ${new Date(h.ts).toLocaleString('en-GB', { hour: '2-digit', minute: '2-digit' })}</div>
+            <div class="fs-fine text-tertiary ml-auto">latency ${h.latency_ms || '—'}ms · ${new Date(h.ts).toLocaleString('en-GB', { hour: '2-digit', minute: '2-digit' })}</div>
           </div>
           <div>${jobsHtml}</div>
           ${warnings}
@@ -1103,6 +1107,7 @@
       } catch (e) {
         summary.innerHTML = `<div class="text-status-cancelled">Health endpoint failed: ${esc(String(e))}</div>`;
       }
+
 
       // 2) cron_runs tail
       try {
@@ -1119,12 +1124,12 @@
           const pill = r.status === 'ok'
             ? '<span class="health-pill health-pill--ok">OK</span>'
             : '<span class="health-pill health-pill--bad">ERR</span>';
-          return `<div style="display:grid;grid-template-columns:80px 220px 1fr 100px 120px;gap:var(--space-md);padding:8px 12px;border-bottom:1px solid var(--border-subtle);font-size:0.82rem;align-items:center">
+          return `<div class="admin-table-row" style="grid-template-columns:80px 220px 1fr 100px 120px">
             <div>${pill}</div>
-            <code style="font-family:var(--font-mono);font-size:0.78rem">${esc(r.job)}</code>
-            <div style="color:var(--text-tertiary);font-size:0.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.error || '')}</div>
-            <div style="font-family:var(--font-mono);font-size:0.74rem;color:var(--text-tertiary)">${r.duration_ms || '—'}ms</div>
-            <div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-tertiary);text-align:right">${when}</div>
+            <code class="mono-sm">${esc(r.job)}</code>
+            <div class="text-tertiary fs-fine truncate">${esc(r.error || '')}</div>
+            <div class="mono-tiny text-tertiary">${r.duration_ms || '—'}ms</div>
+            <div class="meta-mono-right">${when}</div>
           </div>`;
         }).join('');
       } catch (e) {
@@ -1154,10 +1159,10 @@
       }
       const d = res.data;
       const card = (label, value, sub) => `
-        <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:10px 14px">
-          <div style="font-family:var(--font-mono);font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-tertiary)">${label}</div>
-          <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:700;color:var(--text-primary);margin-top:2px">${value}</div>
-          ${sub ? `<div style="font-size:0.68rem;color:var(--text-tertiary);margin-top:2px">${sub}</div>` : ''}
+        <div class="stat-tile">
+          <div class="stat-tile-eyebrow">${label}</div>
+          <div class="stat-tile-value">${value}</div>
+          ${sub ? `<div class="text-sub">${sub}</div>` : ''}
         </div>
       `;
       host.innerHTML =
@@ -1197,7 +1202,7 @@
         return;
       }
       const header = `
-        <div style="display:grid;grid-template-columns:1fr 1fr 90px 90px 110px 320px;gap:var(--space-md);padding:8px 12px;background:var(--bg-raised);font-family:var(--font-mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary)">
+        <div class="admin-table-head" style="grid-template-columns:1fr 1fr 90px 90px 110px 320px">
           <div>Email</div><div>Name</div><div>Role</div><div>City</div><div>Last seen</div><div>Actions</div>
         </div>
       `;
@@ -1205,17 +1210,17 @@
         const lastSeen = u.last_sign_in_at ? timeAgo(u.last_sign_in_at) : '—';
         const flip = u.role === 'artist' ? 'promoter' : 'artist';
         return `
-          <div style="display:grid;grid-template-columns:1fr 1fr 90px 90px 110px 320px;gap:var(--space-md);padding:10px 12px;border-bottom:1px solid var(--border-subtle);font-size:0.82rem;align-items:center">
+          <div class="admin-table-row" style="grid-template-columns:1fr 1fr 90px 90px 110px 320px">
             <div class="truncate">${esc(u.email || '')}</div>
             <div class="truncate">${esc(u.display_name || '')}</div>
-            <div><span style="font-family:var(--font-mono);font-size:0.7rem;padding:2px 8px;border-radius:999px;background:var(--bg-card);border:1px solid var(--border-subtle);color:${u.role === 'artist' ? 'var(--status-info)' : 'var(--accent-soft)'}">${esc(u.role || '—')}</span></div>
-            <div style="color:var(--text-tertiary);font-size:0.78rem">${esc(u.city || '—')}</div>
+            <div><span class="role-pill" style="color:${u.role === 'artist' ? 'var(--status-info)' : 'var(--accent-soft)'}">${esc(u.role || '—')}</span></div>
+            <div class="text-tertiary fs-fine">${esc(u.city || '—')}</div>
             <div class="label-mono">${lastSeen}</div>
-            <div style="display:flex;gap:4px;flex-wrap:wrap">
+            <div class="flex-actions">
               <button class="btn btn-ghost btn-sm fs-2xs" aria-label="Change role of ${esc(u.email||'user')} to ${flip}" onclick="userToggleRole('${esc(u.id)}','${flip}', '${esc(u.email||'')}')">Make ${flip}</button>
               <button class="btn btn-ghost btn-sm fs-2xs" aria-label="Impersonate user ${esc(u.email||'')}" onclick="userImpersonate('${esc(u.id)}', '${esc(u.email||'')}')">Impersonate</button>
               <button class="btn btn-ghost btn-sm fs-2xs" aria-label="Re-send welcome email to ${esc(u.email||'')}" onclick="userResendWelcome('${esc(u.id)}', '${esc(u.email||'')}')">Re-send welcome</button>
-              <button class="btn btn-ghost btn-sm" style="font-size:0.7rem;color:var(--status-cancelled)" aria-label="Suspend user ${esc(u.email||'')}" onclick="userSuspend('${esc(u.id)}', '${esc(u.email||'')}')">Suspend</button>
+              <button class="btn btn-ghost btn-sm fs-2xs text-status-cancelled" aria-label="Suspend user ${esc(u.email||'')}" onclick="userSuspend('${esc(u.id)}', '${esc(u.email||'')}')">Suspend</button>
             </div>
           </div>
         `;
@@ -1309,7 +1314,7 @@
         return;
       }
       const header = `
-        <div style="display:grid;grid-template-columns:100px 1fr 1fr 100px 100px 110px 100px;gap:var(--space-md);padding:8px 12px;background:var(--bg-raised);font-family:var(--font-mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary)">
+        <div class="admin-table-head" style="grid-template-columns:100px 1fr 1fr 100px 100px 110px 100px">
           <div>Date</div><div>Event</div><div>Artist</div><div>Promoter</div><div>Fee</div><div>Status</div><div>Actions</div>
         </div>
       `;
@@ -1327,14 +1332,14 @@
           completed: 'var(--accent)',
         }[b.status] || 'var(--text-tertiary)';
         return `
-          <div style="display:grid;grid-template-columns:100px 1fr 1fr 100px 100px 110px 100px;gap:var(--space-md);padding:10px 12px;border-bottom:1px solid var(--border-subtle);font-size:0.82rem;align-items:center">
-            <div style="font-family:var(--font-mono);font-size:0.76rem">${date}</div>
+          <div class="admin-table-row" style="grid-template-columns:100px 1fr 1fr 100px 100px 110px 100px">
+            <div class="mono-fine">${date}</div>
             <div class="truncate"><a href="/booking-detail.html?id=${esc(b.id)}" style="color:var(--text-primary);text-decoration:none">${esc(b.event_name || b.venue_name || 'Event')}</a></div>
-            <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-secondary)">${esc(artist)}</div>
-            <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-secondary);font-size:0.76rem">${esc(promoter)}</div>
-            <div style="font-family:var(--font-mono);font-size:0.76rem">${fee}</div>
-            <div><span style="font-family:var(--font-mono);font-size:0.68rem;padding:2px 8px;border-radius:999px;border:1px solid ${statusClr};color:${statusClr}">${esc(b.status || '—')}</span></div>
-            <div>${isCancelled ? '<span style="font-size:0.72rem;color:var(--text-tertiary)">—</span>' : `<button class="btn btn-ghost btn-sm" style="font-size:0.72rem;color:var(--status-cancelled)" aria-label="Force cancel booking ${esc(b.event_name || 'Event').replace(/'/g,'&#39;')}" onclick="bookingForceCancel('${esc(b.id)}','${esc(b.event_name || 'Event').replace(/'/g,'&#39;')}')">Force cancel</button>`}</div>
+            <div class="truncate text-secondary">${esc(artist)}</div>
+            <div class="truncate text-secondary fs-tiny">${esc(promoter)}</div>
+            <div class="mono-fine">${fee}</div>
+            <div><span class="pill-mono" style="color:${statusClr}">${esc(b.status || '—')}</span></div>
+            <div>${isCancelled ? '<span class="fs-mxs text-tertiary">—</span>' : `<button class="btn btn-ghost btn-sm fs-mxs text-status-cancelled" aria-label="Force cancel booking ${esc(b.event_name || 'Event').replace(/'/g,'&#39;')}" onclick="bookingForceCancel('${esc(b.id)}','${esc(b.event_name || 'Event').replace(/'/g,'&#39;')}')">Force cancel</button>`}</div>
           </div>
         `;
       }).join('');
@@ -1366,10 +1371,10 @@
       const result = document.getElementById('bc-result');
       result.style.display = '';
       if (!res.success) {
-        result.innerHTML = `<div style="padding:var(--space-md);background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.3);border-radius:var(--radius-sm);color:var(--status-cancelled);font-size:0.82rem">Failed: ${esc(res.error || '')}</div>`;
+        result.innerHTML = `<div class="result-error">Failed: ${esc(res.error || '')}</div>`;
         return;
       }
-      result.innerHTML = `<div style="padding:var(--space-md);background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.3);border-radius:var(--radius-sm);color:var(--status-confirmed);font-size:0.88rem">\u2713 Sent to <strong>${res.recipients}</strong> recipient${res.recipients === 1 ? '' : 's'}.</div>`;
+      result.innerHTML = `<div class="result-ok">\u2713 Sent to <strong>${res.recipients}</strong> recipient${res.recipients === 1 ? '' : 's'}.</div>`;
       document.getElementById('bc-title').value = '';
       document.getElementById('bc-body').value = '';
       document.getElementById('bc-href').value = '';
@@ -1386,13 +1391,13 @@
       const hours = parseInt(document.getElementById('email-window').value, 10) || 24;
       const typeFilter = document.getElementById('email-type-filter').value || null;
 
-      statsHost.innerHTML = '<div style="color:var(--text-tertiary);font-size:0.82rem;padding:var(--space-sm)">Loading\u2026</div>';
+      statsHost.innerHTML = '<div class="text-tertiary fs-sm p-space-sm">Loading\u2026</div>';
       listHost.innerHTML  = '<div class="list-msg list-msg-muted">Loading\u2026</div>';
 
       // Stats
       const statsRes = await DB.adminEmailStats(hours);
       if (!statsRes.success) {
-        statsHost.innerHTML = `<div style="color:var(--status-cancelled);font-size:0.82rem;padding:var(--space-sm)">Failed: ${esc(statsRes.error || '')}</div>`;
+        statsHost.innerHTML = `<div class="text-status-cancelled fs-sm p-space-sm">Failed: ${esc(statsRes.error || '')}</div>`;
       } else {
         const d = statsRes.data || {};
         const sent = d.sent || 0;
@@ -1401,10 +1406,10 @@
         const failed = d.failed || 0;
         const deliveryRate = sent > 0 ? Math.round((delivered / sent) * 100) : null;
         const card = (label, value, sub, clr) => `
-          <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:10px 14px">
-            <div style="font-family:var(--font-mono);font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-tertiary)">${label}</div>
-            <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:700;color:${clr || 'var(--text-primary)'};margin-top:2px">${value}</div>
-            ${sub ? `<div style="font-size:0.68rem;color:var(--text-tertiary);margin-top:2px">${sub}</div>` : ''}
+          <div class="stat-tile">
+            <div class="stat-tile-eyebrow">${label}</div>
+            <div class="stat-tile-value" style="color:${clr || 'var(--text-primary)'}">${value}</div>
+            ${sub ? `<div class="text-sub">${sub}</div>` : ''}
           </div>
         `;
         statsHost.innerHTML =
@@ -1441,12 +1446,12 @@
         const clr = typeClr[ev.type] || 'var(--text-secondary)';
         const short = ev.type.replace('email.', '');
         return `
-          <div style="display:grid;grid-template-columns:140px 120px 1fr 1fr 150px;gap:var(--space-md);padding:8px 12px;border-bottom:1px solid var(--border-subtle);font-size:0.82rem;align-items:center">
-            <div style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-tertiary)">${when}</div>
-            <div><span style="font-family:var(--font-mono);font-size:0.68rem;padding:2px 8px;border-radius:999px;border:1px solid ${clr};color:${clr}">${esc(short)}</span></div>
+          <div class="admin-table-row" style="grid-template-columns:140px 120px 1fr 1fr 150px;padding:8px 12px">
+            <div class="mono-xxs text-tertiary">${when}</div>
+            <div><span class="pill-mono" style="color:${clr}">${esc(short)}</span></div>
             <div class="truncate">${esc(ev.to_email || '')}</div>
-            <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-tertiary)">${esc(ev.subject || '')}</div>
-            <div style="font-family:var(--font-mono);font-size:0.68rem;color:var(--text-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc((ev.resend_id || '').slice(0, 12))}</div>
+            <div class="truncate text-tertiary">${esc(ev.subject || '')}</div>
+            <div class="mono-2xs text-tertiary truncate">${esc((ev.resend_id || '').slice(0, 12))}</div>
           </div>
         `;
       }).join('');
