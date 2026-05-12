@@ -1489,6 +1489,15 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   position: relative;
   z-index: 0;
 }
+/* Hide the initials fallback when the tile actually has an <img>.
+   The initials are the no-photo state — once we have an artist's
+   real face on the tile, doubling up reads as a watermark, not a
+   fallback. Mirrors the partner-logo wordmark behavior. If the
+   <img> 404s, `onerror="this.remove()"` strips it from the DOM
+   and `:has()` no longer matches, so the initials come back. */
+.lp-gallery-tile:has(img) .lp-gallery-initials {
+  display: none;
+}
 
 /* Featured artist card (MiniNowPlaying) */
 .lp-mini-card {
