@@ -1660,19 +1660,75 @@ tr:hover td { background: rgba(255,255,255,0.015); }
 /* ═══ Reach map ═══
    Interactive SVG world with scroll-triggered arcs fanning out from
    Dubai. Equirectangular projection, dot-grid texture, no library. */
-.lp-map-wrap {
+/* ═══ Reach map — scroll-scrubbed globe video (2026-05-12)
+   The old hand-drawn SVG world map + arcs has been replaced by a
+   short video that scrubs in lockstep with scroll. Three pieces:
+     1. .lp-reach-section — the outer section; pads top/bottom only.
+     2. .lp-reach-scrub   — 300vh-tall scroll runway. The inner stage
+        is `position: sticky; top: 0; height: 100vh;` so it pins
+        while the runway scrolls past it.
+     3. .lp-reach-stage   — the pinned viewport. Holds the <video>
+        full-bleed and the .lp-reach-overlay (eyebrow + h2 + legend).
+   The <video> is the source of truth for the visual; JS sets
+   `currentTime` from scroll progress. No autoplay — the static
+   poster frame paints first, then the rAF scrubber takes over. */
+.lp-reach-section {
   position: relative;
-  width: 100%;
-  margin-top: var(--space-md);
-}
-.lp-map {
-  width: 100%;
-  height: auto;
-  display: block;
-  max-height: 520px;
+  /* No padding here — the scrub runway owns the vertical real estate.
+     City list inside .container below the runway carries its own. */
 }
 
-/* Map legend (right of the section head) */
+.lp-reach-scrub {
+  position: relative;
+  height: 300vh;  /* scroll travel = 200vh of scrub (300 − 100vh sticky) */
+}
+
+.lp-reach-stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+  /* The video can be wider than the viewport; clip it. */
+  background: var(--bg-base);
+}
+
+.lp-reach-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Subtle dim so the overlay text reads against the brightest
+     frame of the video without crushing the silhouette. */
+  filter: brightness(0.85);
+  pointer-events: none;
+}
+
+/* Overlay container with the eyebrow / h2 / legend. Sits at the
+   top of the pinned stage so the headline reads when the section
+   first comes into view, then stays put while the scrub plays. */
+.lp-reach-overlay {
+  position: relative;
+  z-index: 2;
+  padding-top: var(--space-3xl);
+  padding-bottom: var(--space-2xl);
+}
+
+/* Soft top-fade so the overlay text never sits on a bright frame. */
+.lp-reach-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 45%;
+  background: linear-gradient(180deg,
+    rgba(8, 9, 11, 0.85) 0%,
+    rgba(8, 9, 11, 0.45) 50%,
+    rgba(8, 9, 11, 0) 100%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Legend (right of the eyebrow on desktop, wraps under on mobile) */
 .lp-map-legend {
   display: flex;
   gap: var(--space-md);
@@ -1700,95 +1756,14 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   box-shadow: 0 0 0 3px var(--accent-dim-20);
 }
 
-/* ── Cities ── */
-.lp-city-node { cursor: default; }
-.lp-city-node .dot {
-  fill: var(--text-secondary);
-  transition: fill var(--duration-fast) var(--ease-out), r var(--duration-fast) var(--ease-out);
-}
-.lp-city-node .label {
-  font-family: var(--font-mono);
-  font-size: 7px;
-  fill: var(--text-tertiary);
-  text-anchor: middle;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  pointer-events: none;
-  transition: fill var(--duration-fast) var(--ease-out);
-}
-.lp-city-node .label.small { font-size: 6px; opacity: 0.75; }
-.lp-city-node:hover .dot { fill: var(--accent-soft); }
-.lp-city-node:hover .label { fill: var(--text-primary); }
-
-/* Home base (Dubai) */
-.lp-city-node.home .dot {
-  fill: var(--accent);
-  filter: drop-shadow(0 0 8px var(--accent-dim-30));
-}
-.lp-city-node.home .ring {
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 1;
-  opacity: 0.35;
-  animation: lp-map-pulse 3s ease-in-out infinite;
-  transform-origin: center;
-  transform-box: fill-box;
-}
-.lp-city-node.home .label {
-  fill: var(--accent-soft);
-  font-size: 8px;
-  font-weight: 600;
-}
-@keyframes lp-map-pulse {
-  0%, 100% { transform: scale(1); opacity: 0.35; }
-  50% { transform: scale(1.6); opacity: 0; }
-}
-
-/* Tier styling — GCC brighter than far-away cities */
-.lp-city-node.tier-gcc .dot { fill: var(--text-primary); }
-.lp-city-node.tier-mena .dot { fill: var(--text-secondary); }
-.lp-city-node.tier-europe .dot,
-.lp-city-node.tier-asia .dot {
-  fill: var(--text-secondary);
-  opacity: 0.85;
-}
-
-/* ── Arcs ──
-   Each path uses pathLength="1" so we can set a uniform stroke-dasharray
-   regardless of the real geometric length. Starts drawn out of view
-   (dashoffset 1) and animates to 0 on intersection. */
-.lp-map-arcs path {
-  pathLength: 1;
-  stroke-dasharray: 1 1;
-  stroke-dashoffset: 1;
-  opacity: 0.85;
-  transition: stroke-dashoffset 1.6s var(--ease-out);
-}
-.lp-map-wrap.is-visible .lp-map-arcs path {
-  stroke-dashoffset: 0;
-}
-/* Stagger each arc so they don't all draw at once — 80ms apart. */
-.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(1)  { transition-delay: 0ms; }
-.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(2)  { transition-delay: 80ms; }
-.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(3)  { transition-delay: 160ms; }
-.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(4)  { transition-delay: 240ms; }
-.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(5)  { transition-delay: 320ms; }
-.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(6)  { transition-delay: 400ms; }
-.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(7)  { transition-delay: 480ms; }
-.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(8)  { transition-delay: 560ms; }
-.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(9)  { transition-delay: 640ms; }
-.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(10) { transition-delay: 720ms; }
-.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(11) { transition-delay: 800ms; }
-.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(12) { transition-delay: 880ms; }
-.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(13) { transition-delay: 960ms; }
-.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(14) { transition-delay: 1040ms; }
-.lp-map-wrap.is-visible .lp-map-arcs path:nth-child(15) { transition-delay: 1120ms; }
-
-/* ── Fallback list below the map ──
-   On small screens the SVG labels become unreadable; this list is the
-   honest backup. On desktop, it's a secondary directory beneath the map. */
+/* ── City list under the scrub stage ──
+   Renders for everyone (SEO + screen readers + reduced-motion users
+   get the same information regardless of whether the video plays).
+   Lives inside its own .container, so the scrub stage can be
+   full-bleed above it. */
 .lp-map-list {
-  margin-top: var(--space-xl);
+  margin-top: var(--space-2xl);
+  margin-bottom: var(--space-3xl);
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: var(--space-lg);
@@ -1809,20 +1784,20 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   line-height: 1.8;
 }
 .lp-map-list .group span { color: var(--text-primary); font-weight: 500; }
-@media (max-width: 720px) {
-  .lp-map { display: none; }
-  .lp-map-legend { display: none; }
-}
-@media (min-width: 721px) {
-  .lp-map-list { display: none; }
+
+/* Reduced-motion: drop the long runway so there's no empty
+   scroll-distance, and let the video sit as a still poster instead. */
+@media (prefers-reduced-motion: reduce) {
+  .lp-reach-scrub { height: auto; }
+  .lp-reach-stage { position: relative; height: 60vh; min-height: 360px; }
+  .lp-reach-video { animation: none; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .lp-map-arcs path {
-    transition: none;
-    stroke-dashoffset: 0;
-  }
-  .lp-city-node.home .ring { animation: none; }
+/* Mobile: keep the effect but trim the runway (300vh on a phone is
+   excessive — the user just wants to see the globe move). */
+@media (max-width: 720px) {
+  .lp-reach-scrub { height: 220vh; }
+  .lp-reach-overlay { padding-top: var(--space-2xl); }
 }
 
 /* Trust microcopy row under hero CTA */

@@ -366,136 +366,47 @@
       </div>
     </section>
 
-    <!-- ═══ REACH MAP ═══ -->
-    <section class="container" style="padding: var(--space-3xl) 0">
-      <div class="lp-section-head">
-        <div>
-          <span class="eyebrow">Where we book</span>
-          <h2>From the Gulf, worldwide.</h2>
-        </div>
-        <div class="lp-map-legend">
-          <span><span class="sw home"></span> Home base</span>
-          <span><span class="sw dest"></span> Destination</span>
+    <!-- ═══ REACH MAP — scroll-scrubbed globe video ═══
+         Replaced 2026-05-12 (was a hand-drawn SVG dot-grid + arcs).
+         Section is a tall (300vh) outer wrapper containing a sticky
+         100vh inner stage; the user scrolls 300vh worth and the
+         video's currentTime is mapped to scroll progress (0→1 →
+         0→duration). The static city list stays below for SEO + no-JS
+         readers + reduced-motion users. -->
+    <section class="lp-reach-section" id="lp-reach-section">
+      <div class="lp-reach-scrub" id="lp-reach-scrub">
+        <div class="lp-reach-stage">
+          <video
+            id="lp-reach-video"
+            class="lp-reach-video"
+            playsinline
+            muted
+            preload="auto"
+            poster="/assets/video/reach-globe-poster.jpg"
+            aria-hidden="true">
+            <source src="/assets/video/reach-globe.webm" type="video/webm">
+            <source src="/assets/video/reach-globe.mp4" type="video/mp4">
+          </video>
+          <div class="lp-reach-overlay container">
+            <div class="lp-section-head">
+              <div>
+                <span class="eyebrow">Where we book</span>
+                <h2>From the Gulf, worldwide.</h2>
+              </div>
+              <div class="lp-map-legend">
+                <span><span class="sw home"></span> Home base</span>
+                <span><span class="sw dest"></span> Destination</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="lp-map-wrap" id="lp-map-wrap">
-        <!-- Viewport crops out the Americas since we have no Western Hemisphere cities.
-             Range x: 440-880 covers Europe → SE Asia; y: 60-320 trims antarctic + arctic. -->
-        <svg class="lp-map" viewBox="440 60 440 260" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-          <!-- Dot grid texture — implies the world without needing landmass geometry.
-               Grid spacing 16px, offset-stippled for visual calm. -->
-          <defs>
-            <pattern id="lp-map-grid" x="0" y="0" width="16" height="16" patternUnits="userSpaceOnUse">
-              <circle cx="8" cy="8" r="0.9" fill="rgba(255,255,255,0.08)"/>
-            </pattern>
-            <radialGradient id="lp-map-fade" cx="50%" cy="50%" r="65%">
-              <stop offset="0%" stop-color="rgba(255,255,255,1)"/>
-              <stop offset="85%" stop-color="rgba(255,255,255,0.6)"/>
-              <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
-            </radialGradient>
-            <mask id="lp-map-mask">
-              <rect x="440" y="60" width="440" height="260" fill="url(#lp-map-fade)"/>
-            </mask>
-          </defs>
-          <rect x="440" y="60" width="440" height="260" fill="url(#lp-map-grid)" mask="url(#lp-map-mask)"/>
-
-          <!-- Arcs: Dubai (653.5, 180) → each destination. Drawn as quadratic Bezier
-               curves that bow upward (lower y = higher on screen). Each path animated
-               via stroke-dasharray on intersection. -->
-          <g class="lp-map-arcs" stroke="var(--accent)" stroke-width="1" fill="none" stroke-linecap="round" opacity="0.7">
-            <!-- Europe -->
-            <path d="M 653.5 180 Q 577 30 499.6 106.9" data-arc></path>
-            <path d="M 653.5 180 Q 629 80 604.5 95.1" data-arc></path>
-            <path d="M 653.5 180 Q 620 75 584.3 83.5" data-arc></path>
-            <!-- MENA -->
-            <path d="M 653.5 180 Q 625 140 598.6 155.9" data-arc></path>
-            <path d="M 653.5 180 Q 620 140 586.8 166.6" data-arc></path>
-            <path d="M 653.5 180 Q 623 150 595.4 172.5" data-arc></path>
-            <path d="M 653.5 180 Q 623 155 593.9 174.3" data-arc></path>
-            <path d="M 653.5 180 Q 623 155 593.6 173.9" data-arc></path>
-            <path d="M 653.5 180 Q 617 135 580.4 164.2" data-arc></path>
-            <!-- GCC (shorter, gentler arcs) -->
-            <path d="M 653.5 180 Q 652 175 651.0 182.0" data-arc></path>
-            <path d="M 653.5 180 Q 642 165 629.7 181.4" data-arc></path>
-            <path d="M 653.5 180 Q 632 170 608.8 190.3" data-arc></path>
-            <path d="M 653.5 180 Q 648 170 643.1 179.8" data-arc></path>
-            <!-- Asia -->
-            <path d="M 653.5 180 Q 740 140 819.7 273.2" data-arc></path>
-          </g>
-
-          <!-- Cities: plotted as dots. Home base (Dubai) is larger + gets a ring.
-               Other cities tiered: GCC/MENA are closer = mid-size; Europe/Asia are smaller. -->
-          <g class="lp-map-cities">
-            <!-- GCC -->
-            <g class="lp-city-node tier-gcc home" data-name="Dubai" transform="translate(653.5, 180)">
-              <circle class="ring" r="10"></circle>
-              <circle class="dot" r="4"></circle>
-              <text y="-14" class="label">Dubai</text>
-            </g>
-            <g class="lp-city-node tier-gcc" data-name="Abu Dhabi" transform="translate(651.0, 182.0)">
-              <circle class="dot" r="2.5"></circle>
-              <text y="14" class="label">Abu Dhabi</text>
-            </g>
-            <g class="lp-city-node tier-gcc" data-name="Riyadh" transform="translate(629.7, 181.4)">
-              <circle class="dot" r="2.5"></circle>
-              <text y="-9" class="label">Riyadh</text>
-            </g>
-            <g class="lp-city-node tier-gcc" data-name="Jeddah" transform="translate(608.8, 190.3)">
-              <circle class="dot" r="2.5"></circle>
-              <text y="14" class="label">Jeddah</text>
-            </g>
-            <g class="lp-city-node tier-gcc" data-name="Doha" transform="translate(643.1, 179.8)">
-              <circle class="dot" r="2.5"></circle>
-              <text y="-9" class="label">Doha</text>
-            </g>
-
-            <!-- MENA -->
-            <g class="lp-city-node tier-mena" data-name="Beirut" transform="translate(598.6, 155.9)">
-              <circle class="dot" r="2.5"></circle>
-              <text y="-9" class="label">Beirut</text>
-            </g>
-            <g class="lp-city-node tier-mena" data-name="Cairo" transform="translate(586.8, 166.6)">
-              <circle class="dot" r="2.5"></circle>
-              <text y="-9" class="label">Cairo</text>
-            </g>
-            <g class="lp-city-node tier-mena" data-name="Sharm El Sheikh" transform="translate(595.4, 172.5)">
-              <circle class="dot" r="2"></circle>
-              <text y="14" class="label small">Sharm</text>
-            </g>
-            <g class="lp-city-node tier-mena" data-name="Hurghada + El Gouna" transform="translate(593.75, 174.1)">
-              <circle class="dot" r="2"></circle>
-              <text y="22" class="label small">Hurghada</text>
-            </g>
-            <g class="lp-city-node tier-mena" data-name="North Coast" transform="translate(580.4, 164.2)">
-              <circle class="dot" r="2"></circle>
-              <text y="-9" class="label small">N. Coast</text>
-            </g>
-
-            <!-- Europe -->
-            <g class="lp-city-node tier-europe" data-name="Moscow" transform="translate(604.5, 95.1)">
-              <circle class="dot" r="2.5"></circle>
-              <text y="-9" class="label">Moscow</text>
-            </g>
-            <g class="lp-city-node tier-europe" data-name="Saint Petersburg" transform="translate(584.3, 83.5)">
-              <circle class="dot" r="2"></circle>
-              <text y="-9" class="label small">St. Petersburg</text>
-            </g>
-            <g class="lp-city-node tier-europe" data-name="London" transform="translate(499.6, 106.9)">
-              <circle class="dot" r="2.5"></circle>
-              <text y="-9" class="label">London</text>
-            </g>
-
-            <!-- Asia -->
-            <g class="lp-city-node tier-asia" data-name="Bali" transform="translate(819.7, 273.2)">
-              <circle class="dot" r="2.5"></circle>
-              <text y="-9" class="label">Bali</text>
-            </g>
-          </g>
-        </svg>
-
-        <!-- Compact list for small screens where the map would be too cramped -->
-        <div class="lp-map-list" aria-hidden="false">
+      <!-- City list. Sits below the scrub stage. Renders for everyone
+           (it's the SEO/accessibility content + the reduced-motion
+           experience). Wrapped in .container so it shares the page grid. -->
+      <div class="container">
+        <div class="lp-map-list" aria-label="Cities we book in">
           <div class="group">
             <div class="group-label">GCC</div>
             <span>Dubai</span> · <span>Abu Dhabi</span> · <span>Riyadh</span> · <span>Jeddah</span> · <span>Doha</span>
@@ -930,6 +841,94 @@
       }
     });
   </script>
+
+  <!-- ═══ Reach-map scroll-scrub ═══
+       The "From the Gulf, worldwide." section is a 300vh-tall wrapper
+       with a sticky 100vh stage inside. As the user scrolls, we map
+       scroll progress (0 → 1) to video.currentTime (0 → duration).
+       Effect: the globe video "plays" in lockstep with scroll —
+       scrolling up rewinds, scrolling down advances, all buttery-
+       smooth because of the dense 12-frame keyframe interval the
+       MP4/WebM was encoded with.
+
+       Cycles only run while the section intersects the viewport
+       (IntersectionObserver), and only inside rAF — never raw scroll
+       listeners. Bails out if the user has prefers-reduced-motion or
+       if the <video> element is missing. -->
+  <script>
+    (function () {
+      const section = document.getElementById('lp-reach-scrub');
+      const video   = document.getElementById('lp-reach-video');
+      if (!section || !video) return;
+
+      // Reduced-motion: leave the poster frame, don't scrub.
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+      if (reduce.matches) return;
+
+      // Wait for enough metadata to know the duration. Without this
+      // `duration` is NaN and the first frames get clobbered.
+      function ready() {
+        if (!isFinite(video.duration) || video.duration === 0) return false;
+        return true;
+      }
+
+      let visible = false;
+      let raf = 0;
+
+      function tick() {
+        raf = 0;
+        if (!visible || !ready()) return;
+
+        // rect.top goes from +viewportHeight (just below fold) → 0
+        // (top of section hits top of viewport) → −(scrubHeight − vh)
+        // (bottom of section reaches bottom of viewport). We want the
+        // *sticky* travel: scrub progress = how far we've scrolled
+        // PAST the start of the section, normalised by the available
+        // travel distance.
+        const rect = section.getBoundingClientRect();
+        const vh = window.innerHeight || document.documentElement.clientHeight;
+        const total = section.offsetHeight - vh;
+        if (total <= 0) return;
+        const progress = Math.max(0, Math.min(1, -rect.top / total));
+
+        // setCurrentTime is the choke point on iOS — only set when
+        // the delta is meaningful (≥ 1 frame at 24fps = ~0.04s).
+        const target = progress * video.duration;
+        if (Math.abs(target - video.currentTime) > 0.04) {
+          video.currentTime = target;
+        }
+      }
+
+      function schedule() {
+        if (raf) return;
+        raf = requestAnimationFrame(tick);
+      }
+
+      // IntersectionObserver gates the work: scroll listener only does
+      // anything while the section is on screen.
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((e) => {
+          visible = e.isIntersecting;
+          if (visible) {
+            // Kick the video by loading metadata if it hasn't yet.
+            if (video.readyState < 1) video.load();
+            schedule();
+          }
+        });
+      }, { threshold: 0 });
+      io.observe(section);
+
+      window.addEventListener('scroll', schedule, { passive: true });
+      window.addEventListener('resize', schedule, { passive: true });
+
+      // Some browsers need a nudge after metadata lands.
+      video.addEventListener('loadedmetadata', schedule, { once: true });
+      // First paint while the section is already in view (e.g. reload
+      // mid-page) — schedule one tick once everything else has settled.
+      requestAnimationFrame(schedule);
+    })();
+  </script>
+
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
 </body>
 </html>
