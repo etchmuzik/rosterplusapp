@@ -263,45 +263,11 @@
       </div>
     </div>
 
-    <!-- ═══ SOCIAL PROOF ═══
-         Real partner logos (white-on-transparent PNGs) live at
-         /assets/images/partners/<slug>.png. The list + slugs is
-         operator-documented in that folder's README.md. Until a
-         PNG lands at a given slug, `onerror="this.remove()"` removes
-         the broken <img> and the typographic wordmark span behind
-         it stays visible — so this strip never paints a broken-image
-         icon, regardless of which files are in place. -->
-    <section class="container" style="padding: var(--space-2xl) 0 0">
-      <div class="lp-social-proof" aria-label="Venues and partners we book for">
-        <div class="lp-social-proof-label">Booking nights at</div>
-        <div class="lp-social-proof-logos">
-          <div class="lp-logo-mark">
-            <img src="/assets/images/partners/cavo.png" alt="CAVO" loading="lazy" decoding="async" onerror="this.remove()">
-            <span class="lp-logo-wordmark">CAVO</span>
-          </div>
-          <div class="lp-logo-mark">
-            <img src="/assets/images/partners/armani-hotel-dubai.png" alt="Armani Hotel Dubai" loading="lazy" decoding="async" onerror="this.remove()">
-            <span class="lp-logo-wordmark">Armani Hotel Dubai</span>
-          </div>
-          <div class="lp-logo-mark">
-            <img src="/assets/images/partners/venture-lifestyle.png" alt="Venture Lifestyle" loading="lazy" decoding="async" onerror="this.remove()">
-            <span class="lp-logo-wordmark">Venture Lifestyle</span>
-          </div>
-          <div class="lp-logo-mark">
-            <img src="/assets/images/partners/space-sharm.png" alt="Space Sharm El Sheikh" loading="lazy" decoding="async" onerror="this.remove()">
-            <span class="lp-logo-wordmark">Space Sharm El Sheikh</span>
-          </div>
-          <div class="lp-logo-mark">
-            <img src="/assets/images/partners/white-dubai.png" alt="WHITE Dubai" loading="lazy" decoding="async" onerror="this.remove()">
-            <span class="lp-logo-wordmark">WHITE Dubai</span>
-          </div>
-          <div class="lp-logo-mark">
-            <img src="/assets/images/partners/partner-6.png" alt="" loading="lazy" decoding="async" onerror="this.remove()">
-            <span class="lp-logo-wordmark">+ more</span>
-          </div>
-        </div>
-      </div>
-    </section>
+    <!-- Social-proof partner-logo strip removed 2026-05-12 — pending real
+         white-on-transparent PNGs from the operator. When ready, restore
+         the `.lp-social-proof` markup (see git history: commit 08ec1de)
+         and drop PNGs at /assets/images/partners/<slug>.png. The CSS
+         classes + `assets/images/partners/README.md` are still in place. -->
 
     <!-- ═══ FEATURE GRID ═══ -->
     <section class="container" style="padding: var(--space-3xl) 0">
