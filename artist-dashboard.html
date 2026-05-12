@@ -112,6 +112,12 @@
           <!-- ═══ Profile completion nudge ═══ -->
           <div id="completion-mount"></div>
 
+          <!-- ═══ Media nudge (photos + video links, 2026-05-13) ═══
+               Independent of the completion checklist above. Even an
+               artist with a "complete" profile may have no media yet,
+               which makes /profile and /epk pages read as threadbare. -->
+          <div id="media-nudge-mount"></div>
+
           <div class="stats-grid">
             <div class="stat-card"><div class="card-inner"><div class="stat-label">Incoming Requests</div><div class="stat-value" id="stat-requests">0</div></div></div>
             <div class="stat-card"><div class="card-inner"><div class="stat-label">Confirmed Gigs</div><div class="stat-value" id="stat-confirmed" style="color:var(--status-confirmed)">0</div></div></div>
@@ -762,6 +768,69 @@
           host.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       })().catch(() => {});
+
+      // Media nudge (added 2026-05-13). Independent of the completion
+      // checklist above: even an artist with a "complete" profile may
+      // not have uploaded photos or added video links yet, which makes
+      // their public /profile and /epk pages look thin. Card stores a
+      // localStorage dismiss key so it doesn't keep nagging — but the
+      // count check trumps it (once they actually upload, dismiss is
+      // moot because the condition no longer fires).
+      (async () => {
+        try {
+          const host2 = document.getElementById('media-nudge-mount');
+          if (!host2) return;
+          const dismissKey = 'rostr-media-nudge-dismissed-v1';
+          if (localStorage.getItem(dismissKey) === '1') {
+            // Will be cleared automatically below if the artist later
+            // ends up with media — see the "auto-clear" pass.
+          }
+
+          // Pull the artist row to check epk_gallery + video_links.
+          const artistId = await DB._getMyArtistId();
+          if (!artistId) return;
+          const res = await DB.getArtistById(artistId);
+          if (!res.success || !res.data) return;
+          const hasPhotos = Array.isArray(res.data.epk_gallery) && res.data.epk_gallery.length > 0;
+          const hasVideos = Array.isArray(res.data.video_links) && res.data.video_links.length > 0;
+
+          // Auto-clear the dismiss flag once they actually have media,
+          // so a future regression (artist removes all media) shows
+          // the nudge again.
+          if (hasPhotos && hasVideos) {
+            localStorage.removeItem(dismissKey);
+            return;
+          }
+
+          // Respect explicit dismissal only when at least one bucket
+          // already has content (partial-progress state). Hard-empty
+          // profiles get nagged regardless.
+          if (localStorage.getItem(dismissKey) === '1' && (hasPhotos || hasVideos)) return;
+
+          const missing = !hasPhotos && !hasVideos
+            ? 'photos and video links'
+            : (!hasPhotos ? 'photos' : 'video links');
+
+          host2.innerHTML = `
+            <div class="section-card" style="border-color:var(--accent-dim-30); background: linear-gradient(180deg, var(--accent-dim-05), var(--bg-card)); margin-bottom: var(--space-xl)">
+              <div style="display:flex; align-items:flex-start; gap:var(--space-md); flex-wrap:wrap">
+                <div style="flex:1; min-width:240px">
+                  <div class="eyebrow" style="font-family:var(--font-mono); font-size:0.7rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--accent-soft); margin-bottom:6px">
+                    Your public profile is missing ${esc(missing)}
+                  </div>
+                  <p style="margin:0; color:var(--text-secondary); line-height:1.6">
+                    Profiles with photos and mixes get booked more often. Promoters land on your page from search and DMs — give them something to see and hear.
+                  </p>
+                </div>
+                <div style="display:flex; gap:var(--space-sm); flex-wrap:wrap; align-items:center">
+                  <a class="btn btn-primary btn-sm" href="/artist-profile-edit.html#gallery">Edit my EPK</a>
+                  <button type="button" class="btn btn-ghost btn-sm" onclick="localStorage.setItem('${dismissKey}','1'); this.closest('.section-card').remove()">Dismiss</button>
+                </div>
+              </div>
+            </div>
+          `;
+        } catch (_) { /* nudge is best-effort */ }
+      })();
 
       // Load data (contracts + payouts in parallel with the rest)
       const [bookingsRes, messagesRes, earningsRes, contractsRes, payoutsRes] = await Promise.all([

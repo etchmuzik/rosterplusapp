@@ -65,6 +65,94 @@
       return (name || '?').split(/\s+/).map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
     }
 
+    /* Build an oEmbed iframe URL for a { platform, url } video link.
+       Returns null for platforms we can't embed (e.g. Instagram needs
+       a JS shim that violates our CSP) — caller falls back to a plain
+       link.
+       Per platform:
+         - youtube     watch?v=ID | youtu.be/ID  → youtube-nocookie.com/embed/ID
+         - vimeo       vimeo.com/ID             → player.vimeo.com/video/ID
+         - soundcloud  any soundcloud URL       → w.soundcloud.com/player?url=<encoded>
+         - mixcloud    cloudcasts URL           → w.mixcloud.com/widget/iframe/?feed=<encoded>
+         - instagram   not embeddable           → null
+       The CSP frame-src must include each origin we return here. */
+    function embedUrlFor(platform, url) {
+      if (!platform || !url) return null;
+      const p = String(platform).toLowerCase();
+      try {
+        if (p === 'youtube') {
+          // Handles youtu.be/ID, youtube.com/watch?v=ID, youtube.com/shorts/ID.
+          const m = String(url).match(/(?:youtu\.be\/|v=|shorts\/)([A-Za-z0-9_-]{6,})/);
+          return m ? `https://www.youtube-nocookie.com/embed/${m[1]}` : null;
+        }
+        if (p === 'vimeo') {
+          const m = String(url).match(/vimeo\.com\/(?:.*\/)?(\d+)/);
+          return m ? `https://player.vimeo.com/video/${m[1]}` : null;
+        }
+        if (p === 'soundcloud') {
+          return `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%23c9a84c&visual=true&hide_related=true&show_comments=false&show_user=true&show_reposts=false`;
+        }
+        if (p === 'mixcloud') {
+          // Mixcloud expects the path after the domain, e.g. /username/show-name/
+          const m = String(url).match(/mixcloud\.com(\/[^?#]+)/);
+          const path = m ? m[1] : null;
+          return path ? `https://www.mixcloud.com/widget/iframe/?feed=${encodeURIComponent(path)}&hide_cover=1&light=0` : null;
+        }
+        // instagram, anything else
+        return null;
+      } catch (_) { return null; }
+    }
+
+    /* Minimal photo lightbox. Creates the overlay node lazily on
+       first call, then reuses it. Click anywhere to dismiss. */
+    function openLightbox(url) {
+      let el = document.getElementById('ap-lightbox');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'ap-lightbox';
+        el.className = 'ap-lightbox';
+        el.onclick = () => el.classList.remove('open');
+        document.body.appendChild(el);
+      }
+      el.innerHTML = `<img src="${url}" alt="Photo">`;
+      el.classList.add('open');
+    }
+
+    /* Render the media-links block. Returns an HTML string with one
+       16:9 iframe per embeddable link, plus a plain link for anything
+       we can't embed (Instagram, malformed URLs, etc.). Returns ''
+       when there's nothing to render. */
+    function renderVideoBlock(videos) {
+      if (!Array.isArray(videos) || videos.length === 0) return '';
+      const items = videos.map((v, idx) => {
+        const embed = embedUrlFor(v.platform, v.url);
+        const label = v.title || v.url;
+        if (embed) {
+          return `
+            <div class="ap-video-card">
+              <div class="ap-video-frame">
+                <iframe src="${esc(embed)}" loading="lazy" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+              </div>
+              ${v.title ? `<div class="ap-video-title">${esc(v.title)}</div>` : ''}
+            </div>
+          `;
+        }
+        // Non-embeddable fallback — plain link
+        return `
+          <a class="ap-video-card ap-video-link" href="${esc(v.url)}" target="_blank" rel="noopener">
+            <span class="ap-video-platform">${esc(v.platform || 'Link')}</span>
+            <span class="ap-video-title">${esc(label)}</span>
+          </a>
+        `;
+      }).join('');
+      return `
+        <div class="ap-card">
+          <div class="eyebrow">Mixes &amp; videos</div>
+          <div class="ap-video-grid" style="margin-top: 12px">${items}</div>
+        </div>
+      `;
+    }
+
     function getArtistIdFromURL() {
       return new URLSearchParams(window.location.search).get('id');
     }
@@ -145,6 +233,15 @@
             'House L/R + 1× monitor wedge',
             'Private greenroom + 2 guests',
           ];
+
+      // ── Media (added 2026-05-13) ──
+      // Photo gallery, press quotes, past performances, video/mix links.
+      // Each block renders only if non-empty; an artist with no media
+      // gets a clean profile, not empty headers.
+      const gallery       = Array.isArray(artist.epk_gallery) ? artist.epk_gallery : [];
+      const quotes        = Array.isArray(artist.press_quotes) ? artist.press_quotes : [];
+      const performances  = Array.isArray(artist.past_performances) ? artist.past_performances : [];
+      const videos        = Array.isArray(artist.video_links) ? artist.video_links : [];
 
       container.innerHTML = `
         <div class="ap-cover" style="${coverStyle(name, 2)}"></div>
@@ -238,6 +335,57 @@
               </div>
             </div>
           </div>
+
+          ${gallery.length > 0 ? `
+            <div class="ap-col lp-anim lp-d-3" style="grid-column: 1 / -1">
+              <div class="ap-card">
+                <div class="eyebrow">Photos</div>
+                <div class="ap-photo-strip" style="margin-top: 12px">
+                  ${gallery.map((url, i) => `<img src="${esc(url)}" alt="Press photo ${i+1}" loading="lazy" decoding="async" onclick="openLightbox('${esc(url)}')">`).join('')}
+                </div>
+              </div>
+            </div>
+          ` : ''}
+
+          ${videos.length > 0 ? `
+            <div class="ap-col lp-anim lp-d-3" style="grid-column: 1 / -1">
+              ${renderVideoBlock(videos)}
+            </div>
+          ` : ''}
+
+          ${quotes.length > 0 ? `
+            <div class="ap-col lp-anim lp-d-3" style="grid-column: 1 / -1">
+              <div class="ap-card">
+                <div class="eyebrow">Press</div>
+                <div class="ap-quotes" style="margin-top: 12px; display: grid; gap: var(--space-md)">
+                  ${quotes.map(q => `
+                    <blockquote style="margin: 0; padding-left: var(--space-md); border-left: 2px solid var(--accent-dim-30); font-style: italic; color: var(--text-secondary)">
+                      "${esc(typeof q === 'string' ? q : (q.quote || q.text || ''))}"
+                      ${(typeof q === 'object' && q.source) ? `<cite style="display:block; margin-top: 4px; font-style: normal; font-size: 0.8rem; color: var(--text-tertiary)">— ${esc(q.source)}</cite>` : ''}
+                    </blockquote>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+          ` : ''}
+
+          ${performances.length > 0 ? `
+            <div class="ap-col lp-anim lp-d-3" style="grid-column: 1 / -1">
+              <div class="ap-card">
+                <div class="eyebrow">Recent performances</div>
+                <ul style="margin: 12px 0 0 0; padding: 0; list-style: none; display: grid; gap: 8px; color: var(--text-secondary)">
+                  ${performances.map(p => {
+                    if (typeof p === 'string') return `<li>${esc(p)}</li>`;
+                    const venue = p.venue || p.name || '';
+                    const date  = p.date || p.year || '';
+                    const city  = p.city || '';
+                    const meta  = [date, city].filter(Boolean).join(' · ');
+                    return `<li><strong style="color:var(--text-primary)">${esc(venue)}</strong>${meta ? ` <span style="color:var(--text-tertiary)">· ${esc(meta)}</span>` : ''}</li>`;
+                  }).join('')}
+                </ul>
+              </div>
+            </div>
+          ` : ''}
 
           ${similar.length > 0 ? `
             <div class="ap-similar">

@@ -233,6 +233,28 @@
           </label>
         </div>
 
+        <!-- Media links — videos, mixes, showcase reels.
+             Saved to artists.video_links (jsonb), rendered on
+             /profile.html + /epk.html as oEmbed iframes, and on
+             /a/<handle> as compact link rows. -->
+        <div class="form-section">
+          <div class="section-header">Mixes &amp; Videos</div>
+          <p class="text-tertiary" style="font-size:0.82rem;margin-bottom:var(--space-md)">Add SoundCloud sets, YouTube reels, Mixcloud shows. Promoters see these front-and-centre on your profile.</p>
+          <div id="video-items" style="display:flex;flex-direction:column;gap:var(--space-xs);margin-bottom:var(--space-md)"></div>
+          <div style="display:flex;gap:var(--space-sm);flex-wrap:wrap;align-items:flex-start">
+            <select class="form-input" id="video-platform" style="flex:0 0 140px">
+              <option value="soundcloud">SoundCloud</option>
+              <option value="youtube">YouTube</option>
+              <option value="mixcloud">Mixcloud</option>
+              <option value="vimeo">Vimeo</option>
+              <option value="instagram">Instagram</option>
+            </select>
+            <input type="url" class="form-input" id="video-url" placeholder="https://..." style="flex:2;min-width:200px">
+            <input type="text" class="form-input" id="video-title" placeholder="Title (optional)" style="flex:1;min-width:140px">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="addVideoLink()">Add</button>
+          </div>
+        </div>
+
         <!-- Tech Rider -->
         <div class="form-section">
           <div class="section-header">Technical Rider</div>
@@ -331,6 +353,42 @@
     let _gallery = [];
     let _rider = [];
     let _quotes = [];
+    let _videos = [];
+
+    // Platforms accepted for media-link entries. Keep in sync with
+    // the <select> in the form and with the embed-URL pattern matching
+    // on profile.html / epk.html. Anything not in this set is rejected
+    // before push, so the server never sees a bogus enum.
+    const _VIDEO_PLATFORMS = new Set(['youtube', 'soundcloud', 'mixcloud', 'vimeo', 'instagram']);
+
+    // Mixes & Videos. Each entry: { platform, url, title? }. Same
+    // shape as press_quotes — small jsonb objects in an array.
+    function addVideoLink() {
+      const platform = document.getElementById('video-platform').value;
+      const url      = document.getElementById('video-url').value.trim();
+      const title    = document.getElementById('video-title').value.trim();
+      if (!_VIDEO_PLATFORMS.has(platform)) { UI.toast('Pick a platform', 'warning'); return; }
+      if (!/^https?:\/\/\S+/i.test(url)) { UI.toast('Enter a full URL starting with https://', 'warning'); return; }
+      if (_videos.length >= 6) { UI.toast('Maximum 6 video links', 'warning'); return; }
+      _videos.push(title ? { platform, url, title } : { platform, url });
+      document.getElementById('video-url').value = '';
+      document.getElementById('video-title').value = '';
+      renderVideos();
+    }
+    function removeVideoLink(idx) { _videos.splice(idx, 1); renderVideos(); }
+    function renderVideos() {
+      const host = document.getElementById('video-items');
+      if (!host) return;
+      host.innerHTML = _videos.length
+        ? _videos.map((v, i) => `
+          <div class="quote-row">
+            <span style="flex:0 0 90px;text-transform:uppercase;font-family:var(--font-mono);font-size:0.7rem;letter-spacing:0.08em;color:var(--text-tertiary)">${esc(v.platform)}</span>
+            <span style="flex:1;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(v.url)}">${esc(v.title || v.url)}</span>
+            <span class="remove" onclick="removeVideoLink(${i})">&times;</span>
+          </div>
+        `).join('')
+        : '<div style="color:var(--text-tertiary);font-size:0.82rem">No video links yet</div>';
+    }
 
     // Gallery
     async function uploadGalleryPhoto(file) {
@@ -503,6 +561,8 @@
       renderRider();
       _quotes = Array.isArray(data.press_quotes) ? [...data.press_quotes] : [];
       renderQuotes();
+      _videos = Array.isArray(data.video_links) ? [...data.video_links] : [];
+      renderVideos();
       if (Array.isArray(data.service_tags)) {
         document.querySelectorAll('#service-tags-grid input[type="checkbox"]').forEach(cb => {
           cb.checked = data.service_tags.includes(cb.value);
@@ -700,6 +760,7 @@
           youtube: document.getElementById('social-youtube').value.trim(),
         },
         epk_gallery: _gallery,
+        video_links: _videos,
         tech_rider: _rider,
         press_quotes: _quotes,
         service_tags: Array.from(document.querySelectorAll('#service-tags-grid input:checked')).map(cb => cb.value),

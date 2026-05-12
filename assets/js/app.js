@@ -1,4 +1,4 @@
-window.ROSTR_VERSION = 'd90378c';
+window.ROSTR_VERSION = 'd3b5cad';
 /* ═══════════════════════════════════════════════════════════
    ROSTR+ GCC — Core Application JS
    Supabase client, auth, router, UI helpers, live data
@@ -1480,6 +1480,18 @@ const DB = {
       available_to: a.available_to || null,
       tech_rider: a.tech_rider || {},
       profile_id: a.profile_id || null,
+      // ── Media (added 2026-05-13) ──
+      // Photos, press quotes, past performances, video links. The
+      // profile.html + epk.html surfaces render whatever's present
+      // and skip empty arrays. Defensive Array.isArray casts mean
+      // legacy nulls (pre-default) flow through as []. video_links
+      // landed in migration 20260513_artists_video_links.sql.
+      epk_gallery: Array.isArray(a.epk_gallery) ? a.epk_gallery : [],
+      past_performances: Array.isArray(a.past_performances) ? a.past_performances : [],
+      press_quotes: Array.isArray(a.press_quotes) ? a.press_quotes : [],
+      video_links: Array.isArray(a.video_links) ? a.video_links : [],
+      epk_url: a.epk_url || null,
+      rider_url: a.rider_url || null,
     };
 
     return { success: true, data: normalised };
@@ -2687,6 +2699,11 @@ const DB = {
       if (data.press_quotes !== undefined) artistUpdate.press_quotes = data.press_quotes;
       if (data.past_performances !== undefined) artistUpdate.past_performances = data.past_performances;
       if (data.epk_gallery !== undefined) artistUpdate.epk_gallery = data.epk_gallery;
+      // video_links: jsonb array of { platform, url, title? }. Added
+      // in migration 20260513_artists_video_links.sql. Server-side
+      // we just accept the array; client validates the platform enum
+      // + the https:// URL prefix before calling us.
+      if (data.video_links !== undefined) artistUpdate.video_links = data.video_links;
 
       const promises = [];
       if (Object.keys(artistUpdate).length > 0) {

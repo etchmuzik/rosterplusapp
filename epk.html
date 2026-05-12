@@ -111,6 +111,34 @@
     let _isEditMode = false;
     let _artistId = null;
 
+    /* See profile.html for the canonical version of this helper.
+       Duplicated here so epk.html can render video iframes from
+       data.video_links without depending on profile.html load order.
+       Returns null for platforms we can't embed (e.g. Instagram). */
+    function embedUrlFor(platform, url) {
+      if (!platform || !url) return null;
+      const p = String(platform).toLowerCase();
+      try {
+        if (p === 'youtube') {
+          const m = String(url).match(/(?:youtu\.be\/|v=|shorts\/)([A-Za-z0-9_-]{6,})/);
+          return m ? `https://www.youtube-nocookie.com/embed/${m[1]}` : null;
+        }
+        if (p === 'vimeo') {
+          const m = String(url).match(/vimeo\.com\/(?:.*\/)?(\d+)/);
+          return m ? `https://player.vimeo.com/video/${m[1]}` : null;
+        }
+        if (p === 'soundcloud') {
+          return `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%23c9a84c&visual=true&hide_related=true&show_comments=false&show_user=true&show_reposts=false`;
+        }
+        if (p === 'mixcloud') {
+          const m = String(url).match(/mixcloud\.com(\/[^?#]+)/);
+          const path = m ? m[1] : null;
+          return path ? `https://www.mixcloud.com/widget/iframe/?feed=${encodeURIComponent(path)}&hide_cover=1&light=0` : null;
+        }
+        return null;
+      } catch (_) { return null; }
+    }
+
     function renderEPK(data) {
       if (!data) { document.getElementById('epk-content').innerHTML = '<div class="empty-state" style="text-align:center;padding:var(--space-3xl)"><h2>EPK Not Found</h2><p>This artist profile doesn\'t exist.</p><a href="directory.html" class="btn btn-primary">Browse Artists</a></div>'; return; }
 
@@ -204,6 +232,22 @@
 
         <!-- Photo Gallery with download -->
         ${(data.epk_gallery && data.epk_gallery.length) ? `<div class="epk-section"><div class="epk-section-title" style="display:flex;justify-content:space-between;align-items:center">Photos <span style="font-size:0.72rem;color:var(--text-tertiary);text-transform:none;letter-spacing:0">Click to zoom · Right-click to download</span></div><div class="photo-gallery">${data.epk_gallery.map((url, idx) => `<img src="${esc(url)}" alt="Press photo ${idx+1}" loading="lazy" decoding="async" onclick="(function(){let lb=document.getElementById('lb');if(!lb){lb=document.createElement('div');lb.id='lb';lb.className='lightbox';lb.onclick=()=>lb.classList.remove('active');document.body.appendChild(lb)}lb.innerHTML='<img src=\\'${url}\\' alt=Photo>';lb.classList.add('active')})()">`).join('')}</div></div>` : ''}
+
+        <!-- Mixes & Videos (video_links jsonb column, added 2026-05-13). -->
+        ${(Array.isArray(data.video_links) && data.video_links.length) ? `
+        <div class="epk-section">
+          <div class="epk-section-title">Mixes &amp; Videos</div>
+          <div class="ap-video-grid">
+            ${data.video_links.map(v => {
+              const embed = embedUrlFor(v.platform, v.url);
+              if (embed) {
+                return `<div class="ap-video-card"><div class="ap-video-frame"><iframe src="${esc(embed)}" loading="lazy" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>${v.title ? `<div class="ap-video-title">${esc(v.title)}</div>` : ''}</div>`;
+              }
+              return `<a class="ap-video-card ap-video-link" href="${esc(v.url)}" target="_blank" rel="noopener"><span class="ap-video-platform">${esc(v.platform || 'Link')}</span><span class="ap-video-title">${esc(v.title || v.url)}</span></a>`;
+            }).join('')}
+          </div>
+        </div>
+        ` : ''}
 
         <div class="epk-section">
           <div class="epk-section-title">Press</div>

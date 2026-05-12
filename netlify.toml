@@ -35,7 +35,13 @@
     Permissions-Policy                = "camera=(), microphone=(), geolocation=()"
     Strict-Transport-Security         = "max-age=31536000; includeSubDomains; preload"
     X-XSS-Protection                  = "1; mode=block"
-    Content-Security-Policy           = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://plausible.io https://browser.sentry-cdn.com; worker-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://plausible.io https://*.ingest.sentry.io; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://api.fontshare.com https://fonts.googleapis.com; font-src 'self' data: https://api.fontshare.com https://cdn.fontshare.com https://fonts.gstatic.com; frame-ancestors 'none'"
+    # frame-src lists the four media-embed origins used by the artist
+    # video_links column (added 2026-05-13). Mixcloud's widget origin
+    # is www.mixcloud.com; SoundCloud's is w.soundcloud.com; YouTube
+    # uses the privacy-friendly nocookie subdomain; Vimeo uses
+    # player.vimeo.com. Anything else (Instagram in particular) falls
+    # back to a plain link on the rendering surfaces.
+    Content-Security-Policy           = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://plausible.io https://browser.sentry-cdn.com; worker-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://plausible.io https://*.ingest.sentry.io; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://api.fontshare.com https://fonts.googleapis.com; font-src 'self' data: https://api.fontshare.com https://cdn.fontshare.com https://fonts.gstatic.com; frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com https://w.soundcloud.com https://www.mixcloud.com; frame-ancestors 'none'"
 
 # ── Cache-Control ──
 # Matches the .htaccess strategy:

@@ -178,6 +178,13 @@
       // page short.
       const gallery = Array.isArray(a.epk_gallery) ? a.epk_gallery.slice(0, 4) : [];
 
+      // Video links from video_links (added 2026-05-13). Linktree page
+      // doesn't try to embed — too tall + competes with the booking CTA.
+      // Each entry becomes a row link that opens the platform externally.
+      // Cap at 3 so the page stays focused.
+      const videos = Array.isArray(a.video_links) ? a.video_links.slice(0, 3) : [];
+      const videoIcon = { youtube: 'play', soundcloud: 'music', mixcloud: 'music', vimeo: 'play', instagram: 'grid' };
+
       // Social row. We render only the channels the artist has filled
       // in — no placeholder buttons. Channel order matches /link.html.
       const socialRow = renderSocialRow(social, handle);
@@ -274,6 +281,26 @@
               <img src="${esc(url)}" alt="" loading="lazy" decoding="async"
                    onerror="this.style.display='none'"
                    style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px;border:1px solid var(--border-subtle)">
+            `).join('')}
+          </div>
+        ` : ''}
+
+        ${videos.length ? `
+          <div class="lt-divider"><span>Mixes &amp; videos</span></div>
+          <div class="lt-links">
+            ${videos.map(v => `
+              <a class="lt-link" href="${esc(v.url)}" target="_blank" rel="noopener" onclick="trackArtistCta('a_video_${esc(String(v.platform || 'link'))}','${esc(handle)}')">
+                <span class="lt-link-ico">
+                  <span class="js-icon" data-icon="${videoIcon[String(v.platform || '').toLowerCase()] || 'externalLink'}" data-size="16"></span>
+                </span>
+                <span class="lt-link-body">
+                  <span class="lt-link-title">${esc(v.title || String(v.platform || 'Listen').replace(/^./, c => c.toUpperCase()))}</span>
+                  <span class="lt-link-sub">${esc(String(v.platform || '').toUpperCase())}</span>
+                </span>
+                <span class="lt-link-arrow">
+                  <span class="js-icon" data-icon="externalLink" data-size="14"></span>
+                </span>
+              </a>
             `).join('')}
           </div>
         ` : ''}
