@@ -601,6 +601,156 @@
       </div>
     </section>
 
+    <!-- ═══ FAQ ═══
+         Per 2026-05-12 homepage audit (#10). Visa, AED payouts, and
+         dispute-resolution come up in every promoter-side conversation
+         we've had — surfacing the answers here removes a friction step
+         and pre-empts the "but how does it actually work in the GCC?"
+         doubt that kills cold conversions.
+
+         Uses native <details>/<summary> for zero-JS accessibility.
+         Each <details> wraps a single Q&A; the FAQPage JSON-LD below
+         lets Google show rich-result accordions for branded queries.
+
+         When updating: keep answers under 80 words. The point is to
+         remove doubt fast, not to be the canonical legal answer. Link
+         out to /terms.html or /privacy.html for the full text. -->
+    <section class="container lp-faq-section" id="faq" style="padding: var(--space-3xl) 0">
+      <div class="lp-section-head">
+        <div>
+          <span class="eyebrow">Common questions</span>
+          <h2 style="max-width: 780px">
+            How it works <em style="color: var(--text-tertiary)">in the Gulf, specifically.</em>
+          </h2>
+        </div>
+        <a href="mailto:hi@rosterplus.io?subject=ROSTR%2B%20question" class="btn btn-ghost">
+          Ask us anything
+          <span class="js-icon" data-icon="send" data-size="14"></span>
+        </a>
+      </div>
+
+      <div class="lp-faq">
+        <details class="lp-faq-item">
+          <summary>
+            <span class="lp-faq-q">Do I need a UAE work visa to book through ROSTR+?</span>
+            <span class="lp-faq-icon" aria-hidden="true">+</span>
+          </summary>
+          <div class="lp-faq-a">
+            <p>Visas remain the promoter's responsibility — same as any booking. ROSTR+ doesn't process visa paperwork, but the contract we generate captures who's responsible for which immigration step (entry permit, employment visa, exit). Most GCC promoters use a NOC + visit-visa pattern for single-event bookings; the contract template has fields for both, so the agreement is explicit before the artist boards a plane.</p>
+          </div>
+        </details>
+
+        <details class="lp-faq-item">
+          <summary>
+            <span class="lp-faq-q">How do payouts work? Can artists receive AED directly?</span>
+            <span class="lp-faq-icon" aria-hidden="true">+</span>
+          </summary>
+          <div class="lp-faq-a">
+            <p>Yes. Promoters record payments on the platform (bank transfer reference, Stripe, or Tap). Artists confirm receipt with one tap. AED is the default; we also support USD and EUR for international artists. Payouts route directly between promoter and artist — ROSTR+ holds no funds. Every transaction has an invoice number, audit trail, and timestamp so VAT filings and dispute evidence are one click away.</p>
+          </div>
+        </details>
+
+        <details class="lp-faq-item">
+          <summary>
+            <span class="lp-faq-q">What happens if an event gets cancelled?</span>
+            <span class="lp-faq-icon" aria-hidden="true">+</span>
+          </summary>
+          <div class="lp-faq-a">
+            <p>The contract you generate captures the cancellation policy at signing — typically 50% deposit non-refundable at &gt;14 days, 100% inside 7 days. Both sides agree before signing. If a dispute arises, the full audit log (every message, status change, signature, payment record) is exportable as a single PDF for arbitration. We've kept the structure aligned with UAE Commercial Transactions Law so it holds up locally.</p>
+          </div>
+        </details>
+
+        <details class="lp-faq-item">
+          <summary>
+            <span class="lp-faq-q">How does ROSTR+ verify artists?</span>
+            <span class="lp-faq-icon" aria-hidden="true">+</span>
+          </summary>
+          <div class="lp-faq-a">
+            <p>Three checks before a "Verified" badge appears: a working email or phone number, a real social presence (Instagram / SoundCloud / Spotify), and at least one cross-reference from a promoter or venue we already know. We don't verify performance quality — promoters decide that — but we do verify the human exists. Founding-50 artists go through the same checks.</p>
+          </div>
+        </details>
+
+        <details class="lp-faq-item">
+          <summary>
+            <span class="lp-faq-q">Is ROSTR+ free? When does pricing change?</span>
+            <span class="lp-faq-icon" aria-hidden="true">+</span>
+          </summary>
+          <div class="lp-faq-a">
+            <p>Free during launch on both sides — no card required to start. When pricing turns on, we take 5–10% only from the promoter side, only after their third paid booking, and never from the artist. Founding-50 artists keep their badge and zero-commission rate forever. See the <a href="#" onclick="document.querySelector('.lp-pricing').scrollIntoView({behavior:'smooth'});return false;">pricing section</a> above for the structure.</p>
+          </div>
+        </details>
+
+        <details class="lp-faq-item">
+          <summary>
+            <span class="lp-faq-q">What happens to my data? Is it private?</span>
+            <span class="lp-faq-icon" aria-hidden="true">+</span>
+          </summary>
+          <div class="lp-faq-a">
+            <p>Data lives on Supabase (EU-West-1 region) with row-level security on every table. Promoters see only their own bookings; artists see only theirs. Public profiles (name, bio, genre, rate band) are visible in the directory; private fields (email, phone) only surface to confirmed booking partners. Full details in our <a href="/privacy.html">privacy policy</a>, which is compliant with UAE PDPL.</p>
+          </div>
+        </details>
+      </div>
+
+      <!-- FAQPage JSON-LD — gets the "People also ask"-style rich
+           result on Google for branded queries like "ROSTR+ visa". -->
+      <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Do I need a UAE work visa to book through ROSTR+?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Visas remain the promoter's responsibility — same as any booking. ROSTR+ doesn't process visa paperwork, but the contract we generate captures who's responsible for which immigration step (entry permit, employment visa, exit). Most GCC promoters use a NOC + visit-visa pattern for single-event bookings."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How do payouts work? Can artists receive AED directly?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Promoters record payments on the platform (bank transfer reference, Stripe, or Tap). Artists confirm receipt with one tap. AED is the default; we also support USD and EUR. Payouts route directly between promoter and artist — ROSTR+ holds no funds."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What happens if an event gets cancelled?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "The contract you generate captures the cancellation policy at signing — typically 50% deposit non-refundable at >14 days, 100% inside 7 days. If a dispute arises, the full audit log is exportable as a single PDF for arbitration."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How does ROSTR+ verify artists?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Three checks before a Verified badge appears: a working email or phone, a real social presence, and at least one cross-reference from a promoter or venue we already know."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is ROSTR+ free? When does pricing change?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Free during launch on both sides — no card required. When pricing turns on, we take 5–10% only from the promoter side, only after their third paid booking, and never from the artist."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What happens to my data? Is it private?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Data lives on Supabase (EU-West-1 region) with row-level security on every table. Promoters see only their own bookings; artists see only theirs. Full details in our privacy policy."
+            }
+          }
+        ]
+      }
+      </script>
+    </section>
+
     <!-- ═══ PLATFORM PARITY STRIP ═══
          Single split panel: parity claim left, platform badges right.
          Surfaces the cross-platform reality without burying it in the footer. -->

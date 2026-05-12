@@ -1955,6 +1955,90 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   .lp-future-r { text-align: left; }
 }
 
+/* FAQ — native <details>/<summary> styled to feel platform-native.
+   Per 2026-05-12 homepage audit (#10). */
+.lp-faq {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+}
+.lp-faq-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+.lp-faq-item:hover {
+  border-color: var(--border-medium);
+}
+.lp-faq-item[open] {
+  border-color: var(--accent-dim-20);
+  background: linear-gradient(180deg, var(--bg-raised), var(--bg-card));
+}
+.lp-faq-item summary {
+  list-style: none;
+  cursor: pointer;
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  user-select: none;
+}
+.lp-faq-item summary::-webkit-details-marker { display: none; }
+.lp-faq-q {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+.lp-faq-icon {
+  font-family: var(--font-mono);
+  font-size: 1.2rem;
+  font-weight: 400;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-subtle);
+  border-radius: 50%;
+  transition: transform var(--duration-base) var(--ease-out),
+              border-color var(--duration-fast) var(--ease-out),
+              color var(--duration-fast) var(--ease-out);
+}
+.lp-faq-item[open] .lp-faq-icon {
+  transform: rotate(45deg);
+  color: var(--accent-soft);
+  border-color: var(--accent-dim-20);
+}
+.lp-faq-a {
+  padding: 0 var(--space-lg) var(--space-md);
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+.lp-faq-a p {
+  margin: 0;
+}
+.lp-faq-a a {
+  color: var(--accent-soft);
+  border-bottom: 1px solid var(--border-medium);
+  text-decoration: none;
+}
+.lp-faq-a a:hover {
+  border-color: var(--accent-soft);
+}
+.lp-faq-section h2 em {
+  font-style: italic;
+  font-weight: 400;
+}
+
 /* Closing CTA panel */
 .lp-cta-panel {
   padding: var(--space-3xl) var(--space-2xl);
