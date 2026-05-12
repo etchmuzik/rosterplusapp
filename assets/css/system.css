@@ -3472,17 +3472,20 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   flex-shrink: 0;
   color: var(--text-primary);
 }
-.app-badge--coming .app-badge-glyph,
-.app-badge--coming .app-badge-store {
-  color: var(--text-secondary);
-}
+/* Both --coming (iOS TestFlight) and --live (web app) now read as
+   peer CTAs. Same border, same hover, same text weight — they're
+   both real links to real destinations. No more desaturation on
+   the App Store badge; the difference is communicated by the caption
+   underneath (TestFlight vs. Live now), not by visual disabling. */
 .app-badge-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.1;
   text-align: left;
 }
 .app-badge-eyebrow {
+  /* Legacy — kept so old markup that still has an eyebrow doesn't
+     break. New badges don't render one. */
   font-family: var(--font-mono);
   font-size: 0.62rem;
   letter-spacing: 0.08em;
@@ -3492,9 +3495,10 @@ tr:hover td { background: rgba(255,255,255,0.015); }
 }
 .app-badge-store {
   font-family: var(--font-display);
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
 }
 .app-badge-caption {
   font-size: 0.74rem;
