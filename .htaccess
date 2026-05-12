@@ -3,6 +3,13 @@ RewriteEngine On
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
+# ─── Short URL: rosterplus.io/link → /link.html ───────────────────
+# Link-in-bio surface. The "/link" URL is what we publish in Instagram
+# bios, business cards, the homepage footer, etc. Internally it's
+# served by /link.html. Internal rewrite (no [R]) so the browser bar
+# stays at /link — cleaner and more memorable.
+RewriteRule ^link/?$ /link.html [L]
+
 # ─── Link-preview bots get pre-rendered profile / EPK pages ────────
 #
 # Why this exists: the app is static HTML + client-side JS. When

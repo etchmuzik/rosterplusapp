@@ -21,6 +21,12 @@
     <lastmod>2026-04-23</lastmod>
   </url>
   <url>
+    <loc>https://rosterplus.io/link</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-05-12</lastmod>
+  </url>
+  <url>
     <loc>https://rosterplus.io/auth.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
