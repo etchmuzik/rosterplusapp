@@ -20,47 +20,185 @@
   <script src="assets/js/error-logger.js?v=2521872" defer></script>
   <script src="assets/js/app.js?v=2521872" defer></script>
   <style>
-    .admin-container { max-width: 1100px; margin: 80px auto 0; padding: var(--space-2xl) var(--space-lg); }
-    .admin-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-md); margin-bottom: var(--space-lg); flex-wrap: wrap; }
-    .admin-head h1 { margin: 0; font-family: var(--font-display); font-size: 2rem; letter-spacing: -0.03em; }
-    .admin-head p { margin-top: 4px; color: var(--text-tertiary); font-size: 0.88rem; }
+    /* ═══ Admin console — 2026-05-13 redesign ═══
+       Two-column shape: left rail (vertical tab nav + identity) +
+       main content panel. The page-shell still owns the global nav
+       at the top. Mobile: rail collapses to a horizontal scroll
+       strip above the main content. */
+    .admin-shell {
+      max-width: 1280px;
+      margin: 80px auto 0;
+      padding: var(--space-xl) var(--space-lg);
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: var(--space-xl);
+      align-items: start;
+    }
 
-    /* Tab strip — same visual idiom as the bookings.html status filter */
-    .admin-tabs {
+    .admin-head {
+      grid-column: 1 / -1;
       display: flex;
-      gap: 2px;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: var(--space-md);
+      margin-bottom: var(--space-md);
+      flex-wrap: wrap;
+    }
+    .admin-head h1 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(1.8rem, 3vw, 2.2rem);
+      letter-spacing: -0.03em;
+    }
+    .admin-head p {
+      margin-top: 4px;
+      color: var(--text-tertiary);
+      font-size: 0.88rem;
+      max-width: 56ch;
+    }
+
+    /* Stats strip — 4 tiles only when data is meaningful.
+       Single calm row, primary number large, sub-line muted small. */
+    .admin-stats {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: var(--space-md);
+      margin-bottom: var(--space-xl);
+    }
+    .admin-stat {
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-sm);
-      padding: 3px;
-      margin-bottom: var(--space-lg);
-      overflow-x: auto;
+      border-radius: var(--radius-md);
+      padding: var(--space-md) var(--space-lg);
+      min-height: 90px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .admin-stat-label {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+    }
+    .admin-stat-value {
+      font-family: var(--font-display);
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      line-height: 1.1;
+      margin-top: 6px;
+    }
+    .admin-stat-sub {
+      font-size: 0.78rem;
+      color: var(--text-tertiary);
+      margin-top: 6px;
+    }
+    .admin-stat--alert .admin-stat-value { color: var(--status-cancelled); }
+
+    /* Left rail tab nav. Vertical list of buttons. */
+    .admin-rail {
+      position: sticky;
+      top: 88px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      align-self: start;
     }
     .admin-tab {
-      padding: 7px 14px;
-      font-size: 0.82rem;
-      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      font-size: 0.92rem;
+      font-weight: 500;
       font-family: var(--font-body);
       color: var(--text-secondary);
       background: none;
-      border: none;
-      border-radius: calc(var(--radius-sm) - 2px);
+      border: 1px solid transparent;
+      border-radius: var(--radius-md);
       cursor: pointer;
-      transition: all var(--duration-fast) var(--ease-out);
-      white-space: nowrap;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
+      transition: background 120ms var(--ease-out),
+                  color 120ms var(--ease-out),
+                  border-color 120ms var(--ease-out);
+      text-align: left;
+      width: 100%;
+    }
+    .admin-tab:hover:not(.active) {
+      color: var(--text-primary);
+      background: var(--bg-card);
     }
     .admin-tab.active {
-      background: var(--bg-raised);
       color: var(--text-primary);
-      box-shadow: var(--shadow-sm);
+      background: var(--bg-card);
+      border-color: var(--border-medium);
+      font-weight: 600;
     }
-    .admin-tab:hover:not(.active) { color: var(--text-primary); }
+    .admin-tab-icon {
+      flex-shrink: 0;
+      width: 16px;
+      height: 16px;
+      color: currentColor;
+      opacity: 0.85;
+    }
+    .admin-tab-badge {
+      margin-left: auto;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: var(--status-cancelled-bg, rgba(239, 68, 68, 0.15));
+      color: var(--status-cancelled);
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
 
+    /* Rail footer — admin identity + build SHA. */
+    .admin-rail-foot {
+      margin-top: var(--space-lg);
+      padding-top: var(--space-md);
+      border-top: 1px solid var(--border-subtle);
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.04em;
+      color: var(--text-tertiary);
+      line-height: 1.6;
+      word-break: break-all;
+    }
+    .admin-rail-foot strong {
+      display: block;
+      color: var(--text-secondary);
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
+
+    /* Main panel — single column. Each tab content lives here. */
+    .admin-main { min-width: 0; }
     .admin-panel { display: none; }
     .admin-panel.active { display: block; animation: fadeIn 200ms var(--ease-out); }
+    .admin-panel > p:first-child {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      margin: 0 0 var(--space-lg);
+      max-width: 70ch;
+    }
+
+    /* Mobile: rail becomes a horizontal pill row above the content. */
+    @media (max-width: 880px) {
+      .admin-shell { grid-template-columns: 1fr; gap: var(--space-md); }
+      .admin-rail {
+        position: static;
+        flex-direction: row;
+        gap: 4px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+      }
+      .admin-tab { white-space: nowrap; width: auto; padding: 8px 12px; }
+      .admin-rail-foot { display: none; }
+    }
 
     /* Errors tab — subtle table */
     .err-row {
@@ -127,31 +265,65 @@
 <body>
   <div class="page-shell">
     <div id="nav-root"></div>
-    <div class="admin-container">
+    <div class="admin-shell">
+      <!-- Page head — spans both columns. -->
       <div class="admin-head">
         <div>
           <div class="eyebrow-soft">Admin console</div>
           <h1>Operate ROSTR+</h1>
           <p>Roster, imports, audit log, errors, cron health. Visible only to platform admins.</p>
         </div>
-        <div id="admin-who" class="meta-mono-right"></div>
       </div>
 
-      <!-- Stats strip -->
-      <div id="admin-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:var(--space-lg)"></div>
+      <!-- Stats strip — only meaningful numbers, hidden when zero. -->
+      <div id="admin-stats" class="admin-stats"></div>
 
-      <!-- Tabs -->
-      <div class="admin-tabs" role="tablist">
-        <button class="admin-tab active" data-tab="roster" onclick="switchAdminTab('roster')">Roster</button>
-        <button class="admin-tab" data-tab="users" onclick="switchAdminTab('users')">Users</button>
-        <button class="admin-tab" data-tab="bookings-mod" onclick="switchAdminTab('bookings-mod')">Bookings</button>
-        <button class="admin-tab" data-tab="import" onclick="switchAdminTab('import')">Bulk import</button>
-        <button class="admin-tab" data-tab="broadcast" onclick="switchAdminTab('broadcast')">Broadcast</button>
-        <button class="admin-tab" data-tab="audit" onclick="switchAdminTab('audit')">Audit log</button>
-        <button class="admin-tab" data-tab="emails" onclick="switchAdminTab('emails')">Emails</button>
-        <button class="admin-tab" data-tab="errors" onclick="switchAdminTab('errors')">Errors</button>
-        <button class="admin-tab" data-tab="health" onclick="switchAdminTab('health')">Health</button>
-      </div>
+      <!-- Left rail: vertical tab nav + admin identity in the footer. -->
+      <nav class="admin-rail" role="tablist" aria-label="Admin sections">
+        <button class="admin-tab active" data-tab="roster" onclick="switchAdminTab('roster')" role="tab" aria-selected="true">
+          <span class="admin-tab-icon js-icon" data-icon="music" data-size="16"></span>
+          Roster
+        </button>
+        <button class="admin-tab" data-tab="users" onclick="switchAdminTab('users')" role="tab" aria-selected="false">
+          <span class="admin-tab-icon js-icon" data-icon="users" data-size="16"></span>
+          Users
+        </button>
+        <button class="admin-tab" data-tab="bookings-mod" onclick="switchAdminTab('bookings-mod')" role="tab" aria-selected="false">
+          <span class="admin-tab-icon js-icon" data-icon="calendar" data-size="16"></span>
+          Bookings
+        </button>
+        <button class="admin-tab" data-tab="import" onclick="switchAdminTab('import')" role="tab" aria-selected="false">
+          <span class="admin-tab-icon js-icon" data-icon="download" data-size="16"></span>
+          Bulk import
+        </button>
+        <button class="admin-tab" data-tab="broadcast" onclick="switchAdminTab('broadcast')" role="tab" aria-selected="false">
+          <span class="admin-tab-icon js-icon" data-icon="send" data-size="16"></span>
+          Broadcast
+        </button>
+        <button class="admin-tab" data-tab="audit" onclick="switchAdminTab('audit')" role="tab" aria-selected="false">
+          <span class="admin-tab-icon js-icon" data-icon="fileText" data-size="16"></span>
+          Audit log
+        </button>
+        <button class="admin-tab" data-tab="emails" onclick="switchAdminTab('emails')" role="tab" aria-selected="false">
+          <span class="admin-tab-icon js-icon" data-icon="inbox" data-size="16"></span>
+          Emails
+        </button>
+        <button class="admin-tab" data-tab="errors" onclick="switchAdminTab('errors')" role="tab" aria-selected="false">
+          <span class="admin-tab-icon js-icon" data-icon="shield" data-size="16"></span>
+          Errors
+          <span id="admin-tab-errors-badge" class="admin-tab-badge" hidden></span>
+        </button>
+        <button class="admin-tab" data-tab="health" onclick="switchAdminTab('health')" role="tab" aria-selected="false">
+          <span class="admin-tab-icon js-icon" data-icon="activity" data-size="16"></span>
+          Health
+        </button>
+
+        <!-- Rail footer: admin identity + build SHA. Hidden on mobile. -->
+        <div id="admin-who" class="admin-rail-foot"></div>
+      </nav>
+
+      <!-- Main panel: tab contents. Each <section data-panel> sits inside this column. -->
+      <div class="admin-main">
 
       <!-- ═══ Tab: Roster ═══ -->
       <section class="admin-panel active" data-panel="roster">
@@ -410,14 +582,17 @@
         <h3 class="section-h3">Last 20 cron runs</h3>
         <div id="cron-runs-list" class="section-card"></div>
       </section>
-    </div>
-  </div>
+      </div><!-- /.admin-main -->
+    </div><!-- /.admin-shell -->
+  </div><!-- /.page-shell -->
 
   <script>
     // ─── Tabs ──────────────────────────────────────────────
     function switchAdminTab(name) {
       document.querySelectorAll('.admin-tab').forEach(b => {
-        b.classList.toggle('active', b.dataset.tab === name);
+        const isActive = b.dataset.tab === name;
+        b.classList.toggle('active', isActive);
+        b.setAttribute('aria-selected', String(isActive));
       });
       document.querySelectorAll('.admin-panel').forEach(p => {
         p.classList.toggle('active', p.dataset.panel === name);
@@ -1149,8 +1324,13 @@
     }
 
     // ─── Stats strip ──────────────────────────────────────
+    // Four calm tiles: Users, Artists, Bookings, Errors. GMV stats
+    // are hidden until the platform actually has revenue (showing
+    // "AED —" three times reads as broken). Errors tile flips to
+    // an alert variant when count > 0 so the eye lands there first.
     async function renderStats() {
       const host = document.getElementById('admin-stats');
+      const errBadge = document.getElementById('admin-tab-errors-badge');
       if (!host) return;
       const res = await DB.adminStats();
       if (!res.success || !res.data) {
@@ -1158,20 +1338,54 @@
         return;
       }
       const d = res.data;
-      const card = (label, value, sub) => `
-        <div class="stat-tile">
-          <div class="stat-tile-eyebrow">${label}</div>
-          <div class="stat-tile-value">${value}</div>
-          ${sub ? `<div class="text-sub">${sub}</div>` : ''}
+
+      // Errors-tab badge (left rail). Shows count when > 0, hidden
+      // when clean. Updates the rail nav even before the user opens
+      // the Errors tab.
+      if (errBadge) {
+        if (d.errors_24h > 0) {
+          errBadge.textContent = d.errors_24h > 99 ? '99+' : String(d.errors_24h);
+          errBadge.hidden = false;
+        } else {
+          errBadge.hidden = true;
+        }
+      }
+
+      // Artists sub-line: arithmetic that adds up. Claimed = total −
+      // unclaimed (because every artist is exactly one of those). If
+      // verified > claimed, only show "verified"; otherwise show both.
+      const claimed = Math.max(0, d.artists_total - d.artists_unclaimed);
+      const artistsSub = d.artists_unclaimed > 0
+        ? `${d.artists_verified} verified · ${claimed} claimed`
+        : `${d.artists_verified} verified`;
+
+      const tile = (label, value, sub, opts = {}) => `
+        <div class="admin-stat${opts.alert ? ' admin-stat--alert' : ''}">
+          <div class="admin-stat-label">${label}</div>
+          <div>
+            <div class="admin-stat-value">${value}</div>
+            ${sub ? `<div class="admin-stat-sub">${sub}</div>` : ''}
+          </div>
         </div>
       `;
-      host.innerHTML =
-        card('Users', d.users_total, `${d.users_promoters}P · ${d.users_artists}A`) +
-        card('Artists', d.artists_total, `${d.artists_verified} verified · ${d.artists_unclaimed} unclaimed`) +
-        card('Bookings', d.bookings_total, `${d.bookings_confirmed} locked in`) +
-        card('This month', d.bookings_this_month, d.gmv_this_month > 0 ? `AED ${Number(d.gmv_this_month).toLocaleString()}` : 'AED —') +
-        card('GMV all-time', d.gmv_all_time > 0 ? `AED ${Number(d.gmv_all_time).toLocaleString()}` : 'AED —', null) +
-        card('Errors 24h', d.errors_24h, d.errors_24h > 0 ? 'see Errors tab' : 'clean');
+
+      const tiles = [
+        tile('Users', d.users_total, `${d.users_promoters} promoters · ${d.users_artists} artists`),
+        tile('Artists', d.artists_total, artistsSub),
+        tile('Bookings', d.bookings_total, d.bookings_confirmed > 0
+          ? `${d.bookings_confirmed} confirmed`
+          : (d.bookings_total > 0 ? 'none confirmed yet' : 'no bookings yet')),
+        tile('Errors 24h', d.errors_24h, d.errors_24h > 0 ? 'see Errors tab' : 'clean', { alert: d.errors_24h > 0 }),
+      ];
+
+      // Add GMV tile ONLY when we have real revenue — hiding the "—"
+      // placeholder removes the broken-looking row.
+      if (d.gmv_all_time > 0) {
+        tiles.push(tile('GMV all-time', `AED ${Number(d.gmv_all_time).toLocaleString()}`,
+          d.gmv_this_month > 0 ? `AED ${Number(d.gmv_this_month).toLocaleString()} this month` : null));
+      }
+
+      host.innerHTML = tiles.join('');
     }
     window.renderStats = renderStats;
 
@@ -1602,8 +1816,11 @@
       document.getElementById('nav-root').innerHTML = renderNav('admin');
       if (typeof hydrateIcons === 'function') hydrateIcons();
 
+      // Rail footer — admin identity + build SHA. Stacked layout
+      // since the rail is narrow; email and SHA each get their own
+      // line so neither truncates.
       document.getElementById('admin-who').innerHTML =
-        esc(Auth.user?.email || 'admin') + ' · build ' + esc(window.ROSTR_VERSION || 'dev');
+        `<strong>${esc(Auth.user?.email || 'admin')}</strong>build ${esc(window.ROSTR_VERSION || 'dev')}`;
 
       // Stats strip — always visible above tabs. Cheap: one RPC.
       renderStats().catch(() => {});
