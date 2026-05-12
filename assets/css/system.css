@@ -1316,29 +1316,40 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   align-items: center;
   gap: 10px;
   color: var(--text-secondary);
-  opacity: 0.85;
+  opacity: 0.6;
+  transition: opacity 200ms ease;
   font-family: var(--font-display);
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   font-weight: 500;
   letter-spacing: 0.01em;
 }
-.lp-logo-glyph {
-  width: 28px; height: 28px;
-  border: 1.5px solid currentColor;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 500;
+.lp-logo-mark:hover { opacity: 1; }
+/* Partner logos: white-on-transparent PNGs at /assets/images/partners/<slug>.png.
+   Constrained to a single uniform row height so brands of different intrinsic
+   sizes sit on a clean visual baseline. `object-fit: contain` keeps any aspect
+   ratio readable. */
+.lp-logo-mark img {
+  height: 32px;
+  max-width: 140px;
+  width: auto;
+  object-fit: contain;
+  filter: brightness(0) invert(1);  /* force pure white even if the PNG isn't */
 }
-.lp-logo-glyph.lp-glyph-sq { border-radius: 4px; }
-.lp-logo-glyph.lp-glyph-dia {
-  border-radius: 0;
-  transform: rotate(45deg);
+/* Wordmark behind the image is the typographic fallback. When the <img>
+   loads it sits right next to the wordmark (gives both signal: visual
+   logo + readable text for screen readers + tiny screens). If the <img>
+   404s, the inline `onerror="this.remove()"` strips it and the wordmark
+   alone carries the slot — never paints a broken-image icon. */
+.lp-logo-wordmark {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  white-space: nowrap;
 }
-.lp-logo-glyph.lp-glyph-dia > span {
-  transform: rotate(-45deg);
-  display: block;
+/* When the image successfully loads, drop the wordmark text so we don't
+   double up. `:has()` is supported on every browser we care about (Safari
+   15.4+, Chrome 105+, FF 121+ — all well below our floor of "evergreens"). */
+.lp-logo-mark:has(img:not([src=""])) .lp-logo-wordmark {
+  display: none;
 }
 @media (max-width: 768px) {
   .lp-social-proof { flex-direction: column; gap: var(--space-md); padding: var(--space-md); }
