@@ -896,6 +896,29 @@
           }
         }
 
+        // Photo-resolution helper. For every artist surface on the
+        // homepage we want the same three-tier fallback:
+        //   1. profiles.avatar_url (claimed artist uploaded one)
+        //   2. /assets/images/artists/<handle>.jpg (operator dropped
+        //      a local file at deploy time — see web/.gitignore
+        //      assets/images/artists/README.md for the contract)
+        //   3. nothing — let the gradient + initials behind the <img>
+        //      show through (every <img> has onerror="this.remove()")
+        // The helper centralises the slug derivation so this matches
+        // directory.html and a.html (per 2026-05-12 web polish).
+        function artistPhotoSrc(a) {
+          if (a && a.avatar_url) return a.avatar_url;
+          const slug = a && (a.handle || slugify(a.name || a.stage_name || ''));
+          return slug ? `/assets/images/artists/${slug}.jpg` : '';
+        }
+        function slugify(s) {
+          return (s || '').toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-|-$/g, '');
+        }
+
         // Featured card — pick the first verified artist, fall back to first
         const featured = artists.find(a => a.verified) || artists[0];
         if (featured) {
@@ -905,30 +928,32 @@
           // don't blow away the placeholder <img> sitting next to it.
           const initialsSpan = document.querySelector('#lp-featured-initials .avatar-initials');
           if (initialsSpan) initialsSpan.textContent = initials;
-          // Swap the avatar photo to the live artist's avatar_url when
-          // we have one. If the artist has no avatar, leave the static
-          // placeholder src in place so the local-file workflow stays
-          // self-contained. The onerror handler still removes the <img>
-          // on 404 so initials win.
+          // Avatar slot: prefer profile avatar, then handle-slug photo
+          // (artists/<handle>.jpg), then leave initials visible.
           const photo = document.getElementById('lp-featured-photo');
-          if (photo && featured.avatar_url) photo.src = featured.avatar_url;
+          const photoSrc = artistPhotoSrc(featured);
+          if (photo && photoSrc) photo.src = photoSrc;
+          // Background slot: same chain, so the hero card has the
+          // featured artist's photo as a moody backdrop.
+          const heroBg = document.getElementById('lp-featured-bg');
+          if (heroBg && photoSrc) heroBg.src = photoSrc;
           setText('lp-featured-name', name);
           setText('lp-featured-genre', 'Featured · ' + (featured.genre || 'Artist'));
           setText('lp-featured-city', featured.city || '—');
         }
 
-        // Feature-01 gallery — first 6 artists. Each tile is a photo
-        // when the artist has avatar_url, falling back to the static
-        // placeholder at /assets/images/placeholders/gallery-N.jpg, and
-        // finally to the initials when neither resolves.
+        // Feature-01 gallery — first 6 artists. Each tile uses the
+        // same three-tier fallback as the featured card; the generic
+        // placeholders/gallery-N.jpg images are no longer referenced
+        // because we now have per-artist photos that read better.
         const gallery = document.getElementById('lp-feature-gallery');
         if (gallery && count > 0) {
-          const tile = (a, i) => {
+          const tile = (a) => {
             const name = a.name || a.stage_name || '?';
             const initials = name.split(/\s+/).map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
-            const photoSrc = a.avatar_url || `/assets/images/placeholders/gallery-${i + 1}.jpg`;
+            const photoSrc = artistPhotoSrc(a);
             return `<div class="lp-gallery-tile">
-              <img src="${esc(photoSrc)}" alt="${esc(name)}" loading="lazy" decoding="async" onerror="this.remove()">
+              ${photoSrc ? `<img src="${esc(photoSrc)}" alt="${esc(name)}" loading="lazy" decoding="async" onerror="this.remove()">` : ''}
               <span class="lp-gallery-initials">${esc(initials)}</span>
             </div>`;
           };

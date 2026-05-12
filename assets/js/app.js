@@ -1390,9 +1390,9 @@ const DB = {
     let query = _sb
       .from('artists')
       .select(`
-        id, stage_name, genre, subgenres, base_fee, currency,
+        id, handle, stage_name, genre, subgenres, base_fee, currency,
         rating, total_bookings, cities_active, social_links,
-        epk_url, verified, status,
+        epk_url, verified, status, featured_until,
         profiles(display_name, avatar_url, city)
       `)
       .eq('status', 'active');
@@ -1407,7 +1407,14 @@ const DB = {
     // Normalise to the shape the UI expects
     const normalised = (data || []).map(a => ({
       id: a.id,
+      // handle: kebab-case slug for /a/<handle>. Added in
+      // 20260512_artists_handle.sql. Also used by the homepage to
+      // resolve the local photo path /assets/images/artists/<handle>.jpg
+      // when an artist hasn't claimed a profile (and so has no
+      // profiles.avatar_url to surface).
+      handle: a.handle || null,
       name: a.stage_name || (a.profiles && a.profiles.display_name) || 'Unknown',
+      stage_name: a.stage_name || null,
       genre: Array.isArray(a.genre) ? a.genre[0] : (a.genre || ''),
       subgenre: Array.isArray(a.subgenres) ? a.subgenres[0] : '',
       city: (a.cities_active && a.cities_active[0]) || (a.profiles && a.profiles.city) || '',
@@ -1422,6 +1429,10 @@ const DB = {
       reviewCount: a.total_bookings || 0,
       avatar_url: a.profiles && a.profiles.avatar_url,
       verified: a.verified,
+      // featured_until: ISO timestamp set by admin via /admin.html.
+      // Surfaced by /link.html for the "Artist of the week" card and
+      // by index.html for the hero featured slot.
+      featured_until: a.featured_until || null,
       available: a.status === 'active',
       social: a.social_links || {},
       bio: (a.profiles && a.profiles.bio) || '',
@@ -1452,7 +1463,9 @@ const DB = {
     const a = data;
     const normalised = {
       id: a.id,
+      handle: a.handle || null,
       name: a.stage_name || (a.profiles && a.profiles.display_name) || 'Unknown',
+      stage_name: a.stage_name || null,
       genre: Array.isArray(a.genre) ? a.genre[0] : (a.genre || ''),
       subgenre: Array.isArray(a.subgenres) ? a.subgenres[0] : '',
       city: (a.cities_active && a.cities_active[0]) || (a.profiles && a.profiles.city) || '',
@@ -1464,6 +1477,7 @@ const DB = {
       bookings: a.total_bookings || 0,
       avatar_url: a.profiles && a.profiles.avatar_url,
       verified: a.verified,
+      featured_until: a.featured_until || null,
       available: a.status === 'active',
       social: a.social_links || {},
       bio: (a.profiles && a.profiles.bio) || '',
