@@ -3443,19 +3443,27 @@ tr:hover td { background: rgba(255,255,255,0.015); }
 .app-badge-block {
   display: inline-flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   align-items: flex-start;
 }
 .app-badge {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 14px;
+  gap: 10px;
+  /* Auto-width pill — content drives the size. Generous vertical
+     padding (10/14) and a moderate corner radius read as a real
+     button at small sizes without looking like a "media-pill". */
+  padding: 10px 16px;
   background: var(--bg-card);
   border: 1px solid var(--border-medium);
-  border-radius: var(--radius-md);
+  border-radius: 999px;  /* fully rounded — peer of the Start booking CTA */
   color: var(--text-primary);
   text-decoration: none;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 500;
+  letter-spacing: -0.005em;
   transition: border-color 200ms cubic-bezier(0.16, 1, 0.3, 1),
               background 200ms cubic-bezier(0.16, 1, 0.3, 1),
               transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -3472,20 +3480,21 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   flex-shrink: 0;
   color: var(--text-primary);
 }
-/* Both --coming (iOS TestFlight) and --live (web app) now read as
-   peer CTAs. Same border, same hover, same text weight — they're
-   both real links to real destinations. No more desaturation on
-   the App Store badge; the difference is communicated by the caption
-   underneath (TestFlight vs. Live now), not by visual disabling. */
-.app-badge-text {
-  display: inline-flex;
-  align-items: center;
-  line-height: 1.1;
-  text-align: left;
+.app-badge-label {
+  /* Single-line label inside the chip. Inherits font from .app-badge
+     so we don't fight specificity. */
+  display: inline-block;
+  line-height: 1;
 }
+/* Legacy classes kept (--coming, --live, .app-badge-eyebrow,
+   .app-badge-store, .app-badge-text) so any other page rendering
+   the older markup still styles OK. Both modifiers now share the
+   same base; differentiation is in the caption underneath. */
+.app-badge--coming,
+.app-badge--live,
+.app-badge--ios,
+.app-badge--web { /* same shape; no per-modifier overrides today */ }
 .app-badge-eyebrow {
-  /* Legacy — kept so old markup that still has an eyebrow doesn't
-     break. New badges don't render one. */
   font-family: var(--font-mono);
   font-size: 0.62rem;
   letter-spacing: 0.08em;
@@ -3493,11 +3502,10 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   color: var(--text-tertiary);
   margin-bottom: 3px;
 }
+.app-badge-text,
 .app-badge-store {
-  font-family: var(--font-display);
-  font-size: 0.95rem;
-  font-weight: 600;
-  letter-spacing: -0.005em;
+  display: inline-block;
+  line-height: 1;
   white-space: nowrap;
 }
 .app-badge-caption {

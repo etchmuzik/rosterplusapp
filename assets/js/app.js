@@ -1,4 +1,4 @@
-window.ROSTR_VERSION = 'f16d43f';
+window.ROSTR_VERSION = 'd90378c';
 /* ═══════════════════════════════════════════════════════════
    ROSTR+ GCC — Core Application JS
    Supabase client, auth, router, UI helpers, live data
@@ -938,34 +938,30 @@ function renderNav(activePage = '') {
   setTimeout(() => { try { _wireUnreadBadge(); } catch (_) {} }, 0);
 }
 
-// ── App Store / Web platform badges ──
-// Static SVG components, inlined to avoid the CSP cross-origin fetch path
-// that the service worker can't currently cache (see sw.js comment).
-// Apple logo glyph is used per Apple's marketing brand guidelines for
-// directing users to the App Store. The "Coming soon" treatment is a
-// custom desaturated badge — Apple's official Coming Soon badge looks
-// awkward in the wild, so we render our own that matches the existing
-// design tokens.
+// ── Platform availability chips ──
+// Two simple horizontal pills: iOS (TestFlight) and Web (live).
+// Layout intentionally simple: small glyph + single-line label,
+// auto-width to content (no fixed pixel sizes that pinch text into a
+// "circle"-feel), and a separate caption line under each. The labels
+// communicate destination ("TestFlight" / "Web app"); the captions
+// carry state. No inline `style="width:Xpx; height:Ypx"` — let the
+// content size the chip.
 function renderAppStoreBadge({ size = 'md', context = 'footer' } = {}) {
-  const w = size === 'sm' ? 152 : 176;
-  const h = size === 'sm' ? 48 : 56;
-  // Two captions: the hero shows just "TestFlight beta open"; other
-  // contexts (footer, parity strip) ask explicitly for access.
+  // Hero context shows "TestFlight beta open"; footer + parity strip
+  // also ask for access since those surfaces are further from the
+  // CTA path and the visitor needs the next-step prompt.
   const caption = context === 'hero'
     ? 'TestFlight beta open'
     : 'TestFlight beta open — request access';
   return `
     <div class="app-badge-block" data-size="${size}">
-      <a class="app-badge app-badge--coming"
+      <a class="app-badge app-badge--ios"
          href="mailto:hesham@beyondmngmt.ae?subject=ROSTR%2B%20iOS%20TestFlight%20access"
-         aria-label="ROSTR+ iOS app — coming soon to App Store. Request TestFlight access."
-         style="width:${w}px;height:${h}px">
-        <svg viewBox="0 0 17 21" width="22" height="22" aria-hidden="true" focusable="false" class="app-badge-glyph">
+         aria-label="Request TestFlight access for the ROSTR+ iOS app">
+        <svg viewBox="0 0 17 21" width="18" height="18" aria-hidden="true" focusable="false" class="app-badge-glyph">
           <path fill="currentColor" d="M14.94 16.32q-.42.97-.99 1.78-.78 1.11-1.27 1.54-.76.69-1.63.71-.62.02-1.5-.36-.88-.38-1.62-.36-.78.02-1.65.36-.88.34-1.42.36-.83.04-1.66-.74-.53-.5-1.32-1.65-.85-1.22-1.4-2.83Q.78 13.05.78 11.4q0-1.88.81-3.24.64-1.09 1.7-1.72 1.07-.64 2.31-.66.66-.02 1.69.41.88.36 1.13.36.18 0 1.27-.43 1.03-.4 1.74-.36 1.93.16 2.9 1.52-1.73 1.05-1.71 2.94.02 1.47 1.06 2.45.47.45 1.06.7-.13.37-.27.71zM11.66 1.46q0 1.4-1.02 2.62-1.23 1.44-2.97 1.32-.02-.17-.02-.36 0-1.34 1.16-2.59.58-.62 1.47-1.04.89-.4 1.69-.43.02.16.02.34z"/>
         </svg>
-        <span class="app-badge-text">
-          <span class="app-badge-store">Coming to App Store</span>
-        </span>
+        <span class="app-badge-label">iOS · TestFlight</span>
       </a>
       <small class="app-badge-caption">${caption}</small>
     </div>
@@ -975,15 +971,13 @@ function renderAppStoreBadge({ size = 'md', context = 'footer' } = {}) {
 function renderWebLiveBadge() {
   return `
     <div class="app-badge-block" data-size="md">
-      <a class="app-badge app-badge--live" href="/dashboard.html"
-         aria-label="ROSTR+ web app — live now. Open the dashboard.">
-        <svg viewBox="0 0 22 22" width="22" height="22" aria-hidden="true" focusable="false" class="app-badge-glyph">
-          <circle cx="11" cy="11" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M2 11 H 20 M11 2 a 14 14 0 0 1 0 18 M11 2 a 14 14 0 0 0 0 18" fill="none" stroke="currentColor" stroke-width="1.2"/>
+      <a class="app-badge app-badge--web" href="/dashboard.html"
+         aria-label="Open the ROSTR+ web app dashboard">
+        <svg viewBox="0 0 22 22" width="18" height="18" aria-hidden="true" focusable="false" class="app-badge-glyph">
+          <circle cx="11" cy="11" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M2 11 H 20 M11 2 a 14 14 0 0 1 0 18 M11 2 a 14 14 0 0 0 0 18" fill="none" stroke="currentColor" stroke-width="1.3"/>
         </svg>
-        <span class="app-badge-text">
-          <span class="app-badge-store">Use the web app</span>
-        </span>
+        <span class="app-badge-label">Web app</span>
       </a>
       <small class="app-badge-caption"><span class="app-badge-pulse"></span> Live now</small>
     </div>
