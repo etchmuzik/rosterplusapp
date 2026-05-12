@@ -1401,6 +1401,29 @@ tr:hover td { background: rgba(255,255,255,0.015); }
 }
 .lp-feature-item h3 { font-size: 1.25rem; }
 .lp-feature-item p { font-size: 0.9rem; }
+
+/* In-card inline link — used on feature card 06 (EPK example).
+   Small, mono, sits below the paragraph. Hover lifts to accent. */
+.lp-feature-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--space-md);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 4px;
+  transition: color var(--duration-fast) var(--ease-out),
+              border-color var(--duration-fast) var(--ease-out);
+}
+.lp-feature-link:hover {
+  color: var(--accent-soft);
+  border-color: var(--accent-soft);
+}
 .lp-feature-num {
   font-family: var(--font-mono);
   font-size: 0.7rem;

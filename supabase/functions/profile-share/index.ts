@@ -64,14 +64,26 @@ function page(opts: {
 
 Deno.serve(async (req) => {
   const url = new URL(req.url);
-  const id = url.searchParams.get('id') || '';
+  // Accept `id` (canonical) or `artist` (booking.html's param name).
+  // .htaccess passes the original query string through verbatim, so
+  // whichever param the source URL used arrives here intact.
+  const id = url.searchParams.get('id')
+          || url.searchParams.get('artist')
+          || '';
   // `path` query selects which canonical URL the rendered preview
-  // refers back to. Accept 'epk' for the EPK page; everything else
-  // (default 'profile') routes to /profile.html. Used by the
-  // .htaccess bot-rewrite rules so a WhatsApp preview of /epk.html
-  // unfurls with og:url pointing at the EPK page, not the profile.
+  // refers back to. Accept 'epk' or 'booking'; everything else
+  // (default 'profile') routes to /profile.html. Booking pages use
+  // ?artist= instead of ?id= in their canonical, so we preserve that
+  // convention here too — keeps the post-unfurl click landing on the
+  // exact URL the artist/promoter actually shared.
   const pathParam = (url.searchParams.get('path') || 'profile').toLowerCase();
-  const targetPath = pathParam === 'epk' ? 'epk.html' : 'profile.html';
+  const targetPath = pathParam === 'epk'
+    ? 'epk.html'
+    : pathParam === 'booking'
+      ? 'booking.html'
+      : 'profile.html';
+  // booking.html uses ?artist=, the others use ?id=.
+  const canonicalParam = pathParam === 'booking' ? 'artist' : 'id';
 
   // Fallback: no id → generic
   if (!id) {
@@ -91,7 +103,7 @@ Deno.serve(async (req) => {
     .eq('id', id)
     .maybeSingle();
 
-  const redirectTo = `${SITE_URL}/${targetPath}?id=${encodeURIComponent(id)}`;
+  const redirectTo = `${SITE_URL}/${targetPath}?${canonicalParam}=${encodeURIComponent(id)}`;
 
   if (error || !data) {
     return new Response(page({
@@ -109,7 +121,11 @@ Deno.serve(async (req) => {
   const bio   = String(data.profiles?.bio || '').trim();
   const img   = data.profiles?.avatar_url || `${SITE_URL}/icons/og-default.png`;
 
-  const title = `${name} — ROSTR+ GCC`;
+  // Booking pages get a "Book {name}" prefix so the shared link reads
+  // as an invitation to book, not just a profile view.
+  const title = pathParam === 'booking'
+    ? `Book ${name} — ROSTR+ GCC`
+    : `${name} — ROSTR+ GCC`;
   // Prefer the real bio. Fall back to a generated line. Truncate at 160
   // chars (standard meta-description convention).
   const descFallback = [genre, city].filter(Boolean).join(' — ') + (data.verified ? ' · Verified on ROSTR+.' : ' · Book on ROSTR+.');

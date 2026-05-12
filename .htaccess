@@ -54,6 +54,16 @@ RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
   RewriteCond %{QUERY_STRING}    (^|&)id=[a-f0-9\-]+(&|$)
   RewriteCond %{HTTP_USER_AGENT} (WhatsApp|facebookexternalhit|Twitterbot|Slackbot|TelegramBot|Discordbot|LinkedInBot|Embedly|Pinterest|vkShare|redditbot|Skype) [NC]
   RewriteRule ^epk\.html$ https://vgjmfpryobsuboukbemr.supabase.co/functions/v1/profile-share?%{QUERY_STRING}&path=epk [R=302,L,NE]
+
+  # /booking.html?artist=<uuid> — booking page uses ?artist= (NOT
+  # ?id=) per its existing convention. The edge fn accepts both param
+  # names, so passing %{QUERY_STRING} through verbatim works. path=booking
+  # makes the preview title read "Book <name> — ROSTR+ GCC" and the
+  # canonical/og:url point back at /booking.html?artist=…
+  RewriteCond %{REQUEST_URI}     ^/booking\.html$
+  RewriteCond %{QUERY_STRING}    (^|&)artist=[a-f0-9\-]+(&|$)
+  RewriteCond %{HTTP_USER_AGENT} (WhatsApp|facebookexternalhit|Twitterbot|Slackbot|TelegramBot|Discordbot|LinkedInBot|Embedly|Pinterest|vkShare|redditbot|Skype) [NC]
+  RewriteRule ^booking\.html$ https://vgjmfpryobsuboukbemr.supabase.co/functions/v1/profile-share?%{QUERY_STRING}&path=booking [R=302,L,NE]
 </IfModule>
 
 # Security headers
