@@ -40,405 +40,11 @@
   <script src="assets/js/error-logger.js?v=2521872" defer></script>
   <script src="assets/js/app.js?v=2521872" defer></script>
 
-  <style>
-    /* link.html scoped — link-in-bio surface. Adapted from the
-       "ROSTR Linktree — Variant A (Glass dark)" design (2026-05-12).
-       Tokens come from system.css; only the page-layout primitives
-       live here. The intent is a single-column, phone-shaped surface
-       that reads at-a-glance from a mobile browser tab opened from
-       an Instagram bio. -->
-    body { background: var(--bg-base); }
-    .lt-page-wrap {
-      min-height: 100vh;
-      min-height: 100dvh;
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      padding: var(--space-2xl) var(--space-md);
-      position: relative;
-      overflow: hidden;
-    }
-    /* Atmospheric radial wash — exactly like the design prototype's
-       top + bottom glow. */
-    .lt-page-wrap::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background:
-        radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255,255,255,0.06), transparent 70%),
-        radial-gradient(ellipse 60% 40% at 50% 100%, rgba(255,255,255,0.03), transparent);
-      pointer-events: none;
-    }
-    .lt-inner {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      max-width: 420px;
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-md);
-      align-items: center;
-      padding-top: var(--space-2xl);
-    }
-
-    /* Brand mark — square tile with gradient + accent dot */
-    .lt-logo {
-      width: 80px; height: 80px;
-      border-radius: 22px;
-      background: linear-gradient(135deg, #1a1d24 0%, #0c0d10 100%);
-      border: 1px solid var(--border-medium);
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 16px 48px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
-      position: relative;
-    }
-    .lt-logo-mark {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: 32px;
-      letter-spacing: -0.04em;
-      background: linear-gradient(180deg, var(--text-primary), var(--text-secondary));
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-    }
-    .lt-logo-plus {
-      position: absolute; top: 12px; right: 12px;
-      width: 8px; height: 8px; border-radius: 50%;
-      background: var(--status-confirmed);
-      box-shadow: 0 0 8px rgba(142,230,181,0.6);
-    }
-
-    /* Handle + tagline */
-    .lt-handle {
-      font-family: var(--font-display);
-      font-size: 1.4rem; font-weight: 500;
-      letter-spacing: -0.01em;
-      display: flex; align-items: center; gap: 6px;
-    }
-    .lt-handle-verified {
-      width: 16px; height: 16px;
-      border-radius: 50%;
-      background: var(--text-primary);
-      color: var(--bg-base);
-      display: inline-flex; align-items: center; justify-content: center;
-      font-size: 9px; font-weight: 700;
-    }
-    .lt-tagline {
-      font-size: 0.85rem;
-      color: var(--text-secondary);
-      text-align: center;
-      max-width: 280px;
-      line-height: 1.5;
-    }
-    .lt-tagline em { font-style: italic; color: var(--text-primary); }
-
-    /* Live + est meta line */
-    .lt-meta-line {
-      display: flex; gap: 10px;
-      font-family: var(--font-mono);
-      font-size: 0.6rem;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      color: var(--text-tertiary);
-      margin-top: -2px;
-    }
-    .lt-meta-live {
-      display: inline-flex; align-items: center; gap: 5px;
-      color: var(--status-confirmed);
-    }
-    .lt-meta-live-dot {
-      width: 5px; height: 5px; border-radius: 50%;
-      background: var(--status-confirmed);
-      box-shadow: 0 0 6px var(--status-confirmed);
-      animation: lt-pulse 2s var(--ease-out) infinite;
-    }
-    @keyframes lt-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-    .lt-meta-sep { opacity: 0.5; }
-
-    /* Featured artist card */
-    .lt-featured {
-      width: 100%;
-      border-radius: var(--radius-lg);
-      overflow: hidden;
-      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
-      border: 1px solid var(--border-subtle);
-      cursor: pointer;
-      transition: transform var(--duration-base) var(--ease-out),
-                  border-color var(--duration-base) var(--ease-out);
-      text-decoration: none;
-      color: inherit;
-      display: block;
-    }
-    .lt-featured:hover { border-color: var(--border-medium); }
-    .lt-featured:active { transform: scale(0.985); }
-    .lt-featured-vis {
-      position: relative;
-      aspect-ratio: 16/9;
-      overflow: hidden;
-      background: linear-gradient(135deg, #2a2126 0%, #0c0d10 100%);
-    }
-    .lt-featured-vis::before {
-      content: '';
-      position: absolute; inset: 0;
-      background:
-        radial-gradient(circle at 25% 45%, rgba(255,255,255,0.08), transparent 50%),
-        radial-gradient(circle at 75% 70%, rgba(255,255,255,0.05), transparent 45%);
-    }
-    .lt-featured-vis::after {
-      content: '';
-      position: absolute; inset: 0;
-      background: linear-gradient(180deg, transparent 30%, rgba(8,9,11,0.92));
-    }
-    .lt-featured-photo {
-      position: absolute; inset: 0;
-      width: 100%; height: 100%;
-      object-fit: cover;
-      z-index: 1;
-    }
-    .lt-featured-badge {
-      position: absolute; top: 10px; left: 10px;
-      z-index: 2;
-      display: inline-flex; align-items: center; gap: 5px;
-      font-family: var(--font-mono);
-      font-size: 0.6rem;
-      text-transform: uppercase; letter-spacing: 0.12em;
-      padding: 4px 8px;
-      border-radius: 999px;
-      background: rgba(8,9,11,0.7);
-      backdrop-filter: blur(8px);
-      border: 1px solid var(--border-medium);
-      color: var(--text-secondary);
-    }
-    .lt-featured-cap {
-      position: absolute;
-      left: 14px; right: 14px; bottom: 12px;
-      z-index: 2;
-    }
-    .lt-featured-pre {
-      font-family: var(--font-mono);
-      font-size: 0.6rem;
-      text-transform: uppercase; letter-spacing: 0.14em;
-      color: var(--text-secondary);
-      margin-bottom: 3px;
-    }
-    .lt-featured-name {
-      font-family: var(--font-display);
-      font-size: 1.3rem;
-      font-weight: 500;
-      letter-spacing: -0.01em;
-      line-height: 1;
-      color: var(--text-primary);
-    }
-    .lt-featured-foot {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 14px;
-      border-top: 1px solid var(--border-subtle);
-      font-family: var(--font-mono);
-      font-size: 0.66rem;
-      text-transform: uppercase; letter-spacing: 0.1em;
-      color: var(--text-tertiary);
-    }
-    .lt-featured-foot-go {
-      color: var(--text-primary);
-      display: inline-flex; align-items: center; gap: 4px;
-    }
-
-    /* Link buttons — vertical stack */
-    .lt-links { display: flex; flex-direction: column; gap: 8px; width: 100%; }
-    .lt-link {
-      display: flex; align-items: center; gap: 12px;
-      padding: 14px 16px;
-      border-radius: 14px;
-      background: rgba(255,255,255,0.04);
-      backdrop-filter: blur(14px);
-      border: 1px solid var(--border-subtle);
-      color: var(--text-primary);
-      text-decoration: none;
-      transition: transform var(--duration-base) var(--ease-out),
-                  background var(--duration-base) var(--ease-out),
-                  border-color var(--duration-base) var(--ease-out);
-      position: relative;
-    }
-    .lt-link:active { transform: scale(0.985); }
-    .lt-link:hover {
-      background: rgba(255,255,255,0.06);
-      border-color: var(--border-medium);
-    }
-    .lt-link.lt-link-primary {
-      background: var(--text-primary);
-      color: var(--bg-base);
-      border-color: transparent;
-    }
-    .lt-link.lt-link-primary:hover { background: var(--text-primary); }
-    .lt-link-ico {
-      width: 32px; height: 32px;
-      border-radius: 9px;
-      flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid var(--border-subtle);
-    }
-    .lt-link.lt-link-primary .lt-link-ico {
-      background: rgba(8,9,11,0.08);
-      border-color: rgba(8,9,11,0.12);
-    }
-    .lt-link-body { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-    .lt-link-title {
-      font-family: var(--font-display);
-      font-size: 0.9rem;
-      font-weight: 500;
-      letter-spacing: -0.005em;
-      line-height: 1.15;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .lt-link-sub {
-      font-family: var(--font-mono);
-      font-size: 0.6rem;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: var(--text-tertiary);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .lt-link.lt-link-primary .lt-link-sub { color: rgba(8,9,11,0.55); }
-    .lt-link-arrow {
-      width: 20px; height: 20px;
-      flex-shrink: 0;
-      opacity: 0.4;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .lt-link.lt-link-primary .lt-link-arrow { opacity: 0.6; }
-    .lt-link-tag {
-      position: absolute;
-      top: -7px; right: 14px;
-      font-family: var(--font-mono);
-      font-size: 0.55rem;
-      text-transform: uppercase; letter-spacing: 0.14em;
-      padding: 3px 7px;
-      border-radius: 999px;
-      background: rgba(142,230,181,0.18);
-      color: var(--status-confirmed);
-      border: 1px solid rgba(142,230,181,0.3);
-    }
-    .lt-link-tag.lt-link-tag-amber {
-      background: rgba(233,207,146,0.12);
-      color: var(--status-pending);
-      border-color: rgba(233,207,146,0.3);
-    }
-
-    /* Divider with mono label */
-    .lt-divider {
-      display: flex; align-items: center; gap: 10px;
-      width: 100%;
-      font-family: var(--font-mono);
-      font-size: 0.6rem;
-      text-transform: uppercase;
-      letter-spacing: 0.16em;
-      color: var(--text-tertiary);
-      margin-top: 6px;
-    }
-    .lt-divider::before, .lt-divider::after {
-      content: '';
-      flex: 1; height: 1px;
-      background: var(--border-subtle);
-    }
-
-    /* Stats strip */
-    .lt-stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      width: 100%;
-    }
-    .lt-stat {
-      padding: 12px 10px;
-      border-radius: 12px;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid var(--border-subtle);
-      text-align: center;
-    }
-    .lt-stat-val {
-      font-family: var(--font-display);
-      font-size: 1.3rem;
-      font-weight: 500;
-      letter-spacing: -0.02em;
-      line-height: 1;
-    }
-    .lt-stat-val sup {
-      font-size: 0.55em;
-      color: var(--text-tertiary);
-      font-weight: 400;
-      vertical-align: top;
-      margin-left: 2px;
-      font-family: var(--font-mono);
-      font-style: normal;
-    }
-    .lt-stat-lbl {
-      font-family: var(--font-mono);
-      font-size: 0.55rem;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      color: var(--text-tertiary);
-      margin-top: 4px;
-    }
-
-    /* Cities pill strip */
-    .lt-cities {
-      width: 100%;
-      display: flex; flex-wrap: wrap; gap: 4px;
-      justify-content: center;
-      margin-top: 2px;
-    }
-    .lt-city {
-      font-family: var(--font-mono);
-      font-size: 0.6rem;
-      text-transform: uppercase;
-      letter-spacing: 0.16em;
-      padding: 4px 8px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid var(--border-medium);
-      color: var(--text-secondary);
-    }
-
-    /* Social row */
-    .lt-social {
-      display: flex; gap: 8px;
-      width: 100%;
-    }
-    .lt-social a {
-      flex: 1;
-      aspect-ratio: 1.5 / 1;
-      display: flex; align-items: center; justify-content: center;
-      border-radius: 11px;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid var(--border-subtle);
-      color: var(--text-secondary);
-      transition: all var(--duration-base) var(--ease-out);
-      text-decoration: none;
-    }
-    .lt-social a:hover {
-      color: var(--text-primary);
-      background: rgba(255,255,255,0.06);
-      border-color: var(--border-medium);
-    }
-    .lt-social svg { width: 18px; height: 18px; }
-
-    /* Footer */
-    .lt-footer {
-      margin-top: 8px;
-      font-family: var(--font-mono);
-      font-size: 0.55rem;
-      text-transform: uppercase;
-      letter-spacing: 0.16em;
-      color: var(--text-tertiary);
-      text-align: center;
-      line-height: 1.7;
-      padding-bottom: var(--space-xl);
-    }
-    .lt-footer a { color: var(--text-secondary); text-decoration: none; }
-    .lt-footer a:hover { color: var(--text-primary); }
-    .lt-footer .lt-footer-sep { opacity: 0.5; margin: 0 5px; }
-  </style>
+  <!-- Linktree styles live in assets/css/system.css under the
+       "LINKTREE SURFACE (shared)" section, used by both /link and
+       /a (the per-artist Linktree). Only the body background
+       override stays inline. -->
+  <style>body { background: var(--bg-base); }</style>
 </head>
 <body>
   <a id="main-content" tabindex="-1" class="sr-only">Main content</a>
@@ -501,7 +107,6 @@
       <!-- Primary links -->
       <div class="lt-links">
         <a class="lt-link lt-link-primary" href="/auth.html?role=promoter">
-          <span class="lt-link-tag">Most clicked</span>
           <span class="lt-link-ico">
             <span class="js-icon" data-icon="send" data-size="16"></span>
           </span>
@@ -595,9 +200,8 @@
 
       <div class="lt-divider"><span>Follow</span></div>
 
-      <!-- Social row — single source of truth for the brand's bios.
-           Each <a> targets the actual handle (placeholder URLs below;
-           swap to real once the IG/TT/X accounts are confirmed). -->
+      <!-- Social row. Four channels, in handle-priority order:
+           Instagram, WhatsApp (real business number), LinkedIn, X. -->
       <div class="lt-social">
         <a href="https://instagram.com/rosterplus" aria-label="Instagram" target="_blank" rel="noopener">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
@@ -606,29 +210,19 @@
             <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/>
           </svg>
         </a>
-        <a href="https://tiktok.com/@rosterplus" aria-label="TikTok" target="_blank" rel="noopener">
+        <a href="https://wa.me/971581232600" aria-label="WhatsApp" target="_blank" rel="noopener">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M19.6 7.8a7 7 0 0 1-4.5-1.6v9.4a6 6 0 1 1-6-6c.3 0 .6 0 .9.1v3a3 3 0 1 0 2.2 2.9V2h3a4 4 0 0 0 4 4v1.8Z"/>
+            <path d="M17.5 14.4c-.3-.2-1.7-.9-2-1-.3-.1-.5-.2-.7.2-.2.3-.8 1-.9 1.1-.2.2-.3.2-.6 0-.3-.2-1.2-.5-2.3-1.4-.9-.7-1.5-1.7-1.6-2-.2-.3 0-.5.1-.6.1-.1.3-.4.5-.5.1-.2.2-.3.3-.5.1-.2 0-.3 0-.5 0-.2-.7-1.7-1-2.3-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4 0 1.4 1 2.7 1.2 2.9.1.2 2 3 4.7 4.2.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.7-.7 1.9-1.4.3-.7.3-1.2.2-1.4-.1-.2-.3-.3-.6-.4ZM12 2.1A9.8 9.8 0 0 0 3.5 16.8L2 22l5.4-1.4A9.9 9.9 0 0 0 21.8 12 9.8 9.8 0 0 0 12 2.1Zm5.8 15.7a8.2 8.2 0 0 1-9.7 1.6l-.3-.2L4.6 20l.9-3.1-.3-.4a8.2 8.2 0 1 1 12.6 1.3Z"/>
+          </svg>
+        </a>
+        <a href="https://linkedin.com/company/rosterplus" aria-label="LinkedIn" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M20.5 2h-17A1.5 1.5 0 0 0 2 3.5v17A1.5 1.5 0 0 0 3.5 22h17a1.5 1.5 0 0 0 1.5-1.5v-17A1.5 1.5 0 0 0 20.5 2ZM8 19H5V9h3v10ZM6.5 7.7A1.7 1.7 0 1 1 8.2 6a1.7 1.7 0 0 1-1.7 1.7ZM19 19h-3v-5c0-1.4-.5-2-1.4-2-1 0-1.6.7-1.6 2v5h-3V9h3v1.3c.5-.8 1.5-1.4 2.8-1.4 2 0 3.2 1.2 3.2 3.6V19Z"/>
           </svg>
         </a>
         <a href="https://x.com/rosterplus" aria-label="X / Twitter" target="_blank" rel="noopener">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M18.9 3H22l-7.6 8.7L23 21h-7l-5.5-7.1L4.2 21H1.1l8.1-9.3L1 3h7.2l5 6.5L18.9 3Zm-1.2 16h1.8L7.4 5H5.5l12.2 14Z"/>
-          </svg>
-        </a>
-        <a href="https://wa.me/971000000000" aria-label="WhatsApp" target="_blank" rel="noopener">
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M17.5 14.4c-.3-.2-1.7-.9-2-1-.3-.1-.5-.2-.7.2-.2.3-.8 1-.9 1.1-.2.2-.3.2-.6 0-.3-.2-1.2-.5-2.3-1.4-.9-.7-1.5-1.7-1.6-2-.2-.3 0-.5.1-.6.1-.1.3-.4.5-.5.1-.2.2-.3.3-.5.1-.2 0-.3 0-.5 0-.2-.7-1.7-1-2.3-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4 0 1.4 1 2.7 1.2 2.9.1.2 2 3 4.7 4.2.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.7-.7 1.9-1.4.3-.7.3-1.2.2-1.4-.1-.2-.3-.3-.6-.4ZM12 2.1A9.8 9.8 0 0 0 3.5 16.8L2 22l5.4-1.4A9.9 9.9 0 0 0 21.8 12 9.8 9.8 0 0 0 12 2.1Zm5.8 15.7a8.2 8.2 0 0 1-9.7 1.6l-.3-.2L4.6 20l.9-3.1-.3-.4a8.2 8.2 0 1 1 12.6 1.3Z"/>
-          </svg>
-        </a>
-        <a href="https://soundcloud.com/rosterplus" aria-label="SoundCloud" target="_blank" rel="noopener">
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M2 16.5a.5.5 0 0 0 .5.5h.4l.1-.1V14a.4.4 0 0 0-.4-.4.5.5 0 0 0-.5.5l-.1 2.4Zm2 .9V13a.4.4 0 0 0-.4-.4.5.5 0 0 0-.5.5v4.3a.5.5 0 0 0 .5.5.4.4 0 0 0 .4-.4Zm1.5.5V12.5a.4.4 0 0 0-.4-.5.5.5 0 0 0-.5.5v5.4a.5.5 0 0 0 .5.5.4.4 0 0 0 .4-.5Zm1.5 0V12a.5.5 0 0 0-1 0v6c0 .3.2.5.5.5s.5-.2.5-.5Zm1.5 0V11.5a.5.5 0 0 0-1 0v6.4a.5.5 0 0 0 1 0Zm1.5 0V11a.5.5 0 0 0-1 0v6.9a.5.5 0 0 0 1 0Zm12 .1c1.7 0 3-1.3 3-3a3 3 0 0 0-4.5-2.6c.1-2.4-1.8-4.4-4.5-4.4a4.5 4.5 0 0 0-4 2.3l-.1 7.7h10.1Z"/>
-          </svg>
-        </a>
-        <a href="https://spotify.com/user/rosterplus" aria-label="Spotify" target="_blank" rel="noopener">
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm4.6 14.4a.6.6 0 0 1-.9.2c-2.4-1.5-5.4-1.8-9-1a.6.6 0 1 1-.3-1.2c4-.9 7.3-.5 10 1.1a.6.6 0 0 1 .2.9Zm1.2-2.7a.8.8 0 0 1-1 .3c-2.7-1.7-6.9-2.2-10.1-1.2a.8.8 0 0 1-.5-1.5c3.7-1.1 8.3-.6 11.4 1.3a.8.8 0 0 1 .2 1.1Zm.1-2.8c-3.3-2-8.7-2.1-11.8-1.2A1 1 0 1 1 5.5 8c3.6-1 9.6-.9 13.4 1.3a1 1 0 0 1-1 1.7Z"/>
           </svg>
         </a>
       </div>
@@ -663,10 +257,29 @@
           if (statEl) statEl.innerHTML = `${count}<sup>+</sup>`;
         }
 
-        // Featured card: pick first verified artist, fall back to first
-        // overall. The static HTML defaults to ETCH so the first paint
-        // is correct even if Supabase is slow.
-        const featured = artists.find(a => a.verified) || artists[0];
+        // Featured card: rotate through verified artists by ISO week,
+        // so the "Artist of the week" badge stays honest with zero
+        // operator action. Same week → same artist; new week → next
+        // verified artist in alphabetical-by-id order (deterministic
+        // tie-break). Falls back to first artist if no verified ones.
+        //
+        // ISO week number, 1-53, computed from current UTC date so a
+        // viewer in Dubai and one in NYC see the same featured artist
+        // any given calendar week.
+        const isoWeek = (() => {
+          const d = new Date();
+          const target = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+          const dayNum = target.getUTCDay() || 7;
+          target.setUTCDate(target.getUTCDate() + 4 - dayNum);
+          const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
+          return Math.ceil((((target - yearStart) / 86400000) + 1) / 7);
+        })();
+        const verifiedArtists = artists
+          .filter(a => a.verified)
+          .sort((x, y) => String(x.id).localeCompare(String(y.id)));
+        const featured = verifiedArtists.length
+          ? verifiedArtists[isoWeek % verifiedArtists.length]
+          : artists[0];
         if (featured) {
           const name = featured.name || featured.stage_name || 'Artist';
           const genre = featured.genre || 'Artist';

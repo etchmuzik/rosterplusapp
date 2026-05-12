@@ -66,6 +66,35 @@
       <h1 style="margin-bottom:var(--space-xs)">Edit Your Profile</h1>
       <p class="text-tertiary" style="margin-bottom:var(--space-2xl)">This info appears on your public profile and EPK</p>
 
+      <!-- ═══ SHARE-LINK CARD ═══════════════════════════════════════
+           Per-artist Linktree URL the operator can paste into Instagram
+           bios, business cards, etc. Updates when the artist's handle
+           changes (handle is auto-derived from stage_name on save).
+           Hidden by default until populateForm fills it in. -->
+      <div id="share-link-card" style="display:none; margin-bottom:var(--space-2xl); padding:var(--space-lg); background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:var(--radius-lg);">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:var(--space-md); margin-bottom:var(--space-sm); flex-wrap:wrap;">
+          <div>
+            <div style="font-family:var(--font-mono); font-size:0.66rem; text-transform:uppercase; letter-spacing:0.12em; color:var(--text-tertiary);">Your link in bio</div>
+            <div style="font-family:var(--font-display); font-size:1.1rem; font-weight:500; margin-top:2px;">Share this anywhere</div>
+          </div>
+          <a id="share-link-open" href="#" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">
+            Open
+            <span class="js-icon" data-icon="chevronRight" data-size="12"></span>
+          </a>
+        </div>
+        <div style="display:flex; gap:var(--space-sm); align-items:stretch; flex-wrap:wrap;">
+          <input id="share-link-url" type="text" readonly
+                 style="flex:1; min-width:200px; padding:10px 14px; background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:var(--radius-sm); font-family:var(--font-mono); font-size:0.78rem; color:var(--text-secondary);">
+          <button type="button" class="btn btn-primary btn-sm" onclick="copyShareLink()">
+            <span class="js-icon" data-icon="grid" data-size="13"></span>
+            <span id="share-link-copy-label">Copy link</span>
+          </button>
+        </div>
+        <p style="margin-top:var(--space-sm); font-size:0.78rem; color:var(--text-tertiary);">
+          The URL updates if you change your stage name. Old links keep working — they redirect to the new one.
+        </p>
+      </div>
+
       <form id="profile-form" onsubmit="saveProfile(event)">
         <!-- Basic Info -->
         <div class="form-section">
@@ -457,6 +486,36 @@
         preview.innerHTML = `<img src="${_avatarUrl}" alt="Avatar">`;
       } else {
         preview.textContent = (data.stage_name || data.name || 'A').charAt(0).toUpperCase();
+      }
+
+      // Share-link card. Handle was auto-derived in the
+      // 20260512_artists_handle migration; falls back to the artist's
+      // UUID for the rare unclaimed scout row that doesn't have one.
+      const handleForLink = data.handle
+                         || data.id
+                         || '';
+      if (handleForLink) {
+        const url = `https://rosterplus.io/a/${encodeURIComponent(handleForLink)}`;
+        document.getElementById('share-link-url').value = url;
+        document.getElementById('share-link-open').href = url;
+        document.getElementById('share-link-card').style.display = '';
+      }
+    }
+
+    // Copy the share-link URL to clipboard with a visible confirmation.
+    // Falls back to selecting the input if the Clipboard API is blocked
+    // (incognito + http://, some older browsers).
+    async function copyShareLink() {
+      const input = document.getElementById('share-link-url');
+      const label = document.getElementById('share-link-copy-label');
+      try {
+        await navigator.clipboard.writeText(input.value);
+        label.textContent = 'Copied!';
+        UI.toast('Link copied — paste it in your Instagram bio', 'success');
+        setTimeout(() => { label.textContent = 'Copy link'; }, 2400);
+      } catch (e) {
+        input.select();
+        UI.toast('Press Cmd/Ctrl-C to copy', 'info');
       }
     }
 

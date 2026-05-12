@@ -1483,6 +1483,38 @@ const DB = {
     }
   },
 
+  // Resolve an artist by their Linktree handle (case-insensitive) OR by
+  // UUID, returning the same enriched shape used by the EPK + Linktree
+  // surfaces. UUID fallback: if `slug` matches the UUID regex, we look
+  // up by id instead — lets /a/<uuid> work as a stable URL even for
+  // artists who haven't picked a handle yet.
+  //
+  // Returns the raw artist row (with profiles joined) — callers
+  // (a.html, edge fn) pull whichever fields they need.
+  async getArtistByHandle(slug) {
+    if (DEMO_MODE) return { success: false, error: 'Offline: Supabase unavailable' };
+    if (!slug || typeof slug !== 'string') {
+      return { success: false, error: 'No handle' };
+    }
+    const trimmed = slug.trim().toLowerCase();
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed);
+    try {
+      const query = _sb
+        .from('artists')
+        .select(`*, profiles(display_name, avatar_url, city, bio, phone, email)`)
+        .is('deleted_at', null);
+      const filtered = isUuid
+        ? query.eq('id', trimmed)
+        : query.ilike('handle', trimmed);
+      const { data, error } = await filtered.maybeSingle();
+      if (error) return { success: false, error: error.message };
+      if (!data) return { success: false, error: 'Artist not found' };
+      return { success: true, data };
+    } catch (e) {
+      return { success: false, error: String(e) };
+    }
+  },
+
   // ── Bookings ──
   // Promoter-side booking list. By default excludes rows the promoter has
   // soft-hidden; pass { includeHidden: true } to show everything (for the

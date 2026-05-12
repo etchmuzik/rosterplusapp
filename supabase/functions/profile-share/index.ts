@@ -64,29 +64,30 @@ function page(opts: {
 
 Deno.serve(async (req) => {
   const url = new URL(req.url);
-  // Accept `id` (canonical) or `artist` (booking.html's param name).
-  // .htaccess passes the original query string through verbatim, so
-  // whichever param the source URL used arrives here intact.
-  const id = url.searchParams.get('id')
-          || url.searchParams.get('artist')
-          || '';
-  // `path` query selects which canonical URL the rendered preview
-  // refers back to. Accept 'epk' or 'booking'; everything else
-  // (default 'profile') routes to /profile.html. Booking pages use
-  // ?artist= instead of ?id= in their canonical, so we preserve that
-  // convention here too — keeps the post-unfurl click landing on the
-  // exact URL the artist/promoter actually shared.
-  const pathParam = (url.searchParams.get('path') || 'profile').toLowerCase();
-  const targetPath = pathParam === 'epk'
-    ? 'epk.html'
-    : pathParam === 'booking'
-      ? 'booking.html'
-      : 'profile.html';
-  // booking.html uses ?artist=, the others use ?id=.
-  const canonicalParam = pathParam === 'booking' ? 'artist' : 'id';
+  // Inputs — three param shapes are accepted:
+  //   ?id=<uuid>          (profile.html, epk.html)
+  //   ?artist=<uuid>      (booking.html legacy)
+  //   ?handle=<kebab>     (per-artist Linktree at /a/<handle>)
+  // .htaccess passes the original query string through verbatim,
+  // so whichever shape the source URL used arrives here intact.
+  const idParam     = url.searchParams.get('id') || '';
+  const artistParam = url.searchParams.get('artist') || '';
+  const handleParam = url.searchParams.get('handle') || '';
 
-  // Fallback: no id → generic
-  if (!id) {
+  // `path` query selects which canonical URL the rendered preview
+  // refers back to. Recognised values:
+  //   'profile'  → /profile.html?id=<uuid>          (default)
+  //   'epk'      → /epk.html?id=<uuid>
+  //   'booking'  → /booking.html?artist=<uuid>
+  //   'link'     → /a/<handle>                       (per-artist Linktree)
+  // Anything else falls through to 'profile'.
+  const pathParam = (url.searchParams.get('path') || 'profile').toLowerCase();
+  const isLink    = pathParam === 'link';
+  const isEpk     = pathParam === 'epk';
+  const isBooking = pathParam === 'booking';
+
+  // Fallback: nothing to look up by → generic
+  if (!idParam && !artistParam && !handleParam) {
     return new Response(page({
       title: 'Artist profile — ROSTR+ GCC',
       description: 'Browse verified GCC artists on ROSTR+.',
@@ -96,14 +97,43 @@ Deno.serve(async (req) => {
     }), { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=60' } });
   }
 
+  // Resolve artist row. Lookup column depends on which param arrived:
+  // handle is case-insensitive (matches DB.getArtistByHandle), id/
+  // artist are exact UUID matches. We always filter out soft-deleted
+  // rows so unfurl never returns ghosts.
   const sb = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistSession: false } });
-  const { data, error } = await sb
+  let query = sb
     .from('artists')
-    .select('id, stage_name, genre, cities_active, verified, profiles(display_name, avatar_url, bio, city)')
-    .eq('id', id)
-    .maybeSingle();
+    .select('id, handle, stage_name, genre, cities_active, verified, profiles(display_name, avatar_url, bio, city)')
+    .is('deleted_at', null);
 
-  const redirectTo = `${SITE_URL}/${targetPath}?${canonicalParam}=${encodeURIComponent(id)}`;
+  if (handleParam) {
+    query = query.ilike('handle', handleParam);
+  } else {
+    query = query.eq('id', idParam || artistParam);
+  }
+  const { data, error } = await query.maybeSingle();
+
+  // Compose canonical/redirect URL based on path.
+  let redirectTo = `${SITE_URL}/directory.html`;
+  if (data) {
+    if (isLink) {
+      // Prefer handle in the canonical; fall back to UUID if the row
+      // doesn't have one yet (unclaimed rows pre-handle migration).
+      const slug = data.handle || data.id;
+      redirectTo = `${SITE_URL}/a/${encodeURIComponent(slug)}`;
+    } else if (isEpk) {
+      redirectTo = `${SITE_URL}/epk.html?id=${encodeURIComponent(data.id)}`;
+    } else if (isBooking) {
+      redirectTo = `${SITE_URL}/booking.html?artist=${encodeURIComponent(data.id)}`;
+    } else {
+      redirectTo = `${SITE_URL}/profile.html?id=${encodeURIComponent(data.id)}`;
+    }
+  } else if (handleParam) {
+    // Handle didn't resolve — point the not-found preview at the
+    // directory rather than a broken /a/<bad-handle> URL.
+    redirectTo = `${SITE_URL}/directory.html`;
+  }
 
   if (error || !data) {
     return new Response(page({
@@ -121,11 +151,14 @@ Deno.serve(async (req) => {
   const bio   = String(data.profiles?.bio || '').trim();
   const img   = data.profiles?.avatar_url || `${SITE_URL}/icons/og-default.png`;
 
-  // Booking pages get a "Book {name}" prefix so the shared link reads
-  // as an invitation to book, not just a profile view.
-  const title = pathParam === 'booking'
+  // Title prefix per path:
+  //   booking → "Book {name}" (reads as an invitation)
+  //   link    → "{name} · @{handle}" (Linktree-style intro)
+  //   default → "{name}"
+  const handleSuffix = (isLink && data?.handle) ? ` · @${data.handle}` : '';
+  const title = isBooking
     ? `Book ${name} — ROSTR+ GCC`
-    : `${name} — ROSTR+ GCC`;
+    : `${name}${handleSuffix} — ROSTR+ GCC`;
   // Prefer the real bio. Fall back to a generated line. Truncate at 160
   // chars (standard meta-description convention).
   const descFallback = [genre, city].filter(Boolean).join(' — ') + (data.verified ? ' · Verified on ROSTR+.' : ' · Book on ROSTR+.');

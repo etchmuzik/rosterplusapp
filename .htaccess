@@ -10,6 +10,30 @@ RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 # stays at /link — cleaner and more memorable.
 RewriteRule ^link/?$ /link.html [L]
 
+# ─── Per-artist Linktree: rosterplus.io/a/<handle> → /a.html ──────
+# Every verified artist gets their own Linktree at /a/<handle>. The
+# handle column (lower kebab-case derivation of stage_name) was added
+# in 20260512_artists_handle.sql.
+#
+# Two-stage rewrite:
+#   1. Link-preview bots (WhatsApp/Slack/etc.) hit a 302-redirect to
+#      the profile-share edge function with path=link, so the OG
+#      preview contains the artist's actual name + photo + bio.
+#      That rule fires FIRST (top-down) because mod_rewrite
+#      processes rules in order; [L] on the matching bot rule stops
+#      further processing.
+#   2. Everyone else gets an internal rewrite to /a.html?h=<handle>.
+#      Browser bar stays at the pretty URL.
+<IfModule mod_rewrite.c>
+  # Stage 1 — bot redirect. UA cond gates whether this fires.
+  RewriteCond %{HTTP_USER_AGENT} (WhatsApp|facebookexternalhit|Twitterbot|Slackbot|TelegramBot|Discordbot|LinkedInBot|Embedly|Pinterest|vkShare|redditbot|Skype) [NC]
+  RewriteRule ^a/([a-z0-9][a-z0-9\-]{1,31})/?$ https://vgjmfpryobsuboukbemr.supabase.co/functions/v1/profile-share?handle=$1&path=link [R=302,L,NE]
+
+  # Stage 2 — user rewrite. Plain internal forward; query string
+  # preserved via [QSA] so any utm / referrer params survive.
+  RewriteRule ^a/([a-z0-9][a-z0-9\-]{1,31})/?$ /a.html?h=$1 [L,QSA]
+</IfModule>
+
 # ─── Link-preview bots get pre-rendered profile / EPK pages ────────
 #
 # Why this exists: the app is static HTML + client-side JS. When

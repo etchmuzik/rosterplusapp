@@ -3621,3 +3621,428 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   flex-direction: column;
   gap: var(--space-lg);
 }
+
+/* ───────────────────────────────────────────────────────────────
+   LINKTREE SURFACE (shared)
+   Used by:
+   - /link.html       — ROSTR+ brand "link in bio" page
+   - /a.html          — per-artist Linktree (artist's own bio page)
+   Both pages render a single-column phone-shaped surface that reads
+   at-a-glance from a mobile browser. Tokens come from above; only
+   the layout primitives live here.
+   Adapted from the "ROSTR Linktree — Variant A · Glass dark"
+   design package (2026-05-12, ~/Downloads/roster/lintree/).
+   ─────────────────────────────────────────────────────────────── */
+.lt-page-wrap {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--space-2xl) var(--space-md);
+  position: relative;
+  overflow: hidden;
+}
+.lt-page-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255,255,255,0.06), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 50% 100%, rgba(255,255,255,0.03), transparent);
+  pointer-events: none;
+}
+.lt-inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  align-items: center;
+  padding-top: var(--space-2xl);
+}
+
+/* Brand mark — square tile with gradient + accent dot */
+.lt-logo {
+  width: 80px; height: 80px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #1a1d24 0%, #0c0d10 100%);
+  border: 1px solid var(--border-medium);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
+  position: relative;
+}
+.lt-logo-mark {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 32px;
+  letter-spacing: -0.04em;
+  background: linear-gradient(180deg, var(--text-primary), var(--text-secondary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.lt-logo-plus {
+  position: absolute; top: 12px; right: 12px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--status-confirmed);
+  box-shadow: 0 0 8px rgba(142,230,181,0.6);
+}
+/* Per-artist (a.html) variant: an actual photo fills the tile. */
+.lt-logo.lt-logo-photo { background: var(--bg-card); padding: 0; overflow: hidden; }
+.lt-logo-photo-img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+/* Handle + tagline */
+.lt-handle {
+  font-family: var(--font-display);
+  font-size: 1.4rem; font-weight: 500;
+  letter-spacing: -0.01em;
+  display: flex; align-items: center; gap: 6px;
+}
+.lt-handle-verified {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--text-primary);
+  color: var(--bg-base);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700;
+}
+.lt-tagline {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-align: center;
+  max-width: 280px;
+  line-height: 1.5;
+}
+.lt-tagline em { font-style: italic; color: var(--text-primary); }
+
+/* Live + est meta line */
+.lt-meta-line {
+  display: flex; gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-tertiary);
+  margin-top: -2px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.lt-meta-live {
+  display: inline-flex; align-items: center; gap: 5px;
+  color: var(--status-confirmed);
+}
+.lt-meta-live-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--status-confirmed);
+  box-shadow: 0 0 6px var(--status-confirmed);
+  animation: lt-pulse 2s var(--ease-out) infinite;
+}
+@keyframes lt-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+.lt-meta-sep { opacity: 0.5; }
+
+/* Featured artist card (link.html uses for the artist of the week,
+   a.html re-uses for the artist's own "hero" card). */
+.lt-featured {
+  width: 100%;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: transform var(--duration-base) var(--ease-out),
+              border-color var(--duration-base) var(--ease-out);
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+.lt-featured:hover { border-color: var(--border-medium); }
+.lt-featured:active { transform: scale(0.985); }
+.lt-featured-vis {
+  position: relative;
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  background: linear-gradient(135deg, #2a2126 0%, #0c0d10 100%);
+}
+.lt-featured-vis.lt-featured-vis-portrait { aspect-ratio: 4 / 5; }
+.lt-featured-vis::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(circle at 25% 45%, rgba(255,255,255,0.08), transparent 50%),
+    radial-gradient(circle at 75% 70%, rgba(255,255,255,0.05), transparent 45%);
+}
+.lt-featured-vis::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 30%, rgba(8,9,11,0.92));
+}
+.lt-featured-photo {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  z-index: 1;
+}
+.lt-featured-badge {
+  position: absolute; top: 10px; left: 10px;
+  z-index: 2;
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(8,9,11,0.7);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-medium);
+  color: var(--text-secondary);
+}
+.lt-featured-cap {
+  position: absolute;
+  left: 14px; right: 14px; bottom: 12px;
+  z-index: 2;
+}
+.lt-featured-pre {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  text-transform: uppercase; letter-spacing: 0.14em;
+  color: var(--text-secondary);
+  margin-bottom: 3px;
+}
+.lt-featured-name {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  color: var(--text-primary);
+}
+.lt-featured-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border-subtle);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--text-tertiary);
+}
+.lt-featured-foot-go {
+  color: var(--text-primary);
+  display: inline-flex; align-items: center; gap: 4px;
+}
+
+/* Link buttons — vertical stack */
+.lt-links { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.lt-link {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: transform var(--duration-base) var(--ease-out),
+              background var(--duration-base) var(--ease-out),
+              border-color var(--duration-base) var(--ease-out);
+  position: relative;
+}
+.lt-link:active { transform: scale(0.985); }
+.lt-link:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: var(--border-medium);
+}
+.lt-link.lt-link-primary {
+  background: var(--text-primary);
+  color: var(--bg-base);
+  border-color: transparent;
+}
+.lt-link.lt-link-primary:hover { background: var(--text-primary); }
+.lt-link-ico {
+  width: 32px; height: 32px;
+  border-radius: 9px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border-subtle);
+}
+.lt-link.lt-link-primary .lt-link-ico {
+  background: rgba(8,9,11,0.08);
+  border-color: rgba(8,9,11,0.12);
+}
+.lt-link-body { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.lt-link-title {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  line-height: 1.15;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.lt-link-sub {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-tertiary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.lt-link.lt-link-primary .lt-link-sub { color: rgba(8,9,11,0.55); }
+.lt-link-arrow {
+  width: 20px; height: 20px;
+  flex-shrink: 0;
+  opacity: 0.4;
+  display: flex; align-items: center; justify-content: center;
+}
+.lt-link.lt-link-primary .lt-link-arrow { opacity: 0.6; }
+.lt-link-tag {
+  position: absolute;
+  top: -7px; right: 14px;
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  text-transform: uppercase; letter-spacing: 0.14em;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(142,230,181,0.18);
+  color: var(--status-confirmed);
+  border: 1px solid rgba(142,230,181,0.3);
+}
+.lt-link-tag.lt-link-tag-amber {
+  background: rgba(233,207,146,0.12);
+  color: var(--status-pending);
+  border-color: rgba(233,207,146,0.3);
+}
+
+/* Divider with mono label */
+.lt-divider {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--text-tertiary);
+  margin-top: 6px;
+}
+.lt-divider::before, .lt-divider::after {
+  content: '';
+  flex: 1; height: 1px;
+  background: var(--border-subtle);
+}
+
+/* Stats strip */
+.lt-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: 100%;
+}
+.lt-stat {
+  padding: 12px 10px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border-subtle);
+  text-align: center;
+}
+.lt-stat-val {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.lt-stat-val sup {
+  font-size: 0.55em;
+  color: var(--text-tertiary);
+  font-weight: 400;
+  vertical-align: top;
+  margin-left: 2px;
+  font-family: var(--font-mono);
+  font-style: normal;
+}
+.lt-stat-lbl {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+}
+
+/* Cities pill strip (and the same shape works for genre tags on a.html) */
+.lt-cities {
+  width: 100%;
+  display: flex; flex-wrap: wrap; gap: 4px;
+  justify-content: center;
+  margin-top: 2px;
+}
+.lt-city {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border-medium);
+  color: var(--text-secondary);
+}
+
+/* Social row */
+.lt-social {
+  display: flex; gap: 8px;
+  width: 100%;
+}
+.lt-social a {
+  flex: 1;
+  aspect-ratio: 1.5 / 1;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 11px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  transition: all var(--duration-base) var(--ease-out);
+  text-decoration: none;
+}
+.lt-social a:hover {
+  color: var(--text-primary);
+  background: rgba(255,255,255,0.06);
+  border-color: var(--border-medium);
+}
+.lt-social svg { width: 18px; height: 18px; }
+
+/* Media-embed wrap — used by a.html for SoundCloud / Spotify /
+   YouTube iframes returned by UI.mediaEmbed(). */
+.lt-media-embed {
+  width: 100%;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+}
+.lt-media-embed iframe {
+  display: block;
+  width: 100%;
+  border: 0;
+}
+
+/* Footer */
+.lt-footer {
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--text-tertiary);
+  text-align: center;
+  line-height: 1.7;
+  padding-bottom: var(--space-xl);
+}
+.lt-footer a { color: var(--text-secondary); text-decoration: none; }
+.lt-footer a:hover { color: var(--text-primary); }
+.lt-footer .lt-footer-sep { opacity: 0.5; margin: 0 5px; }

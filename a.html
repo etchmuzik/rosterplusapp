@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en" data-accent="mono">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#08090b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ROSTR+">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32.png">
+
+  <!-- Title + OG default to a generic frame; the JS hydration step
+       below overrides every meta tag with the specific artist's
+       data once their row resolves. The bot-redirect rule in
+       .htaccess sends link-preview crawlers to the profile-share
+       edge function instead, which renders the per-artist meta
+       server-side. So both JS-running and JS-skipping clients see
+       artist-specific previews. -->
+  <title>ROSTR+ · Artist profile</title>
+  <meta name="description" content="Book this artist on ROSTR+ — the artist booking platform for the Gulf.">
+
+  <meta property="og:type" content="profile">
+  <meta property="og:site_name" content="ROSTR+ GCC">
+  <meta property="og:title" content="ROSTR+ · Artist profile">
+  <meta property="og:description" content="Book this artist on ROSTR+ — the artist booking platform for the Gulf.">
+  <meta property="og:image" content="https://rosterplus.io/icons/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:url" content="https://rosterplus.io/a/">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="ROSTR+ · Artist profile">
+  <meta name="twitter:description" content="Book this artist on ROSTR+.">
+  <meta name="twitter:image" content="https://rosterplus.io/icons/og-default.png">
+
+  <link rel="canonical" href="https://rosterplus.io/a/">
+  <script type="application/ld+json" id="lt-ld-json"></script>
+
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://vgjmfpryobsuboukbemr.supabase.co" crossorigin>
+
+  <link rel="stylesheet" href="assets/css/system.css?v=2521872">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="assets/js/error-logger.js?v=2521872" defer></script>
+  <script src="assets/js/app.js?v=2521872" defer></script>
+
+  <!-- Linktree styles live in system.css under "LINKTREE SURFACE
+       (shared)", same as /link.html. Only a tiny body bg override
+       stays inline so first paint is dark even before the stylesheet
+       resolves. -->
+  <style>body { background: var(--bg-base); }</style>
+</head>
+<body>
+  <a id="main-content" tabindex="-1" class="sr-only">Main content</a>
+
+  <main class="lt-page-wrap">
+    <div class="lt-inner" id="lt-root">
+      <!-- Initial loading skeleton. JS hydration replaces this whole
+           block with the personalized layout once DB.getArtistByHandle
+           resolves. If hydration fails, the empty state below stays
+           visible. -->
+      <div class="lt-logo">
+        <span class="lt-logo-mark">R</span>
+        <span class="lt-logo-plus" aria-hidden="true"></span>
+      </div>
+      <div class="lt-handle">Loading…</div>
+      <p class="lt-tagline" style="opacity:0.5">Resolving artist profile.</p>
+    </div>
+  </main>
+
+  <script>
+    // Per-artist Linktree page (rosterplus.io/a/<handle>).
+    //
+    // URL shapes accepted:
+    //   /a.html?h=<handle-or-uuid>     ← direct (what the .htaccess
+    //                                    rewrite from /a/<handle>
+    //                                    produces internally)
+    //   /a/<handle-or-uuid>            ← short URL, handled by
+    //                                    .htaccess RewriteRule
+    //
+    // The hydration script reads `h` from the query string, falls
+    // back to parsing it from the pathname for browsers that
+    // somehow saw the unrewritten /a/<handle> path (and to make
+    // local dev with python http.server work without .htaccess).
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (typeof Auth !== 'undefined') await Auth.ready();
+
+      // 1. Resolve the handle from URL.
+      const params = new URLSearchParams(window.location.search);
+      let handle = params.get('h') || params.get('handle') || '';
+      if (!handle) {
+        // Fallback: extract from /a/<handle> if the rewrite was bypassed.
+        const m = window.location.pathname.match(/^\/a\/([^/]+)/);
+        if (m) handle = decodeURIComponent(m[1]);
+      }
+
+      const root = document.getElementById('lt-root');
+
+      if (!handle) {
+        renderNotFound(root, 'No artist handle provided.');
+        return;
+      }
+
+      // 2. Fetch the artist row. DB.getArtistByHandle accepts handle
+      //    OR uuid; soft-deleted rows are filtered out at the DB layer.
+      const res = await DB.getArtistByHandle(handle);
+      if (!res.success || !res.data) {
+        renderNotFound(root, 'That artist isn’t on ROSTR+ (yet).');
+        return;
+      }
+
+      // 3. Render personalized surface.
+      renderArtistLinktree(res.data, root);
+      if (typeof hydrateIcons === 'function') hydrateIcons();
+    });
+
+    // ── Renderers ─────────────────────────────────────────────────
+
+    function renderNotFound(root, body) {
+      // Soft empty state — same brand mark, just no artist below.
+      // Direct visitors back to the directory.
+      root.innerHTML = `
+        <div class="lt-logo">
+          <span class="lt-logo-mark">R</span>
+          <span class="lt-logo-plus" aria-hidden="true"></span>
+        </div>
+        <div class="lt-handle">Not found</div>
+        <p class="lt-tagline">${esc(body)}</p>
+        <a class="lt-link lt-link-primary" href="/directory.html" style="margin-top:var(--space-md)">
+          <span class="lt-link-ico">
+            <span class="js-icon" data-icon="grid" data-size="16"></span>
+          </span>
+          <span class="lt-link-body">
+            <span class="lt-link-title">Browse the roster</span>
+            <span class="lt-link-sub">All verified ROSTR+ artists</span>
+          </span>
+          <span class="lt-link-arrow">
+            <span class="js-icon" data-icon="chevronRight" data-size="14"></span>
+          </span>
+        </a>
+      `;
+      if (typeof hydrateIcons === 'function') hydrateIcons();
+    }
+
+    function renderArtistLinktree(a, root) {
+      // Resolve display fields with the same fallback chain the EPK
+      // + directory use, so the layout never shows raw nulls.
+      const stageName = a.stage_name || a.profiles?.display_name || 'Artist';
+      const handle = a.handle || stageName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const verified = !!a.verified;
+      const genre = Array.isArray(a.genre) ? a.genre.join(' · ') : (a.genre || '');
+      const city = (Array.isArray(a.cities_active) ? a.cities_active[0] : '') || a.profiles?.city || '';
+      const bio = (a.profiles?.bio || '').trim();
+      const avatarUrl = a.profiles?.avatar_url
+                    || `/assets/images/artists/${slugify(stageName)}.jpg`;
+      const social = a.social_links || {};
+
+      // Media: pick the first non-empty SC/Spotify/YouTube link.
+      const mediaUrl = social.soundcloud || social.spotify || social.youtube;
+      const mediaHtml = mediaUrl ? UI.mediaEmbed(mediaUrl) : '';
+
+      // Gallery photos from epk_gallery, if any. Up to 4 to keep the
+      // page short.
+      const gallery = Array.isArray(a.epk_gallery) ? a.epk_gallery.slice(0, 4) : [];
+
+      // Social row. We render only the channels the artist has filled
+      // in — no placeholder buttons. Channel order matches /link.html.
+      const socialRow = renderSocialRow(social);
+
+      // Update <head> meta. Crawlers hitting /a/ already get pre-
+      // rendered HTML via the .htaccess bot-rewrite + profile-share
+      // edge function; this updateMeta covers JS-running clients
+      // (browsers, Slack-as-logged-in-user, etc.) so tab titles,
+      // shared in-app links, and JSON-LD all carry the right artist.
+      updateMetaForArtist({ stageName, handle, bio, city, genre, avatarUrl, social, verified });
+
+      root.innerHTML = `
+        <!-- Artist mark — their avatar in the tile slot. Falls back
+             to the R+ default mark if no avatar resolves. -->
+        <div class="lt-logo lt-logo-photo">
+          <img class="lt-logo-photo-img" src="${esc(avatarUrl)}" alt="${esc(stageName)}"
+               loading="eager" decoding="async"
+               onerror="this.parentElement.innerHTML='<span class=&quot;lt-logo-mark&quot;>${esc(stageName.charAt(0).toUpperCase())}</span><span class=&quot;lt-logo-plus&quot;></span>'">
+        </div>
+
+        <div class="lt-handle">
+          ${esc(stageName)}
+          ${verified ? '<span class="lt-handle-verified" aria-label="Verified">✓</span>' : ''}
+        </div>
+
+        ${bio
+          ? `<p class="lt-tagline">${esc(bio)}</p>`
+          : `<p class="lt-tagline"><em>${esc(genre || 'Live artist')}</em>${city ? ' · ' + esc(city) : ''}</p>`
+        }
+
+        ${(genre || city) ? `
+          <div class="lt-meta-line">
+            ${city ? `<span>${esc(city)}</span>` : ''}
+            ${(genre && city) ? '<span class="lt-meta-sep" aria-hidden="true">·</span>' : ''}
+            ${genre ? `<span>${esc(genre)}</span>` : ''}
+          </div>
+        ` : ''}
+
+        <!-- Primary booking CTA — the page's reason for existing. -->
+        <div class="lt-links">
+          <a class="lt-link lt-link-primary" href="/booking.html?artist=${encodeURIComponent(a.id)}">
+            <span class="lt-link-ico">
+              <span class="js-icon" data-icon="send" data-size="16"></span>
+            </span>
+            <span class="lt-link-body">
+              <span class="lt-link-title">Book ${esc(stageName)}</span>
+              <span class="lt-link-sub">Send a request · free</span>
+            </span>
+            <span class="lt-link-arrow">
+              <span class="js-icon" data-icon="chevronRight" data-size="14"></span>
+            </span>
+          </a>
+
+          <a class="lt-link" href="/epk.html?id=${encodeURIComponent(a.id)}">
+            <span class="lt-link-ico">
+              <span class="js-icon" data-icon="fileText" data-size="16"></span>
+            </span>
+            <span class="lt-link-body">
+              <span class="lt-link-title">View full EPK</span>
+              <span class="lt-link-sub">Bio · rider · press · gallery</span>
+            </span>
+            <span class="lt-link-arrow">
+              <span class="js-icon" data-icon="chevronRight" data-size="14"></span>
+            </span>
+          </a>
+
+          ${(a.profiles?.phone || social.whatsapp) ? `
+            <a class="lt-link" href="${esc(buildWhatsAppUrl(a.profiles?.phone || social.whatsapp, stageName))}" target="_blank" rel="noopener">
+              <span class="lt-link-ico" style="color:#25d366">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" aria-hidden="true">
+                  <path d="M17.5 14.4c-.3-.2-1.7-.9-2-1-.3-.1-.5-.2-.7.2-.2.3-.8 1-.9 1.1-.2.2-.3.2-.6 0-.3-.2-1.2-.5-2.3-1.4-.9-.7-1.5-1.7-1.6-2-.2-.3 0-.5.1-.6.1-.1.3-.4.5-.5.1-.2.2-.3.3-.5.1-.2 0-.3 0-.5 0-.2-.7-1.7-1-2.3-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4 0 1.4 1 2.7 1.2 2.9.1.2 2 3 4.7 4.2.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.7-.7 1.9-1.4.3-.7.3-1.2.2-1.4-.1-.2-.3-.3-.6-.4Z"/>
+                </svg>
+              </span>
+              <span class="lt-link-body">
+                <span class="lt-link-title">WhatsApp directly</span>
+                <span class="lt-link-sub">Faster reply · pre-filled message</span>
+              </span>
+              <span class="lt-link-arrow">
+                <span class="js-icon" data-icon="chevronRight" data-size="14"></span>
+              </span>
+            </a>
+          ` : ''}
+        </div>
+
+        ${mediaHtml ? `
+          <div class="lt-divider"><span>Listen</span></div>
+          <div class="lt-media-embed">${mediaHtml}</div>
+        ` : ''}
+
+        ${gallery.length ? `
+          <div class="lt-divider"><span>Gallery</span></div>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;width:100%">
+            ${gallery.map(url => `
+              <img src="${esc(url)}" alt="" loading="lazy" decoding="async"
+                   onerror="this.style.display='none'"
+                   style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px;border:1px solid var(--border-subtle)">
+            `).join('')}
+          </div>
+        ` : ''}
+
+        ${socialRow ? `
+          <div class="lt-divider"><span>Follow</span></div>
+          ${socialRow}
+        ` : ''}
+
+        <div class="lt-footer">
+          Powered by <a href="/">ROSTR+ GCC</a>
+          <span class="lt-footer-sep" aria-hidden="true">·</span>
+          <a href="/auth.html?role=artist">Get your own link</a><br>
+          rosterplus.io / a / ${esc(handle)}
+        </div>
+      `;
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────
+
+    function slugify(s) {
+      return (s || '').toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+    }
+
+    function buildWhatsAppUrl(phoneOrUrl, stageName) {
+      // Accept either a wa.me URL OR a bare phone number; normalize
+      // to wa.me with a pre-filled prompt.
+      let s = String(phoneOrUrl || '').trim();
+      if (!s) return '#';
+      // Strip everything that isn't a digit — wa.me wants digits only.
+      let digits = s.replace(/[^\d]/g, '');
+      // If it looks like a full URL, extract the trailing digits.
+      const m = s.match(/wa\.me\/(\+?\d+)/i);
+      if (m) digits = m[1].replace(/\D/g, '');
+      if (!digits) return '#';
+      const msg = encodeURIComponent(`Hi ${stageName}, I found you on ROSTR+ and would like to book you for an event.`);
+      return `https://wa.me/${digits}?text=${msg}`;
+    }
+
+    function renderSocialRow(social) {
+      // Each entry: [key, svg, urlBuilder]. We render only entries
+      // with a truthy URL.
+      const entries = [
+        ['instagram',
+         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/></svg>',
+         social.instagram],
+        ['tiktok',
+         '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19.6 7.8a7 7 0 0 1-4.5-1.6v9.4a6 6 0 1 1-6-6c.3 0 .6 0 .9.1v3a3 3 0 1 0 2.2 2.9V2h3a4 4 0 0 0 4 4v1.8Z"/></svg>',
+         social.tiktok],
+        ['spotify',
+         '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm4.6 14.4a.6.6 0 0 1-.9.2c-2.4-1.5-5.4-1.8-9-1a.6.6 0 1 1-.3-1.2c4-.9 7.3-.5 10 1.1a.6.6 0 0 1 .2.9Zm1.2-2.7a.8.8 0 0 1-1 .3c-2.7-1.7-6.9-2.2-10.1-1.2a.8.8 0 0 1-.5-1.5c3.7-1.1 8.3-.6 11.4 1.3a.8.8 0 0 1 .2 1.1Zm.1-2.8c-3.3-2-8.7-2.1-11.8-1.2A1 1 0 1 1 5.5 8c3.6-1 9.6-.9 13.4 1.3a1 1 0 0 1-1 1.7Z"/></svg>',
+         social.spotify],
+        ['soundcloud',
+         '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2 16.5a.5.5 0 0 0 .5.5h.4l.1-.1V14a.4.4 0 0 0-.4-.4.5.5 0 0 0-.5.5l-.1 2.4Zm2 .9V13a.4.4 0 0 0-.4-.4.5.5 0 0 0-.5.5v4.3a.5.5 0 0 0 .5.5.4.4 0 0 0 .4-.4Zm1.5.5V12.5a.4.4 0 0 0-.4-.5.5.5 0 0 0-.5.5v5.4a.5.5 0 0 0 .5.5.4.4 0 0 0 .4-.5Zm1.5 0V12a.5.5 0 0 0-1 0v6c0 .3.2.5.5.5s.5-.2.5-.5Zm1.5 0V11.5a.5.5 0 0 0-1 0v6.4a.5.5 0 0 0 1 0Zm1.5 0V11a.5.5 0 0 0-1 0v6.9a.5.5 0 0 0 1 0Zm12 .1c1.7 0 3-1.3 3-3a3 3 0 0 0-4.5-2.6c.1-2.4-1.8-4.4-4.5-4.4a4.5 4.5 0 0 0-4 2.3l-.1 7.7h10.1Z"/></svg>',
+         social.soundcloud],
+        ['youtube',
+         '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23 12s0-3.7-.5-5.5a2.8 2.8 0 0 0-2-2C18.7 4 12 4 12 4s-6.7 0-8.5.5a2.8 2.8 0 0 0-2 2C1 8.3 1 12 1 12s0 3.7.5 5.5a2.8 2.8 0 0 0 2 2C5.3 20 12 20 12 20s6.7 0 8.5-.5a2.8 2.8 0 0 0 2-2C23 15.7 23 12 23 12ZM10 15.5v-7l6 3.5-6 3.5Z"/></svg>',
+         social.youtube],
+        ['x',
+         '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.9 3H22l-7.6 8.7L23 21h-7l-5.5-7.1L4.2 21H1.1l8.1-9.3L1 3h7.2l5 6.5L18.9 3Zm-1.2 16h1.8L7.4 5H5.5l12.2 14Z"/></svg>',
+         social.x || social.twitter],
+      ];
+      const present = entries.filter(([, , url]) => typeof url === 'string' && url.startsWith('http'));
+      if (!present.length) return '';
+      return `<div class="lt-social">${
+        present.map(([key, svg, url]) =>
+          `<a href="${esc(url)}" aria-label="${esc(key)}" target="_blank" rel="noopener">${svg}</a>`
+        ).join('')
+      }</div>`;
+    }
+
+    function updateMetaForArtist({ stageName, handle, bio, city, genre, avatarUrl, social, verified }) {
+      const url = `https://rosterplus.io/a/${encodeURIComponent(handle)}`;
+      const title = `${stageName} — ROSTR+ GCC`;
+      const desc = bio && bio.length > 5
+        ? (bio.length > 160 ? bio.slice(0, 157) + '…' : bio)
+        : ([genre, city].filter(Boolean).join(' — ') + ' · Book on ROSTR+.').trim();
+      const img = avatarUrl && avatarUrl.startsWith('http')
+        ? avatarUrl
+        : 'https://rosterplus.io/icons/og-default.png';
+
+      document.title = title;
+      const setMeta = (sel, val) => { const el = document.querySelector(sel); if (el) el.setAttribute('content', val); };
+      setMeta('meta[name="description"]',         desc);
+      setMeta('meta[property="og:title"]',        title);
+      setMeta('meta[property="og:description"]',  desc);
+      setMeta('meta[property="og:image"]',        img);
+      setMeta('meta[property="og:url"]',          url);
+      setMeta('meta[name="twitter:title"]',       title);
+      setMeta('meta[name="twitter:description"]', desc);
+      setMeta('meta[name="twitter:image"]',       img);
+      const can = document.querySelector('link[rel="canonical"]');
+      if (can) can.setAttribute('href', url);
+
+      // JSON-LD — same MusicGroup schema profile.html uses, so a
+      // shared link's rich-result snippet looks identical regardless
+      // of which surface (profile / epk / a) was shared.
+      const sameAs = ['instagram','soundcloud','spotify','youtube','tiktok','x','twitter']
+        .map(k => social[k])
+        .filter(v => typeof v === 'string' && v.startsWith('http'));
+      const ld = {
+        '@context': 'https://schema.org',
+        '@type':    'MusicGroup',
+        name:        stageName,
+        description: desc,
+        image:       img,
+        url,
+        genre:       genre ? [genre] : undefined,
+        address:     city ? { '@type': 'PostalAddress', addressLocality: city } : undefined,
+        sameAs:      sameAs.length ? sameAs : undefined,
+      };
+      const ldEl = document.getElementById('lt-ld-json');
+      if (ldEl) ldEl.textContent = JSON.stringify(ld);
+    }
+  </script>
+  <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
+</body>
+</html>
