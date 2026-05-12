@@ -865,11 +865,31 @@
       const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
       if (reduce.matches) return;
 
-      // Wait for enough metadata to know the duration. Without this
-      // `duration` is NaN and the first frames get clobbered.
-      function ready() {
-        if (!isFinite(video.duration) || video.duration === 0) return false;
-        return true;
+      // Known duration of the encoded clip — fallback when the browser
+      // hasn't reported `video.duration` yet (iOS Safari delays metadata
+      // until user interaction, even with preload="auto"). Matches the
+      // 10.04s of the source MP4/WebM. If you re-encode at a different
+      // length, update this constant.
+      const FALLBACK_DURATION = 10.0;
+
+      // iOS Safari wake-up: the video element won't seek until it has
+      // both metadata AND has been "touched" by JS. play() + pause()
+      // immediately schedules metadata loading without ever actually
+      // showing playback. Wrapped in try/catch because some browsers
+      // reject the bare play() promise.
+      function wake() {
+        try {
+          const p = video.play();
+          if (p && typeof p.then === 'function') {
+            p.then(() => video.pause()).catch(() => { /* expected on iOS pre-interaction */ });
+          }
+        } catch (_) { /* ignore */ }
+      }
+
+      function duration() {
+        return (isFinite(video.duration) && video.duration > 0)
+          ? video.duration
+          : FALLBACK_DURATION;
       }
 
       let visible = false;
@@ -877,25 +897,27 @@
 
       function tick() {
         raf = 0;
-        if (!visible || !ready()) return;
+        if (!visible) return;
 
-        // rect.top goes from +viewportHeight (just below fold) → 0
-        // (top of section hits top of viewport) → −(scrubHeight − vh)
-        // (bottom of section reaches bottom of viewport). We want the
-        // *sticky* travel: scrub progress = how far we've scrolled
-        // PAST the start of the section, normalised by the available
-        // travel distance.
+        // The OUTER scrub runway is 300vh tall. Inside it sits the
+        // 100vh sticky stage. As the runway scrolls past, rect.top
+        // goes from +viewportHeight (just below fold) → 0 (top of
+        // runway hits top of viewport) → −(300vh − 100vh) (runway's
+        // bottom reaches bottom of viewport). Scrub progress = how
+        // far past the start of the runway, normalised by the
+        // available travel distance (height − vh).
         const rect = section.getBoundingClientRect();
         const vh = window.innerHeight || document.documentElement.clientHeight;
         const total = section.offsetHeight - vh;
         if (total <= 0) return;
         const progress = Math.max(0, Math.min(1, -rect.top / total));
 
-        // setCurrentTime is the choke point on iOS — only set when
-        // the delta is meaningful (≥ 1 frame at 24fps = ~0.04s).
-        const target = progress * video.duration;
+        // Seek if delta ≥ 1 frame (24fps → 0.04s). Some browsers will
+        // ignore the seek if the byte range isn't buffered yet — that's
+        // okay, the next rAF after a buffer event picks it up.
+        const target = progress * duration();
         if (Math.abs(target - video.currentTime) > 0.04) {
-          video.currentTime = target;
+          try { video.currentTime = target; } catch (_) { /* not seekable yet */ }
         }
       }
 
@@ -904,27 +926,32 @@
         raf = requestAnimationFrame(tick);
       }
 
-      // IntersectionObserver gates the work: scroll listener only does
-      // anything while the section is on screen.
+      // IntersectionObserver wakes the rAF loop only while the section
+      // intersects the viewport. First intersection also triggers the
+      // iOS wake-up dance so currentTime becomes seekable.
       const io = new IntersectionObserver((entries) => {
         entries.forEach((e) => {
           visible = e.isIntersecting;
           if (visible) {
-            // Kick the video by loading metadata if it hasn't yet.
-            if (video.readyState < 1) video.load();
+            if (video.readyState < 2) {
+              video.load();
+              wake();
+            }
             schedule();
           }
         });
       }, { threshold: 0 });
       io.observe(section);
 
-      window.addEventListener('scroll', schedule, { passive: true });
-      window.addEventListener('resize', schedule, { passive: true });
+      window.addEventListener('scroll',  schedule, { passive: true });
+      window.addEventListener('resize',  schedule, { passive: true });
+      // Re-schedule on every readiness event so the first scrub catches
+      // up the moment the browser has enough bytes to seek.
+      ['loadedmetadata','loadeddata','canplay','canplaythrough','seeked','progress']
+        .forEach(ev => video.addEventListener(ev, schedule));
 
-      // Some browsers need a nudge after metadata lands.
-      video.addEventListener('loadedmetadata', schedule, { once: true });
-      // First paint while the section is already in view (e.g. reload
-      // mid-page) — schedule one tick once everything else has settled.
+      // Kick once after DOM settles — in case the section is already in
+      // view on reload (mid-page hash, deep link, etc.).
       requestAnimationFrame(schedule);
     })();
   </script>
