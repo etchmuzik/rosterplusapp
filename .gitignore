@@ -55,3 +55,8 @@ assets/images/artists/*.png
 assets/images/artists/*.webp
 !assets/images/artists/README.md
 *.deploy-bak
+
+# Sourcemaps from the esbuild minify step in scripts/deploy-stamp.sh.
+# Created during deploy, restored by cleanup_stamps in deploy.sh, but
+# ignored anyway in case of crash mid-deploy.
+assets/js/*.js.map

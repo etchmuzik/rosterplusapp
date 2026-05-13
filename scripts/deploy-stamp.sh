@@ -44,6 +44,53 @@ else
 fi
 rm -f assets/js/app.js.tmp
 
+# ── Minify app.js + error-logger.js (2026-05-13 audit v2 P2) ─────
+# esbuild runs in-place on the build artifact. Source files in git
+# stay unminified — only the deployed copy gets minified. Wins:
+#   app.js          207 KB → ~120 KB (~30 KB brotli savings per cold visit)
+#   error-logger.js  10 KB → ~5  KB
+#
+# Stamps SURVIVE minification because esbuild preserves variable
+# assignments. The ROSTR_VERSION line above becomes
+# `window.ROSTR_VERSION="$SHA";` (no functional change).
+#
+# Sourcemaps land next to the JS so Sentry / DevTools resolve traces
+# to original lines. They're served at the same path; ignored by
+# normal page-load.
+#
+# Local lftp deploy (scripts/deploy.sh) backs up app.js to
+# .deploy-bak BEFORE this script runs, then restores after FTP
+# upload — so locally, git stays unminified too. On Netlify the
+# build env is ephemeral so there's no restore step.
+#
+# If npx isn't available (rare), the step skips silently and the
+# unminified file ships. App still works, just ~30 KB heavier.
+if command -v npx >/dev/null 2>&1; then
+  echo "Minifying assets/js/app.js..."
+  if npx --yes esbuild assets/js/app.js \
+       --minify --target=es2020 --legal-comments=none --keep-names \
+       --outfile=assets/js/app.js.min --sourcemap=external 2>/dev/null; then
+    mv assets/js/app.js.min assets/js/app.js
+    mv assets/js/app.js.min.map assets/js/app.js.map
+    echo "  app.js minified ($(wc -c < assets/js/app.js) bytes)"
+  else
+    echo "  esbuild failed for app.js — shipping unminified"
+  fi
+
+  echo "Minifying assets/js/error-logger.js..."
+  if npx --yes esbuild assets/js/error-logger.js \
+       --minify --target=es2020 --legal-comments=none --keep-names \
+       --outfile=assets/js/error-logger.js.min --sourcemap=external 2>/dev/null; then
+    mv assets/js/error-logger.js.min assets/js/error-logger.js
+    mv assets/js/error-logger.js.min.map assets/js/error-logger.js.map
+    echo "  error-logger.js minified ($(wc -c < assets/js/error-logger.js) bytes)"
+  else
+    echo "  esbuild failed for error-logger.js — shipping unminified"
+  fi
+else
+  echo "npx not found — skipping minification"
+fi
+
 # ── Cache-bust HTML asset references ──────────────────────
 # Match: src="assets/js/X.js" or href="assets/css/X.css", with or
 #        without an existing ?v=… query string.

@@ -133,6 +133,30 @@ else
 fi
 rm -f assets/js/app.js.tmp
 
+# ── Minify (2026-05-13 audit v2 P2) ──────────────────────
+# In-place esbuild on the build artifacts. The .deploy-bak files
+# above are the unminified originals; cleanup_stamps below restores
+# them after FTP upload, so git stays unminified.
+# Skipped silently if npx isn't available.
+if command -v npx >/dev/null 2>&1; then
+  cp assets/js/error-logger.js assets/js/error-logger.js.deploy-bak
+  echo "Minifying assets/js/app.js + error-logger.js..."
+  if npx --yes esbuild assets/js/app.js \
+       --minify --target=es2020 --legal-comments=none --keep-names \
+       --outfile=assets/js/app.js.min --sourcemap=external 2>/dev/null; then
+    mv assets/js/app.js.min assets/js/app.js
+    mv assets/js/app.js.min.map assets/js/app.js.map
+    echo "  app.js: $(wc -c < assets/js/app.js) bytes"
+  fi
+  if npx --yes esbuild assets/js/error-logger.js \
+       --minify --target=es2020 --legal-comments=none --keep-names \
+       --outfile=assets/js/error-logger.js.min --sourcemap=external 2>/dev/null; then
+    mv assets/js/error-logger.js.min assets/js/error-logger.js
+    mv assets/js/error-logger.js.min.map assets/js/error-logger.js.map
+    echo "  error-logger.js: $(wc -c < assets/js/error-logger.js) bytes"
+  fi
+fi
+
 # ── Cache-bust HTML asset references ──────────────────────
 # Every <link href="assets/css/system.css"> and <script src="assets/js/app.js">
 # gets a ?v=<sha> appended so browsers treat post-deploy assets as new
@@ -161,6 +185,10 @@ done
 cleanup_stamps() {
   mv -f sw.js.deploy-bak sw.js 2>/dev/null || true
   mv -f assets/js/app.js.deploy-bak assets/js/app.js 2>/dev/null || true
+  mv -f assets/js/error-logger.js.deploy-bak assets/js/error-logger.js 2>/dev/null || true
+  # Drop the .map artifacts from the minify step — they get uploaded
+  # but shouldn't sit in the local checkout.
+  rm -f assets/js/app.js.map assets/js/error-logger.js.map 2>/dev/null || true
   # Restore every stamped HTML file.
   if [[ -d "$HTML_BAK_DIR" ]]; then
     for bak in "$HTML_BAK_DIR"/*.deploy-bak; do
