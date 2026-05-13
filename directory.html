@@ -25,6 +25,10 @@
 
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://vgjmfpryobsuboukbemr.supabase.co" crossorigin>
+  <link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.fontshare.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
   <link rel="stylesheet" href="assets/css/system.css?v=2521872">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
@@ -51,9 +55,9 @@
       <div class="dir-toolbar">
         <div class="dir-search">
           <span class="js-icon" data-icon="search" data-size="16"></span>
-          <input type="text" class="dir-input" id="searchInput" placeholder="Search artists, genres…" autocomplete="off">
+          <input type="text" class="dir-input" id="searchInput" placeholder="Search artists, genres…" aria-label="Search artists by name or genre" autocomplete="off">
         </div>
-        <select class="dir-select" id="genreFilter" style="min-width: 160px">
+        <select class="dir-select" id="genreFilter" aria-label="Filter by genre" style="min-width: 160px">
           <option value="">All genres</option>
           <option>House</option>
           <option>Tech House</option>
@@ -66,7 +70,7 @@
           <option>Open Format</option>
           <option>Electronic</option>
         </select>
-        <select class="dir-select" id="cityFilter" style="min-width: 150px">
+        <select class="dir-select" id="cityFilter" aria-label="Filter by city" style="min-width: 150px">
           <option value="">All cities</option>
           <option>Dubai</option>
           <option>Abu Dhabi</option>
@@ -80,13 +84,13 @@
           <option>Hurghada</option>
           <option>Tashkent</option>
         </select>
-        <select class="dir-select" id="rateFilter" style="min-width: 130px">
+        <select class="dir-select" id="rateFilter" aria-label="Filter by fee range" style="min-width: 130px">
           <option value="">Any rate</option>
           <option value="low">Under 10K</option>
           <option value="mid">10K – 25K</option>
           <option value="high">25K+</option>
         </select>
-        <input type="date" class="dir-select" id="dateFilter" title="Check availability on date" style="min-width: 160px">
+        <input type="date" class="dir-select" id="dateFilter" aria-label="Filter by availability on date" title="Check availability on date" style="min-width: 160px">
         <label style="display: inline-flex; align-items: center; gap: 8px; padding: 0 10px; color: var(--text-secondary); font-size: 0.85rem; cursor: pointer">
           <input type="checkbox" id="availabilityToggle" style="accent-color: var(--accent)">
           Available only

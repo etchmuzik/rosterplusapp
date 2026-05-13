@@ -20,7 +20,7 @@
 //   - Web Push — handlers at the bottom of this file. Receives payloads
 //     from send-push edge function and surfaces them via Notification API.
 
-const CACHE_NAME = 'rostr-v6-swr-push';
+const CACHE_NAME = 'rostr-b95b4ef';
 
 // Core shell — precached on install so first offline navigation works.
 // Everything else populates the cache as the user visits it (lazy).

@@ -54,3 +54,4 @@ assets/images/artists/*.jpeg
 assets/images/artists/*.png
 assets/images/artists/*.webp
 !assets/images/artists/README.md
+*.deploy-bak

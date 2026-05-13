@@ -6,7 +6,16 @@
    working unchanged — they just resolve to the new values.
    ═══════════════════════════════════════════════════════════ */
 
-/* ── Fonts — Satoshi body, Chillax display, JetBrains Mono ── */
+/* ── Fonts — Satoshi body, Chillax display, JetBrains Mono ──
+   2026-05-13 audit P0-7: the two webfont imports below were
+   originally @import statements. That blocked font discovery on
+   `system.css` parse, costing 200-400ms of serialised RTTs on
+   cold load. Webfont stylesheets are now loaded via <link rel=
+   "stylesheet"> in each HTML <head> (alongside preconnects), so
+   the browser fetches `api.fontshare.com` / `fonts.googleapis.com`
+   in parallel with `system.css`. These @imports are left here as
+   a fallback for any page that hasn't been updated yet, and so
+   that opening this file directly still has the right typography. */
 @import url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700,900&f[]=chillax@500,600,700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
 
@@ -67,11 +76,15 @@
   --border-medium: rgba(255,255,255,0.08);
   --border-strong: rgba(255,255,255,0.14);
 
-  /* Text — slightly lifted from previous for cool-white palette */
+  /* Text — slightly lifted from previous for cool-white palette.
+     2026-05-13 audit P0-13: bumped --text-tertiary from 0.34 (~2.8:1
+     against bg-base, fails WCAG AA 4.5:1 for body text) to 0.62
+     (~5.7:1, passes AA). Quaternary stays low — only used for
+     decorative dividers and not text. */
   --text-primary: rgba(255,255,255,0.96);
-  --text-secondary: rgba(255,255,255,0.58);
-  --text-tertiary: rgba(255,255,255,0.34);
-  --text-quaternary: rgba(255,255,255,0.18);
+  --text-secondary: rgba(255,255,255,0.70);
+  --text-tertiary: rgba(255,255,255,0.62);
+  --text-quaternary: rgba(255,255,255,0.32);
   --text-inverse: #08090b;
 
   /* Status — desaturated toward grey for cooler palette */

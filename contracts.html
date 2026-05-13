@@ -14,6 +14,10 @@
   <meta name="description" content="Manage performance contracts with artists on ROSTR+ GCC">
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://vgjmfpryobsuboukbemr.supabase.co" crossorigin>
+  <link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.fontshare.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
   <link rel="stylesheet" href="assets/css/system.css?v=2521872">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
@@ -687,26 +691,26 @@
       </div>
       <form id="new-contract-form" onsubmit="createContract(event)">
         <div class="form-group">
-          <label class="form-label">Artist</label>
+          <label class="form-label" for="artist-select">Artist</label>
           <select class="form-select" id="artist-select" required>
             <option value="">Select an artist...</option>
           </select>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Event / Venue</label>
+          <label class="form-label" for="event-select">Event / Venue</label>
           <select class="form-select" id="event-select" required>
             <option value="">Select an event...</option>
           </select>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Fee (AED)</label>
+          <label class="form-label" for="fee-input">Fee (AED)</label>
           <input type="number" class="form-input" id="fee-input" placeholder="e.g., 15000" required min="0" step="100">
         </div>
 
         <div class="form-group">
-          <label class="form-label">Notes</label>
+          <label class="form-label" for="notes-input">Notes</label>
           <textarea class="form-input" id="notes-input" placeholder="Any special terms or notes..." style="resize: vertical; min-height: 80px;"></textarea>
         </div>
 
@@ -730,7 +734,7 @@
     // Initialize page
     document.addEventListener('DOMContentLoaded', async () => {
       await Auth.ready();
-      if (!Auth.isLoggedIn()) { window.location.href = 'auth.html'; return; }
+      if (!Auth.isLoggedIn()) { Auth.require(); return; }
       // Contracts management view is promoter-only for now; artist signing flow lives on booking detail
       if (Auth.role === 'artist') { window.location.replace('artist-dashboard.html'); return; }
 

@@ -104,7 +104,10 @@ RewriteRule ^link/?$ /link.html [L]
   Header set Referrer-Policy "strict-origin-when-cross-origin"
   Header set Permissions-Policy "camera=(), microphone=(), geolocation=()"
   Header set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-  Header set X-XSS-Protection "1; mode=block"
+  # X-XSS-Protection removed 2026-05-13 audit P2-1 — modern browsers
+  # ignore it; older Chrome introduced new XSS vectors via this header
+  # in some cases. The CSP below is the correct replacement.
+  # Header set X-XSS-Protection "1; mode=block"
   # CSP rationale — only widened to what the app actually needs:
   #   script-src: jsDelivr for Supabase SDK, Plausible for privacy-friendly analytics.
   #   style-src:  Fontshare + Google Fonts stylesheets for Chillax / Satoshi / JetBrains Mono.

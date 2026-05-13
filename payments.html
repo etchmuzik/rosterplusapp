@@ -13,6 +13,10 @@
   <title>Payments — ROSTR+ GCC</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://vgjmfpryobsuboukbemr.supabase.co" crossorigin>
+  <link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.fontshare.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
   <link rel="stylesheet" href="assets/css/system.css?v=2521872">
   <style>
@@ -1116,7 +1120,7 @@
     // ── Initialize ──
     document.addEventListener('DOMContentLoaded', async () => {
       await Auth.ready();
-      if (!Auth.isLoggedIn()) { window.location.href = 'auth.html'; return; }
+      if (!Auth.isLoggedIn()) { Auth.require(); return; }
       // Payments view is promoter-only; artists see earnings on artist-dashboard
       if (Auth.role === 'artist') { window.location.replace('artist-dashboard.html'); return; }
 

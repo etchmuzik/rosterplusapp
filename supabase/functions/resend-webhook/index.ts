@@ -32,23 +32,27 @@ Deno.serve(async (req: Request) => {
 
   // Signature verification. Resend uses Svix-standard headers
   // (svix-id, svix-timestamp, svix-signature).
-  if (WEBHOOK_SECRET) {
-    try {
-      const wh = new Webhook(WEBHOOK_SECRET);
-      const headers = {
-        'svix-id':        req.headers.get('svix-id') || '',
-        'svix-timestamp': req.headers.get('svix-timestamp') || '',
-        'svix-signature': req.headers.get('svix-signature') || '',
-      };
-      wh.verify(raw, headers);
-    } catch (e) {
-      log('warn', 'signature_invalid', { err: String(e) });
-      return new Response(JSON.stringify({ error: 'bad_signature' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
-    }
-  } else {
-    // No secret configured — log loudly but accept during first-time
-    // setup so the admin can see events flowing before hooking the secret.
-    log('warn', 'webhook_secret_not_configured');
+  // Fail closed if no secret is configured. Prior behaviour was to
+  // log a warning and accept the payload, which let any attacker
+  // poison `email_events` with fake bounce/complaint rows once they
+  // found the webhook URL. (2026-05-13 audit P0-3.) Operator must
+  // set RESEND_WEBHOOK_SECRET in Supabase function secrets before
+  // first-time setup; events stop flowing entirely otherwise.
+  if (!WEBHOOK_SECRET) {
+    log('error', 'webhook_secret_not_configured');
+    return new Response(JSON.stringify({ error: 'server_misconfigured' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  }
+  try {
+    const wh = new Webhook(WEBHOOK_SECRET);
+    const headers = {
+      'svix-id':        req.headers.get('svix-id') || '',
+      'svix-timestamp': req.headers.get('svix-timestamp') || '',
+      'svix-signature': req.headers.get('svix-signature') || '',
+    };
+    wh.verify(raw, headers);
+  } catch (e) {
+    log('warn', 'signature_invalid', { err: String(e) });
+    return new Response(JSON.stringify({ error: 'bad_signature' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
   }
 
   let body: Record<string, unknown>;

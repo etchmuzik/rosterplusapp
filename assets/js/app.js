@@ -1,4 +1,7 @@
-window.ROSTR_VERSION = 'd3b5cad';
+// Source-of-truth build SHA. Overwritten by scripts/deploy-stamp.sh
+// on every deploy; the value here in git should always read 'dev' so
+// nobody confuses a stale local stamp with a real deploy version.
+window.ROSTR_VERSION = 'dev';
 /* ═══════════════════════════════════════════════════════════
    ROSTR+ GCC — Core Application JS
    Supabase client, auth, router, UI helpers, live data
@@ -492,10 +495,17 @@ const UI = {
     return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   },
 
-  // Toast notification
+  // Toast notification.
+  // Accessibility (2026-05-13 audit P0-10): the visual toast is paired
+  // with a singleton off-screen live region so screen-reader users
+  // get the same message announced. role="status" + aria-live="polite"
+  // for info/success/warning; role="alert" for errors (interrupts).
   toast(message, type = 'info') {
     const toast = document.createElement('div');
     const colors = { success: '#34d399', error: '#f87171', info: '#60a5fa', warning: '#fbbf24' };
+    toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+    toast.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
+    toast.setAttribute('aria-atomic', 'true');
     toast.style.cssText = `
       position:fixed;bottom:24px;right:24px;padding:12px 20px;
       background:var(--bg-raised);border:1px solid ${colors[type]}40;
@@ -506,6 +516,25 @@ const UI = {
     `;
     toast.textContent = message;
     document.body.appendChild(toast);
+
+    // Mirror to a hidden screen-reader-only live region — separate
+    // from the visual toast so animations don't break announcements
+    // and so the SR catches the message even if the toast is dismissed
+    // by another event before the region updates.
+    let srRegion = document.getElementById('rostr-sr-status');
+    if (!srRegion) {
+      srRegion = document.createElement('div');
+      srRegion.id = 'rostr-sr-status';
+      srRegion.className = 'sr-only';
+      srRegion.setAttribute('role', 'status');
+      srRegion.setAttribute('aria-live', 'polite');
+      srRegion.setAttribute('aria-atomic', 'true');
+      document.body.appendChild(srRegion);
+    }
+    // Clear then set, so identical consecutive toasts re-announce.
+    srRegion.textContent = '';
+    requestAnimationFrame(() => { srRegion.textContent = message; });
+
     setTimeout(() => {
       toast.style.opacity = '0';
       toast.style.transform = 'translateY(8px)';
@@ -905,7 +934,7 @@ function renderNav(activePage = '') {
               <span style="display:none" class="nav-search-label-desktop">Search</span>
               <kbd style="font-family:inherit;font-size:0.68rem;background:var(--bg-raised);border:1px solid var(--border-subtle);border-radius:3px;padding:1px 5px">\u2318K</kbd>
             </button>
-            <button class="nav-bell" id="notif-bell" onclick="toggleNotifications()" style="position:relative;background:none;border:none;color:var(--text-secondary);cursor:pointer;padding:4px" title="Notifications">
+            <button class="nav-bell" id="notif-bell" onclick="toggleNotifications()" style="position:relative;background:none;border:none;color:var(--text-secondary);cursor:pointer;padding:4px" aria-label="Notifications" aria-haspopup="true" aria-expanded="false" aria-controls="notif-dropdown">
               ${UI.icon('inbox', 18)}
               <span id="notif-badge" style="display:none;position:absolute;top:-2px;right:-2px;width:8px;height:8px;border-radius:50%;background:var(--status-cancelled)"></span>
             </button>
@@ -919,7 +948,7 @@ function renderNav(activePage = '') {
               </div>
               <div id="notif-list" style="padding:8px"><div style="padding:16px;text-align:center;color:var(--text-tertiary);font-size:0.82rem">No notifications yet</div></div>
             </div>
-            <div class="nav-avatar" onclick="document.getElementById('user-menu').classList.toggle('hidden')"${Auth.user?.avatar_url ? ` style="background-image:url(&quot;${String(Auth.user.avatar_url).replace(/"/g, '%22')}&quot;);background-size:cover;background-position:center" aria-label="${(Auth.user.display_name || 'Account').replace(/"/g, '&quot;')}"` : ''}>${Auth.user?.avatar_url ? '' : (Auth.user?.display_name?.charAt(0)?.toUpperCase() || 'U')}</div>
+            <div class="nav-avatar" role="button" tabindex="0" aria-haspopup="menu" aria-expanded="false" aria-controls="user-menu" onclick="(function(el){const m=document.getElementById('user-menu');if(!m)return;const open=m.classList.contains('hidden');m.classList.toggle('hidden');el.setAttribute('aria-expanded',String(open));})(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"${Auth.user?.avatar_url ? ` style="background-image:url(&quot;${String(Auth.user.avatar_url).replace(/"/g, '%22')}&quot;);background-size:cover;background-position:center" aria-label="${(Auth.user.display_name || 'Account').replace(/"/g, '&quot;')}"` : ' aria-label="Account menu"'}>${Auth.user?.avatar_url ? '' : (Auth.user?.display_name?.charAt(0)?.toUpperCase() || 'U')}</div>
             <div id="user-menu" class="hidden" style="position:absolute;top:56px;right:24px;background:var(--bg-raised);border:1px solid var(--border-medium);border-radius:var(--radius-md);padding:8px;min-width:180px;box-shadow:var(--shadow-lg);z-index:1001">
               <div style="padding:8px 12px;font-size:0.82rem;color:var(--text-tertiary);border-bottom:1px solid var(--border-subtle);margin-bottom:4px" data-user-name>${Auth.user?.display_name || ''}</div>
               <a href="/invite.html" class="sidebar-item" style="font-size:0.85rem">${UI.icon('send', 14)} Invite</a>
@@ -927,7 +956,7 @@ function renderNav(activePage = '') {
               <button class="sidebar-item" style="font-size:0.85rem;color:var(--status-cancelled)" onclick="Auth.signOut()">${UI.icon('logout', 14)} Sign out</button>
             </div>
           </div>
-          <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('show')" aria-label="Toggle navigation menu" aria-expanded="false">${UI.icon('menu', 20)}</button>
+          <button class="nav-toggle" onclick="(function(el){const l=document.querySelector('.nav-links');if(!l)return;const open=!l.classList.contains('show');l.classList.toggle('show');el.setAttribute('aria-expanded',String(open));})(this)" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="nav-links">${UI.icon('menu', 20)}</button>
         </div>
       </div>
     </nav>
@@ -1361,11 +1390,9 @@ Auth.updatePassword = async function(newPassword) {
   return { success: true };
 };
 
-// ── Demo Banner ──
-function renderDemoBanner() {
-  if (!DEMO_MODE) return '';
-  return `<div style="background:var(--gold-dim);border-bottom:1px solid var(--border-gold);padding:8px 16px;text-align:center;font-size:0.82rem;color:var(--gold-text);font-family:var(--font-mono)">Demo Mode — Connect Supabase for live data</div>`;
-}
+// (renderDemoBanner removed 2026-05-13 — was defined but never
+// called from any HTML or JS site. Superseded by the FORCE_DEMO
+// console warning at app boot.)
 
 // ══════════════════════════════════════════════════════════
 // DB — Live Supabase data access
@@ -2244,8 +2271,17 @@ const DB = {
   },
 
   // ── Admin: manage the artist roster ──────────────────────
-  // These are gated server-side by the is_admin() RLS helper. Non-admins
-  // can still call them; Supabase just returns 0 rows affected.
+  // These are gated server-side by the is_admin() RLS helper. Defense-
+  // in-depth: every WRITE-path admin function pre-checks the cached
+  // admin flag and bails out immediately if absent. The server-side
+  // gate remains the hard boundary; this just stops a non-admin from
+  // generating noisy RLS-blocked POSTs and surfacing as "Not allowed
+  // or not found" errors to the user. (2026-05-13 audit P0-1.)
+  _assertAdmin() {
+    // Synchronous check against the cached flag populated at boot.
+    // If the cache hasn't loaded yet, fail closed.
+    return Auth.isAdminCached === true;
+  },
 
   // List every artist, including pending/inactive ones that aren't in
   // the public directory. Only admins will actually get the hidden rows
@@ -2267,6 +2303,7 @@ const DB = {
   async adminUpdateArtistStatus(artistId, status) {
     if (DEMO_MODE) return { success: true };
     if (!Auth.user) return { success: false, error: 'Not authenticated' };
+    if (!this._assertAdmin()) return { success: false, error: 'forbidden' };
     if (!['active','pending','inactive'].includes(status)) return { success: false, error: 'Invalid status' };
     try {
       const { data, error } = await _sb.from('artists')
@@ -2285,6 +2322,7 @@ const DB = {
   async adminSetFeatured(artistId, untilIso) {
     if (DEMO_MODE) return { success: true };
     if (!Auth.user) return { success: false, error: 'Not authenticated' };
+    if (!this._assertAdmin()) return { success: false, error: 'forbidden' };
     try {
       const { data, error } = await _sb.from('artists')
         .update({
@@ -2321,6 +2359,7 @@ const DB = {
   async adminSetArtistVerified(artistId, verified) {
     if (DEMO_MODE) return { success: true };
     if (!Auth.user) return { success: false, error: 'Not authenticated' };
+    if (!this._assertAdmin()) return { success: false, error: 'forbidden' };
     try {
       const { data, error } = await _sb.from('artists')
         .update({ verified: !!verified, updated_at: new Date().toISOString() })
@@ -2339,6 +2378,7 @@ const DB = {
   async adminCreateUnclaimedArtist({ stage_name, genre, cities_active, status, verified, social_links, base_fee }) {
     if (DEMO_MODE) return { success: true };
     if (!Auth.user) return { success: false, error: 'Not authenticated' };
+    if (!this._assertAdmin()) return { success: false, error: 'forbidden' };
     if (!stage_name) return { success: false, error: 'stage_name required' };
     try {
       const row = {
@@ -3655,9 +3695,17 @@ function toggleNotifications() {
   if (!dd) return;
   const willOpen = dd.classList.contains('hidden');
   dd.classList.toggle('hidden');
+  // Keep aria-expanded in sync with .hidden state on the trigger.
+  // (2026-05-13 audit P0-11.)
+  const bell = document.getElementById('notif-bell');
+  if (bell) bell.setAttribute('aria-expanded', String(willOpen));
   // Close user menu if open
   const um = document.getElementById('user-menu');
-  if (um) um.classList.add('hidden');
+  if (um) {
+    um.classList.add('hidden');
+    const av = document.querySelector('.nav-avatar');
+    if (av) av.setAttribute('aria-expanded', 'false');
+  }
   if (willOpen) {
     // Refresh from DB first so we're aligned with any reads from other
     // tabs. Once rendered, auto-clear unread state: if the user opened
@@ -3724,12 +3772,32 @@ async function openNotification(id) {
   }
   // Navigate only for notifications that have a deep-link. Otherwise
   // just re-render so the unread dot disappears — no navigation.
-  if (n.href) {
+  //
+  // Defense-in-depth: `n.href` comes from the DB. Today only triggers
+  // and admin RPCs write it (no anon INSERT policy on notifications),
+  // but if a future trigger lets user input flow into href, an
+  // attacker could redirect every reader to a phishing site or
+  // `javascript:` URL. Restrict to same-origin relative paths.
+  // (2026-05-13 audit P0-2.)
+  if (n.href && _isSafeInternalHref(n.href)) {
     location.href = n.href;
   } else {
     renderNotifications();
   }
 }
+
+// Same-origin relative-href validator. Accepts /foo.html, /foo,
+// /a/handle, optionally with ?query and #hash. Rejects schemes,
+// protocol-relative (//...), and any traversal segments.
+function _isSafeInternalHref(href) {
+  if (typeof href !== 'string') return false;
+  if (!href.startsWith('/')) return false;       // require leading slash
+  if (href.startsWith('//')) return false;       // protocol-relative
+  if (href.includes('..')) return false;         // any traversal
+  if (/^[a-z]+:/i.test(href)) return false;      // javascript:, data:, etc.
+  return /^\/[A-Za-z0-9_\-./]*(\?[^#]*)?(#.*)?$/.test(href);
+}
+window._isSafeInternalHref = _isSafeInternalHref;
 window.openNotification = openNotification;
 
 function _relTime(iso) {

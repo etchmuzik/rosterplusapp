@@ -131,8 +131,44 @@
     } catch (_) { /* no-op */ }
   }
 
+  // Browser-extension noise filter (2026-05-13 audit P1-13).
+  // The single biggest source of client_errors rows over the last
+  // week was "func sseError not found" — 199 entries originating
+  // from an injected wallet-extension script (TON/Tron), not our
+  // code. Drop these before they hit Supabase + Sentry so real
+  // bugs don't drown in the noise.
+  var NOISE_PATTERNS = [
+    /func\s+sseError\s+not\s+found/i,
+    /inpage\.js/i,                    // TON/Tron wallet inpage shim
+    /chrome-extension:\/\//i,
+    /moz-extension:\/\//i,
+    /safari-(web-)?extension:\/\//i,
+    /^ResizeObserver loop/i,          // benign browser noise
+    /Script error\.?$/i,              // cross-origin script (uninformative)
+  ];
+  function looksLikeNoise(err, context) {
+    try {
+      var msg = err instanceof Error ? (err.message || '') : String(err || '');
+      var fname = (context && context.filename) || '';
+      for (var i = 0; i < NOISE_PATTERNS.length; i++) {
+        if (NOISE_PATTERNS[i].test(msg) || NOISE_PATTERNS[i].test(fname)) return true;
+      }
+      // Errors whose source filename isn't same-origin almost always
+      // come from extensions or third-party trackers.
+      if (fname && fname.indexOf(location.origin) !== 0 && !fname.startsWith('/')) {
+        // Allow Sentry / Supabase / Plausible CDN URLs through — we want
+        // to know if THEIR code crashes us.
+        if (!/(supabase\.co|plausible\.io|sentry-cdn\.com|jsdelivr\.net)/.test(fname)) {
+          return true;
+        }
+      }
+    } catch (_) { /* if filter itself blows up, fall through and log */ }
+    return false;
+  }
+
   function logError(err, context) {
     if (!rateLimitOk()) return;
+    if (looksLikeNoise(err, context)) return;
     try {
       // Normalise: accept Error instances or plain strings.
       var message, stack;

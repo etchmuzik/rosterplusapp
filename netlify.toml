@@ -34,7 +34,9 @@
     Referrer-Policy                   = "strict-origin-when-cross-origin"
     Permissions-Policy                = "camera=(), microphone=(), geolocation=()"
     Strict-Transport-Security         = "max-age=31536000; includeSubDomains; preload"
-    X-XSS-Protection                  = "1; mode=block"
+    # X-XSS-Protection removed 2026-05-13 audit P2-1 — modern browsers
+    # ignore it; older Chrome versions occasionally introduced new XSS
+    # vectors via this header. The proper replacement is the CSP below.
     # frame-src lists the four media-embed origins used by the artist
     # video_links column (added 2026-05-13). Mixcloud's widget origin
     # is www.mixcloud.com; SoundCloud's is w.soundcloud.com; YouTube
