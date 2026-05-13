@@ -114,6 +114,25 @@
   --status-draft: rgba(255,255,255,0.4);
   --status-draft-bg: rgba(255,255,255,0.05);
 
+  /* ── Brand warm accent ──
+     Single ownable hue introduced 2026-05-14 (impeccable colorize pass).
+     Sodium-amber, the colour of GCC street-lighting at 2am. Used
+     sparingly: founding-cohort pill, the closing-CTA italic emphasis,
+     the page-wide text selection, the "Live now" pulse dot, and the
+     lead feature-card eyebrow. NOT applied to body copy, buttons,
+     headlines, or surfaces — restraint is the system.
+       --warm-soft is the highlight (used on text);
+       --warm      is the mid (used on background washes + dot);
+       --warm-deep is the rim (used on borders + glow). */
+  --warm:      oklch(0.78 0.16 75);
+  --warm-soft: oklch(0.86 0.13 78);
+  --warm-deep: oklch(0.54 0.14 65);
+  --warm-bg-08: oklch(0.78 0.16 75 / 0.08);
+  --warm-bg-14: oklch(0.78 0.16 75 / 0.14);
+  --warm-rim-32: oklch(0.78 0.16 75 / 0.32);
+  --warm-glow:  0 0 22px oklch(0.78 0.16 75 / 0.32),
+                0 0 56px oklch(0.78 0.16 75 / 0.12);
+
   /* Shadows — tinted to bg hue */
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.35);
   --shadow-md: 0 4px 20px rgba(0,0,0,0.40), 0 0 1px rgba(255,255,255,0.05);
@@ -903,7 +922,9 @@ tr:hover td { background: rgba(255,255,255,0.015); }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
 
 /* ── Selection ── */
-::selection { background: var(--gold-dim); color: var(--gold-text); }
+/* Page-wide text selection picks up the warm accent so even highlighting
+   a passage reads as branded. Reuses --warm-bg-14 + --warm-soft. */
+::selection { background: var(--warm-bg-14); color: var(--warm-soft); }
 
 /* ── Accessibility ── */
 /* Skip-to-content link — hidden off-screen until keyboard focused.
@@ -1497,6 +1518,13 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
+/* Lead card (01 / ROSTER) gets the warm accent on its eyebrow so the
+   eye lands here first. The other seven cards stay neutral — repeating
+   the accent across all eight would re-create the kicker-scaffolding
+   tic the audit just flagged. */
+.lp-feature-item.hero-item .lp-feature-num {
+  color: var(--warm-soft);
+}
 .lp-feature-visual {
   margin-top: auto;
   border-radius: var(--radius-md);
@@ -1696,120 +1724,22 @@ tr:hover td { background: rgba(255,255,255,0.015); }
 /* ═══ Reach map ═══
    Interactive SVG world with scroll-triggered arcs fanning out from
    Dubai. Equirectangular projection, dot-grid texture, no library. */
-/* ═══ Reach map — scroll-scrubbed globe video (2026-05-12)
-   The old hand-drawn SVG world map + arcs has been replaced by a
-   short video that scrubs in lockstep with scroll. Three pieces:
-     1. .lp-reach-section — the outer section; pads top/bottom only.
-     2. .lp-reach-scrub   — 300vh-tall scroll runway. The inner stage
-        is `position: sticky; top: 0; height: 100vh;` so it pins
-        while the runway scrolls past it.
-     3. .lp-reach-stage   — the pinned viewport. Holds the <video>
-        full-bleed and the .lp-reach-overlay (eyebrow + h2 + legend).
-   The <video> is the source of truth for the visual; JS sets
-   `currentTime` from scroll progress. No autoplay — the static
-   poster frame paints first, then the rAF scrubber takes over. */
+/* ═══ Reach — typographic city ledger (2026-05-14)
+   Globe video retired; section is now a typographic block: section
+   head (eyebrow + h2) followed by the .lp-map-list (4 region groups).
+   No stage, no overlay, no legend. Padding mirrors other typographic
+   sections on the page. */
 .lp-reach-section {
   position: relative;
-  /* No padding here — the scrub runway owns the vertical real estate.
-     City list inside .container below the runway carries its own. */
+  padding: var(--space-3xl) 0;
 }
 
-.lp-reach-scrub {
-  position: relative;
-  height: 300vh;  /* scroll travel = 200vh of scrub (300 − 100vh sticky) */
-}
-
-.lp-reach-stage {
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  overflow: hidden;
-  /* The video can be wider than the viewport; clip it. */
-  background: var(--bg-base);
-}
-
-.lp-reach-video {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  /* No filter here — the brand-tint overlay (.lp-reach-stage::before)
-     handles dimming. Stacking a brightness filter on top crushed the
-     silhouette of the globe. */
-  pointer-events: none;
-}
-
-/* Overlay container with the eyebrow / h2 / legend. Sits at the
-   top of the pinned stage so the headline reads when the section
-   first comes into view, then stays put while the scrub plays. */
-.lp-reach-overlay {
-  position: relative;
-  z-index: 2;
-  padding-top: var(--space-3xl);
-  padding-bottom: var(--space-2xl);
-}
-
-/* Brand-tinted overlay across the entire video stage.
-   Uses --bg-base (#08090b — the site's page background) at low
-   opacity so the globe video reads as part of the page, not as
-   a foreign embed. A gentler vertical gradient on top deepens
-   the dim around the headline area. Both layers sit between the
-   video (z:auto/0) and the overlay content (z:2). */
-.lp-reach-stage::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    /* Vertical accent — slightly darker at top, lighter mid, darker again
-       at bottom — pulls the eye to the headline + legend. */
-    linear-gradient(180deg,
-      rgba(8, 9, 11, 0.55) 0%,
-      rgba(8, 9, 11, 0.25) 45%,
-      rgba(8, 9, 11, 0.55) 100%),
-    /* Flat brand tint — site bg-base at low opacity. Keeps the
-       video visible but cool-tinted to match the page. */
-    rgba(8, 9, 11, 0.30);
-  z-index: 1;
-  pointer-events: none;
-}
-
-/* Legend (right of the eyebrow on desktop, wraps under on mobile) */
-.lp-map-legend {
-  display: flex;
-  gap: var(--space-md);
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  color: var(--text-tertiary);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  align-items: center;
-  flex-wrap: wrap;
-}
-.lp-map-legend span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.lp-map-legend .sw {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--text-tertiary);
-}
-.lp-map-legend .sw.home {
-  background: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-dim-20);
-}
-
-/* ── City list under the scrub stage ──
-   Renders for everyone (SEO + screen readers + reduced-motion users
-   get the same information regardless of whether the video plays).
-   Lives inside its own .container, so the scrub stage can be
-   full-bleed above it. */
+/* ── City list ──
+   4 region groups in a responsive auto-fit grid. Rules unchanged
+   from the globe-era version; the top border separates the list
+   from the section heading above. */
 .lp-map-list {
-  margin-top: var(--space-2xl);
-  margin-bottom: var(--space-3xl);
+  margin-top: var(--space-xl);
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: var(--space-lg);
@@ -1830,21 +1760,6 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   line-height: 1.8;
 }
 .lp-map-list .group span { color: var(--text-primary); font-weight: 500; }
-
-/* Reduced-motion: drop the long runway so there's no empty
-   scroll-distance, and let the video sit as a still poster instead. */
-@media (prefers-reduced-motion: reduce) {
-  .lp-reach-scrub { height: auto; }
-  .lp-reach-stage { position: relative; height: 60vh; min-height: 360px; }
-  .lp-reach-video { animation: none; }
-}
-
-/* Mobile: keep the effect but trim the runway (300vh on a phone is
-   excessive — the user just wants to see the globe move). */
-@media (max-width: 720px) {
-  .lp-reach-scrub { height: 220vh; }
-  .lp-reach-overlay { padding-top: var(--space-2xl); }
-}
 
 /* Trust microcopy row under hero CTA */
 .lp-trust-row {
@@ -2075,6 +1990,10 @@ tr:hover td { background: rgba(255,255,255,0.015); }
 }
 .lp-faq-a p {
   margin: 0;
+  /* Cap line-length to keep FAQ answers readable. The default would
+     run the full width of the <details> (~1100px on desktop) and read
+     as a wall of text. 70ch is the upper end of the readability band. */
+  max-width: 70ch;
 }
 .lp-faq-a a {
   color: var(--accent-soft);
@@ -2130,11 +2049,17 @@ tr:hover td { background: rgba(255,255,255,0.015); }
 /* Cohort variant (2026-05-12 audit fix #17): urgency pill above
    the headline, em italic in the H2, "X claimed · closes Y" meta
    after the buttons. */
+/* Closing-CTA italic emphasis. Was --text-secondary (grey); now
+   carries the warm accent so the one piece of typographic flourish
+   on the page actually earns its space. */
 .lp-cta-cohort h2 em {
   font-style: italic;
-  color: var(--text-secondary);
+  color: var(--warm-soft);
   font-weight: 400;
 }
+/* Founding-cohort urgency pill. Was --status-pending (desaturated
+   sand); now uses the warm accent so the scarcity moment reads as
+   category-native nightlife signage, not a generic SaaS notification. */
 .lp-urgency-pill {
   display: inline-flex;
   align-items: center;
@@ -2144,12 +2069,13 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   text-transform: uppercase;
   letter-spacing: 0.12em;
   padding: 7px 14px;
-  border: 1px solid var(--status-pending);
-  color: var(--status-pending);
-  background: rgba(233, 207, 146, 0.08);
+  border: 1px solid var(--warm-rim-32);
+  color: var(--warm-soft);
+  background: var(--warm-bg-08);
   border-radius: 99px;
   margin-bottom: var(--space-md);
   position: relative;
+  box-shadow: var(--warm-glow);
 }
 .lp-cohort-meta {
   font-family: var(--font-mono);
@@ -2174,6 +2100,303 @@ tr:hover td { background: rgba(255,255,255,0.015); }
 .lp-d-3 { animation-delay: 180ms; }
 .lp-d-4 { animation-delay: 240ms; }
 .lp-d-5 { animation-delay: 300ms; }
+
+/* ═══════════════════════════════════════════════════════════
+   HERO v4 (2026-05-13 impeccable redo)
+   Monochromatic on the site's existing cool-white --accent
+   system. Voice comes from typography (monumental Chillax
+   headline) and layout (vertical departures-board), not from
+   a custom color. All classes scoped under .hero-flyer so the
+   legacy .lp-hero* rules used by older pages stay intact.
+   ═══════════════════════════════════════════════════════════ */
+.hero-flyer {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: clamp(24px, 3.6vw, 48px) 0 clamp(28px, 4vw, 56px);
+}
+.hero-flyer-bleed {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  /* Same ambient glow shape as the body, just stronger inside the
+     hero so the section reads as the visual head of the page. */
+  background:
+    radial-gradient(ellipse 60% 70% at 92% 0%,
+      var(--accent-dim-10) 0%,
+      var(--accent-dim-05) 32%,
+      transparent 64%),
+    radial-gradient(ellipse 38% 40% at 8% 100%,
+      var(--accent-dim-05) 0%,
+      transparent 60%);
+}
+.hero-flyer::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    var(--border-subtle) 8%,
+    var(--border-medium) 50%,
+    var(--border-subtle) 92%,
+    transparent 100%);
+  z-index: 1;
+}
+.hero-flyer-grid {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+  grid-template-rows: auto auto;
+  grid-template-areas:
+    "head    board"
+    "meta    board";
+  column-gap: clamp(24px, 3.2vw, 56px);
+  row-gap: clamp(16px, 2.4vw, 28px);
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .hero-flyer-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "head" "meta" "board";
+  }
+}
+
+.hero-ticker {
+  grid-area: ticker;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: clamp(18px, 2.4vw, 28px);
+  border-bottom: 1px solid var(--border-subtle);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.hero-ticker-label {
+  color: var(--text-secondary);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+}
+.hero-ticker-sep {
+  width: 4px; height: 4px;
+  background: var(--border-medium);
+  flex-shrink: 0;
+}
+.hero-ticker-city {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.hero-ticker-city b { color: var(--text-primary); font-weight: 600; }
+.hero-ticker-city time { color: var(--text-tertiary); font-weight: 400; }
+
+.hero-headline {
+  grid-area: head;
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  /* Editorial scale, not poster scale. Caps around 3rem (~48px) on
+     wide viewports so the headline reads as a confident statement,
+     not a billboard. Pairs with the departures-board to the right
+     and the meta cluster below, where the visual mass actually
+     belongs. */
+  font-size: clamp(1.8rem, 3.4vw, 3rem);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+  color: var(--text-primary);
+  text-wrap: balance;
+  max-width: 18ch;
+}
+
+.hero-meta {
+  grid-area: meta;
+  max-width: 56ch;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 2vw, 22px);
+}
+.hero-sub {
+  margin: 0;
+  font-size: clamp(1rem, 1.2vw, 1.15rem);
+  line-height: 1.5;
+  color: var(--text-secondary);
+  max-width: 52ch;
+}
+.hero-cta {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 1.6vw, 20px);
+  flex-wrap: wrap;
+}
+.hero-cta-foot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.hero-cta-foot b { color: var(--text-primary); font-weight: 600; font-variant-numeric: tabular-nums; }
+.hero-cta-foot .hero-plus { color: var(--text-tertiary); font-weight: 400; margin-left: 1px; }
+.hero-cta-foot-sep {
+  width: 3px; height: 3px;
+  background: var(--border-medium);
+  flex-shrink: 0;
+}
+.hero-platforms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: clamp(4px, 1vw, 10px);
+}
+
+/* ── How-it-works panel (right column) ──
+   Three numbered steps. Each step is [big mono number] [name + desc].
+   The whole panel sits on a single left-border rule with a short
+   accent tick at the top, matching the visual anchor pattern used
+   by the original departures-board. */
+.hero-how {
+  grid-area: board;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  padding-left: clamp(16px, 1.6vw, 22px);
+  border-left: 1px solid var(--border-medium);
+  position: relative;
+}
+.hero-how::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -1px;
+  width: 1px;
+  height: 32px;
+  background: var(--accent);
+}
+.hero-how-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+/* Eyebrow on the how-it-works panel. Was a <span>; promoted to <h2>
+   2026-05-14 to fix the h1→h3 outline skip. Overrides the global h2
+   rule (Chillax display @ clamp(1.5rem, 3vw, 2.2rem)) so it stays a
+   tiny mono uppercase label visually. */
+.hero-how-eyebrow {
+  color: var(--text-primary);
+  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.2;
+  letter-spacing: 0.14em;
+  margin: 0;
+}
+.hero-how-meta    { color: var(--text-tertiary); font-weight: 400; }
+.hero-how-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.hero-how-step {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  align-items: baseline;
+  gap: 14px;
+  padding-bottom: 18px;
+  border-bottom: 1px dashed var(--border-subtle);
+}
+.hero-how-step:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+.hero-how-num {
+  font-family: var(--font-mono);
+  font-size: 0.86rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+  padding-top: 3px;
+}
+.hero-how-body {
+  min-width: 0;
+}
+.hero-how-name {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+  line-height: 1.2;
+}
+.hero-how-desc {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+/* Two-row role grid inside each step: [Promoter | text] / [Artist | text].
+   Fixed label column (64px) keeps the colon-style alignment crisp across
+   all three steps. Collapses gracefully on narrow widths because the
+   text column stays `1fr`. */
+.hero-how-roles {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  row-gap: 6px;
+  column-gap: 10px;
+  margin-top: 4px;
+}
+.hero-how-role-label {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  padding-top: 2px;
+}
+.hero-how-role-text {
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+/* Hero-scoped selection — same warm accent as the global selection. */
+.hero-flyer ::selection {
+  background: var(--warm-bg-14);
+  color: var(--warm-soft);
+}
+
+.hero-anim { animation: lp-fadeInUp 720ms var(--ease-out) both; }
+.hero-d-1 { animation-delay: 80ms; }
+.hero-d-2 { animation-delay: 140ms; }
+.hero-d-3 { animation-delay: 200ms; }
+.hero-d-4 { animation-delay: 320ms; }
+
+@media (max-width: 640px) {
+  .hero-flyer { padding-top: 24px; }
+  .hero-headline { font-size: clamp(1.6rem, 6.5vw, 2.2rem); max-width: none; }
+}
 
 /* ═══════════════════════════════════════════════════════════
    Directory — artist browsing
@@ -3652,19 +3875,22 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   align-items: center;
   gap: 6px;
 }
+/* "Live now" pulse dot. Was a stock green (#4ade80); now uses --warm
+   so the page's two status moments (Founding-50 pill + Live-now dot)
+   share a colour family. Reads as a system, not a one-off. */
 .app-badge-pulse {
   display: inline-block;
   width: 7px;
   height: 7px;
   border-radius: 999px;
-  background: #4ade80;
-  box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.45);
+  background: var(--warm);
+  box-shadow: 0 0 0 0 var(--warm-rim-32);
   animation: appBadgePulse 2200ms cubic-bezier(0.16, 1, 0.3, 1) infinite;
 }
 @keyframes appBadgePulse {
-  0%   { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.45); }
-  70%  { box-shadow: 0 0 0 8px rgba(74, 222, 128, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+  0%   { box-shadow: 0 0 0 0 var(--warm-rim-32); }
+  70%  { box-shadow: 0 0 0 8px oklch(0.78 0.16 75 / 0); }
+  100% { box-shadow: 0 0 0 0 oklch(0.78 0.16 75 / 0); }
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -3805,6 +4031,43 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   display: flex;
   flex-direction: column;
   gap: var(--space-lg);
+}
+
+/* Proof row: two mono lines showing the same event hitting iOS and web
+   ~20ms apart. Sells the "instantly" claim without needing a screenshot.
+   Sits below the paragraph copy in the left column. */
+.lp-parity-proof {
+  margin-top: var(--space-lg);
+  padding: 14px 16px;
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 380px;
+}
+.lp-parity-proof-row {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: baseline;
+  gap: 12px;
+}
+.lp-parity-proof-os {
+  color: var(--text-tertiary);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 0.66rem;
+  font-weight: 600;
+}
+.lp-parity-proof-event {
+  color: var(--text-primary);
+}
+.lp-parity-proof-time {
+  color: var(--accent-soft);
 }
 
 /* ───────────────────────────────────────────────────────────────

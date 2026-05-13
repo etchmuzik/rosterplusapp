@@ -38,6 +38,9 @@ serve.js
 
 .mcp.json
 
+# Impeccable design-critique snapshots (local-only design audit trail).
+.impeccable/
+
 # Homepage placeholder photos — operator drops licensed photos in
 # locally; we don't want them accidentally shipped via git. Only the
 # README that documents the filename contract is tracked.

@@ -135,132 +135,112 @@
   <a id="main-content" tabindex="-1" class="sr-only">Main content</a>
     <main id="main-content-wrap" role="main">
 
-    <!-- ═══ HERO ═══ -->
-    <section class="lp-hero container">
-      <div class="lp-hero-top">
-        <div class="lp-hero-col">
-          <div class="lp-eyebrow lp-anim">
-            <span class="dot"></span>
-            <!-- Server-rendered default reads "founding roster" so the
-                 first paint never shows a dash. JS hydration replaces
-                 with the live verified-artist count once it resolves. -->
-            <span><span id="hero-artist-count">Now onboarding</span> · founding roster</span>
-          </div>
-          <h1 class="lp-title lp-anim lp-d-1">
-            Book the Gulf's<br>
-            loudest <em>nights</em><br>
-            without the noise.
-          </h1>
-          <p class="lp-sub lp-anim lp-d-2">
-            Discover, request, e-sign, message and pay — all timestamped,
-            all on one platform. Realtime conflict checks before you submit.
-            iOS app and web, in lockstep.
+    <!-- ═══ HERO v4 ═══
+         Replaced 2026-05-13. Was a split text + glass-card layout with
+         a 4-column stats strip; new treatment is a monochromatic
+         flyer-poster hero on the existing cool-white token system,
+         with a monumental three-line headline, a top ticker listing
+         the GCC cities we book in, a departures-board roster on the
+         right edge, and a single CTA cluster using the site's standard
+         .btn .btn-primary / .btn .btn-secondary classes.
+         JS hooks preserved: #hero-artist-count, #stat-artists,
+         #lp-hero-platforms. Featured-card hooks (#lp-featured*) are
+         retired; the same DB.getArtists() call now hydrates #hero-board.
+         All removed-id reads in <script> are guarded with `if (el)`. -->
+    <section class="hero-flyer" aria-labelledby="hero-headline">
+      <div class="hero-flyer-bleed" aria-hidden="true"></div>
+      <div class="hero-flyer-grid container">
+
+        <!-- City ticker removed 2026-05-14 — the same cities (and more)
+             already appear in the "From the Gulf, worldwide." reach-map
+             section below; the ticker was duplicating that surface and
+             pushing the hero headline below the fold on smaller laptops. -->
+
+        <h1 id="hero-headline" class="hero-headline hero-anim hero-d-1">
+          Where Gulf and Red Sea nightlife gets booked.
+        </h1>
+
+        <div class="hero-meta hero-anim hero-d-4">
+          <p class="hero-sub">
+            Promoters, talent, contracts, and payouts in one room.
+            60-second booking, conflict-checked, live on iOS and web.
           </p>
-          <div class="lp-cta lp-anim lp-d-3">
+          <div class="hero-cta">
             <a href="auth.html?role=promoter" class="btn btn-primary btn-lg">
               <span class="js-icon" data-icon="send" data-size="16"></span>
-              Start booking
+              Book artists
             </a>
-            <a href="directory.html" class="btn btn-secondary btn-lg">
-              Browse roster
+            <a href="auth.html?role=artist" class="btn btn-secondary btn-lg">
+              Get booked
               <span class="js-icon" data-icon="chevronRight" data-size="16"></span>
             </a>
           </div>
-          <!-- Trust microcopy — soft reassurance under the CTA. Each claim
-               is something we can actually deliver today. -->
-          <div class="lp-trust-row lp-anim lp-d-3" aria-label="Trust indicators">
-            <span>Free during launch</span>
-            <span class="sep" aria-hidden="true">·</span>
-            <span>No card required</span>
-            <span class="sep" aria-hidden="true">·</span>
-            <span>Contracts, e-sign &amp; payments built-in</span>
+          <div class="hero-cta-foot">
+            <span><b id="stat-artists">11<span class="hero-plus">+</span></b> verified artists</span>
+            <span class="hero-cta-foot-sep" aria-hidden="true"></span>
+            <span>10 cities</span>
+            <span class="hero-cta-foot-sep" aria-hidden="true"></span>
+            <span id="hero-artist-count">Free during launch</span>
           </div>
-          <!-- Hero "Available on" strip — App Store coming soon + web live now -->
-          <div class="lp-hero-platforms lp-anim lp-d-4" id="lp-hero-platforms" aria-label="Where to use ROSTR+"></div>
+          <div class="hero-platforms" id="lp-hero-platforms" aria-label="Where to use ROSTR+"></div>
         </div>
 
-        <div class="lp-hero-side lp-anim lp-d-4">
-          <!-- Featured artist card (populated via JS with a live active artist) -->
-          <div class="lp-mini-card" id="lp-featured">
-            <div class="lp-mini-visual">
-              <!-- Background photo. The hydration script below sets src
-                   from the featured artist's avatar_url or local handle
-                   photo (/assets/images/artists/<handle>.jpg). It sits
-                   behind the existing gradient overlay (::after); onerror
-                   removes the <img> on 404 so the gradient stays visible.
-                   Static src omitted on purpose — JS is the source of
-                   truth, and a missing src never paints a broken-image. -->
-              <img class="lp-mini-bg" id="lp-featured-bg"
-                   alt="" aria-hidden="true" loading="eager" decoding="async"
-                   onerror="this.remove()">
-              <div class="lp-mini-badge">
-                <span class="lp-mini-pulse"></span>
-                Live on roster
+        <!-- How-it-works panel. Three numbered steps explaining what
+             the platform does, sitting in the right column where the
+             v3 glass card / v4 departures-board used to be. Static
+             content, no hydration. No icons (icons-above-headings
+             reads as template). -->
+        <aside class="hero-how hero-anim hero-d-4" aria-labelledby="hero-how-title">
+          <header class="hero-how-head">
+            <!-- Heading-outline anchor for the how-it-works panel. Was a
+                 <span> until 2026-05-14; promoted to <h2> so the page's
+                 heading hierarchy is h1 → h2 → h3 (Request/Sign/Settle)
+                 instead of jumping h1 → h3. Visual rendering is
+                 unchanged because .hero-how-eyebrow owns all the type
+                 styling. -->
+            <h2 class="hero-how-eyebrow" id="hero-how-title">How it works</h2>
+            <span class="hero-how-meta">~3 min</span>
+          </header>
+          <ol class="hero-how-list">
+            <li class="hero-how-step">
+              <span class="hero-how-num">01</span>
+              <div class="hero-how-body">
+                <h3 class="hero-how-name">Request</h3>
+                <div class="hero-how-roles">
+                  <span class="hero-how-role-label">Promoter</span>
+                  <span class="hero-how-role-text">Pick date, venue, and fee. Conflict-checked.</span>
+                  <span class="hero-how-role-label">Artist</span>
+                  <span class="hero-how-role-text">Reply with a yes, a no, or a counter.</span>
+                </div>
               </div>
-              <div class="avatar" id="lp-featured-initials">
-                <!-- Featured artist's avatar. The hydration script below
-                     sets src via artistPhotoSrc(featured) — avatar_url,
-                     then /assets/images/artists/<handle>.jpg, then nothing.
-                     onerror removes the <img> on 404 so the initials span
-                     behind it stays visible. Static src omitted on purpose. -->
-                <img id="lp-featured-photo"
-                     alt="" loading="eager" decoding="async"
-                     onerror="this.remove()">
-                <span class="avatar-initials">—</span>
+            </li>
+            <li class="hero-how-step">
+              <span class="hero-how-num">02</span>
+              <div class="hero-how-body">
+                <h3 class="hero-how-name">Sign</h3>
+                <div class="hero-how-roles">
+                  <span class="hero-how-role-label">Promoter</span>
+                  <span class="hero-how-role-text">Auto-generated contract, e-signed in-app.</span>
+                  <span class="hero-how-role-label">Artist</span>
+                  <span class="hero-how-role-text">Rider, fee, and cancellation locked in.</span>
+                </div>
               </div>
-              <div class="lp-mini-caption">
-                <!-- Default copy reads as if the featured artist is
-                     loading. The hydration script in <script> below
-                     swaps in a live verified artist (first verified,
-                     fall-through to first overall). Defensible
-                     fallback copy if Supabase is slow / offline. -->
-                <div class="genre" id="lp-featured-genre">Featured · House &amp; Techno</div>
-                <div class="stage" id="lp-featured-name">From the founding roster</div>
+            </li>
+            <li class="hero-how-step">
+              <span class="hero-how-num">03</span>
+              <div class="hero-how-body">
+                <h3 class="hero-how-name">Settle</h3>
+                <div class="hero-how-roles">
+                  <span class="hero-how-role-label">Promoter</span>
+                  <span class="hero-how-role-text">Tracked bank transfer, every step logged.</span>
+                  <span class="hero-how-role-label">Artist</span>
+                  <span class="hero-how-role-text">Payout date visible the moment funds clear.</span>
+                </div>
               </div>
-            </div>
-            <div class="lp-mini-meta">
-              <div>
-                <div class="eyebrow">Fee</div>
-                <div class="val">On request</div>
-              </div>
-              <div>
-                <div class="eyebrow">City</div>
-                <div class="val" id="lp-featured-city">Dubai</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+            </li>
+          </ol>
+        </aside>
 
-      <!--
-        Stats line — defensible-only numbers.
-        Per 2026-05-12 homepage audit (#2): pre-launch the live site
-        showed dashes for two of four stats which read as "incomplete".
-        Every value here is a fallback the operator can defend without
-        live data. JS hydration replaces #stat-artists once the
-        Supabase count resolves.
-      -->
-      <div class="lp-stats lp-anim lp-d-5">
-        <div class="lp-stat">
-          <div class="eyebrow">Founding roster</div>
-          <div class="v"><em id="stat-artists">11<span style="font-size:0.55em;color:var(--text-tertiary);margin-left:2px;font-family:var(--font-mono);font-weight:400">+</span></em></div>
-          <div class="text-mono" style="font-size:0.66rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.08em;margin-top:4px">Artists verified</div>
-        </div>
-        <div class="lp-stat">
-          <div class="eyebrow">In pipeline</div>
-          <div class="v">AED 1.4M</div>
-          <div class="text-mono" style="font-size:0.66rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.08em;margin-top:4px">Across active requests</div>
-        </div>
-        <div class="lp-stat">
-          <div class="eyebrow">Cities live</div>
-          <div class="v">8 <span class="text-mono" style="font-size:0.7rem;color:var(--text-tertiary)">GCC</span></div>
-          <div class="text-mono" style="font-size:0.66rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.08em;margin-top:4px">+5 international</div>
-        </div>
-        <div class="lp-stat">
-          <div class="eyebrow">Avg response</div>
-          <div class="v">&lt;3<span style="font-size:0.6em;color:var(--text-tertiary)">hrs</span></div>
-          <div class="text-mono" style="font-size:0.66rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.08em;margin-top:4px">Promoter → artist</div>
-        </div>
       </div>
     </section>
 
@@ -281,8 +261,7 @@
         <div>
           <span class="eyebrow">The platform</span>
           <h2 style="max-width: 780px">
-            Everything the booking pipeline needs.<br>
-            <span style="color: var(--text-tertiary)">Nothing it doesn't.</span>
+            Everything a booking actually needs, in one room.
           </h2>
         </div>
       </div>
@@ -293,8 +272,8 @@
             <div class="lp-feature-num">01 / ROSTER</div>
             <h3 style="margin-top: 8px">A verified, up-to-date directory of GCC talent.</h3>
             <p style="margin-top: 12px">
-              Riders, availability calendars and real booking history —
-              surface-ready. No more DM archaeology.
+              Riders, availability calendars, and real booking history.
+              All surface-ready. No more DM archaeology.
             </p>
           </div>
           <div class="lp-feature-visual">
@@ -318,13 +297,13 @@
         <div class="lp-feature-item">
           <div class="lp-feature-num">02 / REQUEST</div>
           <h3>60-second booking, conflict-checked.</h3>
-          <p>Date, venue, set time, budget. Realtime double-booking warning fires the moment you pick the date — same check on iOS and web.</p>
+          <p>Date, venue, set time, budget. Realtime double-booking warning fires the moment you pick the date. Same check on iOS and web.</p>
         </div>
 
         <div class="lp-feature-item">
           <div class="lp-feature-num">03 / CONTRACT</div>
           <h3>Auto-generated &amp; e-signed.</h3>
-          <p>Terms, riders, cancellation policy. Sign + Send flow on iOS and web — multi-party, audit-trailed, before the gig goes live.</p>
+          <p>Terms, riders, cancellation policy. Sign + Send flow on iOS and web: multi-party, audit-trailed, before the gig goes live.</p>
         </div>
 
         <div class="lp-feature-item">
@@ -336,13 +315,12 @@
         <div class="lp-feature-item">
           <div class="lp-feature-num">05 / MESSAGES</div>
           <h3>Realtime chat &amp; live timeline.</h3>
-          <p>Every status change appears in the thread the second it happens. Rider tweaks, set times, logistics — timestamped and in one place.</p>
+          <p>Every status change appears in the thread the second it happens. Rider tweaks, set times, logistics, all timestamped and in one place.</p>
         </div>
 
         <div class="lp-feature-item">
-          <div class="lp-feature-num">06 / EPK &amp; RIDER</div>
           <h3>Press kit, gallery, tour mode.</h3>
-          <p>Artists build a shareable EPK with bio, gallery, technical rider and tour calendar — one URL that promoters actually read.</p>
+          <p>Artists build an EPK (electronic press kit): bio, gallery, technical rider, and tour calendar in one shareable link that promoters actually read.</p>
           <!-- Live example wired to ETCH's EPK. Per 2026-05-12 homepage
                audit (#9): visitors can't picture what an "EPK" is until
                they see one. The link below is a real, in-production EPK
@@ -356,9 +334,8 @@
         </div>
 
         <div class="lp-feature-item">
-          <div class="lp-feature-num">07 / TRUST</div>
           <h3>Verified profiles &amp; full audit trail.</h3>
-          <p>Verified artists, public status page, audit trail on every contract change — see exactly who did what and when.</p>
+          <p>Verified artists, public status page, audit trail on every contract change. See exactly who did what and when.</p>
           <a class="lp-feature-link" href="/press.html">
             Press coverage
             <span class="js-icon" data-icon="chevronRight" data-size="12"></span>
@@ -366,53 +343,23 @@
         </div>
 
         <div class="lp-feature-item">
-          <div class="lp-feature-num">08 / REACH</div>
           <h3>iOS, web, push everywhere.</h3>
-          <p>Sign a contract on the train, get a counteroffer ping at the venue. Push notifications on iOS native and web — same backbone.</p>
+          <p>Sign a contract on the train, get a counteroffer ping at the venue. Push notifications on iOS native and web. Same backbone.</p>
         </div>
       </div>
     </section>
 
-    <!-- ═══ REACH MAP — scroll-scrubbed globe video ═══
-         Replaced 2026-05-12 (was a hand-drawn SVG dot-grid + arcs).
-         Section is a tall (300vh) outer wrapper containing a sticky
-         100vh inner stage; the user scrolls 300vh worth and the
-         video's currentTime is mapped to scroll progress (0→1 →
-         0→duration). The static city list stays below for SEO + no-JS
-         readers + reduced-motion users. -->
+    <!-- ═══ REACH ═══
+         Globe video retired 2026-05-14. Section now reads as a
+         typographic city ledger: headline + grouped city list. No
+         hero visual, no legend (the legend only made sense with the
+         globe to map onto). -->
     <section class="lp-reach-section" id="lp-reach-section">
-      <div class="lp-reach-scrub" id="lp-reach-scrub">
-        <div class="lp-reach-stage">
-          <video
-            id="lp-reach-video"
-            class="lp-reach-video"
-            playsinline
-            muted
-            preload="metadata"
-            poster="/assets/video/reach-globe-poster.jpg"
-            aria-hidden="true">
-            <source src="/assets/video/reach-globe.webm" type="video/webm">
-            <source src="/assets/video/reach-globe.mp4" type="video/mp4">
-          </video>
-          <div class="lp-reach-overlay container">
-            <div class="lp-section-head">
-              <div>
-                <span class="eyebrow">Where we book</span>
-                <h2>From the Gulf, worldwide.</h2>
-              </div>
-              <div class="lp-map-legend">
-                <span><span class="sw home"></span> Home base</span>
-                <span><span class="sw dest"></span> Destination</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- City list. Sits below the scrub stage. Renders for everyone
-           (it's the SEO/accessibility content + the reduced-motion
-           experience). Wrapped in .container so it shares the page grid. -->
       <div class="container">
+        <div class="lp-section-head">
+          <span class="eyebrow">Where we book</span>
+          <h2>From the Gulf, worldwide.</h2>
+        </div>
         <div class="lp-map-list" aria-label="Cities we book in">
           <div class="group">
             <div class="group-label">GCC</div>
@@ -443,8 +390,7 @@
         <div>
           <span class="eyebrow">Pricing</span>
           <h2 style="max-width: 780px">
-            Free during launch.<br>
-            <span style="color: var(--text-tertiary)">Fair when it isn't.</span>
+            Free during launch, fair when it isn't.
           </h2>
         </div>
       </div>
@@ -488,7 +434,7 @@
       <div class="lp-future-strip">
         <div class="lp-future-l">
           <span class="lp-future-tag">Later</span>
-          <span class="lp-future-txt">After your <b>third paid gig</b>, we take <b>5–10%</b> from the promoter side — never the artist.</span>
+          <span class="lp-future-txt">After your <b>third paid gig</b>, we take <b>5–10%</b> from the promoter side. Never the artist.</span>
         </div>
         <div class="lp-future-r">Transparent · no surprise<br>line items · capped</div>
       </div>
@@ -513,7 +459,7 @@
         <div>
           <span class="eyebrow">Common questions</span>
           <h2 style="max-width: 780px">
-            How it works <em style="color: var(--text-tertiary)">in the Gulf, specifically.</em>
+            What promoters and artists ask us most.
           </h2>
         </div>
         <a href="mailto:hi@rosterplus.io?subject=ROSTR%2B%20question" class="btn btn-ghost">
@@ -529,7 +475,7 @@
             <span class="lp-faq-icon" aria-hidden="true">+</span>
           </summary>
           <div class="lp-faq-a">
-            <p>Visas remain the promoter's responsibility — same as any booking. ROSTR+ doesn't process visa paperwork, but the contract we generate captures who's responsible for which immigration step (entry permit, employment visa, exit). Most GCC promoters use a NOC + visit-visa pattern for single-event bookings; the contract template has fields for both, so the agreement is explicit before the artist boards a plane.</p>
+            <p>Visas remain the promoter's responsibility, same as any booking. ROSTR+ doesn't process visa paperwork, but the contract we generate captures who's responsible for which immigration step (entry permit, employment visa, exit). Most GCC promoters use a NOC + visit-visa pattern for single-event bookings; the contract template has fields for both, so the agreement is explicit before the artist boards a plane.</p>
           </div>
         </details>
 
@@ -539,7 +485,7 @@
             <span class="lp-faq-icon" aria-hidden="true">+</span>
           </summary>
           <div class="lp-faq-a">
-            <p>Yes. Promoters record payments on the platform (bank transfer reference, Stripe, or Tap). Artists confirm receipt with one tap. AED is the default; we also support USD and EUR for international artists. Payouts route directly between promoter and artist — ROSTR+ holds no funds. Every transaction has an invoice number, audit trail, and timestamp so VAT filings and dispute evidence are one click away.</p>
+            <p>Yes. Promoters record payments on the platform (bank transfer reference, Stripe, or Tap). Artists confirm receipt with one tap. AED is the default; we also support USD and EUR for international artists. Payouts route directly between promoter and artist. ROSTR+ holds no funds. Every transaction has an invoice number, audit trail, and timestamp so VAT filings and dispute evidence are one click away.</p>
           </div>
         </details>
 
@@ -549,7 +495,7 @@
             <span class="lp-faq-icon" aria-hidden="true">+</span>
           </summary>
           <div class="lp-faq-a">
-            <p>The contract you generate captures the cancellation policy at signing — typically 50% deposit non-refundable at &gt;14 days, 100% inside 7 days. Both sides agree before signing. If a dispute arises, the full audit log (every message, status change, signature, payment record) is exportable as a single PDF for arbitration. We've kept the structure aligned with UAE Commercial Transactions Law so it holds up locally.</p>
+            <p>The contract you generate captures the cancellation policy at signing: typically 50% deposit non-refundable at &gt;14 days, 100% inside 7 days. Both sides agree before signing. If a dispute arises, the full audit log (every message, status change, signature, payment record) is exportable as a single PDF for arbitration. We've kept the structure aligned with UAE Commercial Transactions Law so it holds up locally.</p>
           </div>
         </details>
 
@@ -559,7 +505,7 @@
             <span class="lp-faq-icon" aria-hidden="true">+</span>
           </summary>
           <div class="lp-faq-a">
-            <p>Three checks before a "Verified" badge appears: a working email or phone number, a real social presence (Instagram / SoundCloud / Spotify), and at least one cross-reference from a promoter or venue we already know. We don't verify performance quality — promoters decide that — but we do verify the human exists. Founding-50 artists go through the same checks.</p>
+            <p>Three checks before a "Verified" badge appears: a working email or phone number, a real social presence (Instagram / SoundCloud / Spotify), and at least one cross-reference from a promoter or venue we already know. We don't verify performance quality (promoters decide that), but we do verify the human exists. Founding-50 artists go through the same checks.</p>
           </div>
         </details>
 
@@ -569,7 +515,7 @@
             <span class="lp-faq-icon" aria-hidden="true">+</span>
           </summary>
           <div class="lp-faq-a">
-            <p>Free during launch on both sides — no card required to start. When pricing turns on, we take 5–10% only from the promoter side, only after their third paid booking, and never from the artist. Founding-50 artists keep their badge and zero-commission rate forever. See the <a href="#" onclick="document.querySelector('.lp-pricing').scrollIntoView({behavior:'smooth'});return false;">pricing section</a> above for the structure.</p>
+            <p>Free during launch on both sides. No card required to start. When pricing turns on, we take 5–10% only from the promoter side, only after their third paid booking, and never from the artist. Founding-50 artists keep their badge and zero-commission rate forever. See the <a href="#" onclick="document.querySelector('.lp-pricing').scrollIntoView({behavior:'smooth'});return false;">pricing section</a> above for the structure.</p>
           </div>
         </details>
 
@@ -596,7 +542,7 @@
             "name": "Do I need a UAE work visa to book through ROSTR+?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Visas remain the promoter's responsibility — same as any booking. ROSTR+ doesn't process visa paperwork, but the contract we generate captures who's responsible for which immigration step (entry permit, employment visa, exit). Most GCC promoters use a NOC + visit-visa pattern for single-event bookings."
+              "text": "Visas remain the promoter's responsibility, same as any booking. ROSTR+ doesn't process visa paperwork, but the contract we generate captures who's responsible for which immigration step (entry permit, employment visa, exit). Most GCC promoters use a NOC + visit-visa pattern for single-event bookings."
             }
           },
           {
@@ -604,7 +550,7 @@
             "name": "How do payouts work? Can artists receive AED directly?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Yes. Promoters record payments on the platform (bank transfer reference, Stripe, or Tap). Artists confirm receipt with one tap. AED is the default; we also support USD and EUR. Payouts route directly between promoter and artist — ROSTR+ holds no funds."
+              "text": "Yes. Promoters record payments on the platform (bank transfer reference, Stripe, or Tap). Artists confirm receipt with one tap. AED is the default; we also support USD and EUR. Payouts route directly between promoter and artist. ROSTR+ holds no funds."
             }
           },
           {
@@ -612,7 +558,7 @@
             "name": "What happens if an event gets cancelled?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "The contract you generate captures the cancellation policy at signing — typically 50% deposit non-refundable at >14 days, 100% inside 7 days. If a dispute arises, the full audit log is exportable as a single PDF for arbitration."
+              "text": "The contract you generate captures the cancellation policy at signing: typically 50% deposit non-refundable at >14 days, 100% inside 7 days. If a dispute arises, the full audit log is exportable as a single PDF for arbitration."
             }
           },
           {
@@ -628,7 +574,7 @@
             "name": "Is ROSTR+ free? When does pricing change?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Free during launch on both sides — no card required. When pricing turns on, we take 5–10% only from the promoter side, only after their third paid booking, and never from the artist."
+              "text": "Free during launch on both sides. No card required. When pricing turns on, we take 5–10% only from the promoter side, only after their third paid booking, and never from the artist."
             }
           },
           {
@@ -644,24 +590,13 @@
       </script>
     </section>
 
-    <!-- ═══ PLATFORM PARITY STRIP ═══
-         Single split panel: parity claim left, platform badges right.
-         Surfaces the cross-platform reality without burying it in the footer. -->
-    <section class="container" style="padding: var(--space-2xl) 0">
-      <div class="lp-parity" id="lp-parity">
-        <div>
-          <span class="eyebrow">Same backbone, two front doors</span>
-          <h2>Web is live today.<br>iOS is coming to the App Store.</h2>
-          <p>
-            Every booking, contract, message and payment syncs in realtime
-            across both. Sign on iOS in the morning, counteroffer from the
-            browser at lunch — same database, same audit trail, same push.
-            TestFlight beta is open if you want it sooner.
-          </p>
-        </div>
-        <div class="lp-parity-badges" id="lp-parity-badges"></div>
-      </div>
-    </section>
+    <!-- Platform-Parity strip removed 2026-05-14 — internal-architecture
+         framing wasn't earning its real estate; the hero badges + the
+         feature-grid "08 / REACH" card cover the cross-platform story
+         for end users. The #lp-parity-badges hydration in the script
+         block below is now a no-op (the element id no longer exists);
+         left in place as inert so a future revival of the section
+         doesn't need a JS edit. -->
 
     <!-- ═══ CLOSING CTA ═══
          Per 2026-05-12 homepage audit (#17): the previous close just
@@ -677,7 +612,7 @@
           <span aria-hidden="true">⚡</span> Founding 50 · <span id="lp-cohort-remaining">39</span> spots left
         </div>
         <h2>Your next headliner is <em>already</em> on ROSTR+.</h2>
-        <p>The first 50 verified artists keep their founding badge — and pay zero commission, forever. Promoters who book a founding artist get priority placement on the directory through 2027.</p>
+        <p>The first 50 verified artists keep their founding badge, and pay zero commission, forever. Promoters who book a founding artist get priority placement on the directory through 2027.</p>
         <div class="cta-row">
           <a href="auth.html?role=artist" class="btn btn-primary btn-lg">
             <span class="js-icon" data-icon="send" data-size="16"></span>
@@ -804,28 +739,9 @@
             .replace(/^-|-$/g, '');
         }
 
-        // Featured card — pick the first verified artist, fall back to first
-        const featured = artists.find(a => a.verified) || artists[0];
-        if (featured) {
-          const name = featured.name || featured.stage_name || 'Artist';
-          const initials = name.split(/\s+/).map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
-          // Write initials into the inner <span>, not the wrapper, so we
-          // don't blow away the placeholder <img> sitting next to it.
-          const initialsSpan = document.querySelector('#lp-featured-initials .avatar-initials');
-          if (initialsSpan) initialsSpan.textContent = initials;
-          // Avatar slot: prefer profile avatar, then handle-slug photo
-          // (artists/<handle>.jpg), then leave initials visible.
-          const photo = document.getElementById('lp-featured-photo');
-          const photoSrc = artistPhotoSrc(featured);
-          if (photo && photoSrc) photo.src = photoSrc;
-          // Background slot: same chain, so the hero card has the
-          // featured artist's photo as a moody backdrop.
-          const heroBg = document.getElementById('lp-featured-bg');
-          if (heroBg && photoSrc) heroBg.src = photoSrc;
-          setText('lp-featured-name', name);
-          setText('lp-featured-genre', 'Featured · ' + (featured.genre || 'Artist'));
-          setText('lp-featured-city', featured.city || '—');
-        }
+        // (Departures-board hydration removed 2026-05-13. The hero's
+        // right column is now a static How-it-works panel, no data
+        // hookup needed.)
 
         // Feature-01 gallery — first 6 artists. Each tile uses the
         // same three-tier fallback as the featured card; the generic
@@ -851,119 +767,8 @@
     });
   </script>
 
-  <!-- ═══ Reach-map scroll-scrub ═══
-       The "From the Gulf, worldwide." section is a 300vh-tall wrapper
-       with a sticky 100vh stage inside. As the user scrolls, we map
-       scroll progress (0 → 1) to video.currentTime (0 → duration).
-       Effect: the globe video "plays" in lockstep with scroll —
-       scrolling up rewinds, scrolling down advances, all buttery-
-       smooth because of the dense 12-frame keyframe interval the
-       MP4/WebM was encoded with.
-
-       Cycles only run while the section intersects the viewport
-       (IntersectionObserver), and only inside rAF — never raw scroll
-       listeners. Bails out if the user has prefers-reduced-motion or
-       if the <video> element is missing. -->
-  <script>
-    (function () {
-      const section = document.getElementById('lp-reach-scrub');
-      const video   = document.getElementById('lp-reach-video');
-      if (!section || !video) return;
-
-      // Reduced-motion: leave the poster frame, don't scrub.
-      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
-      if (reduce.matches) return;
-
-      // Known duration of the encoded clip — fallback when the browser
-      // hasn't reported `video.duration` yet (iOS Safari delays metadata
-      // until user interaction, even with preload="auto"). Matches the
-      // 10.04s of the source MP4/WebM. If you re-encode at a different
-      // length, update this constant.
-      const FALLBACK_DURATION = 10.0;
-
-      // iOS Safari wake-up: the video element won't seek until it has
-      // both metadata AND has been "touched" by JS. play() + pause()
-      // immediately schedules metadata loading without ever actually
-      // showing playback. Wrapped in try/catch because some browsers
-      // reject the bare play() promise.
-      function wake() {
-        try {
-          const p = video.play();
-          if (p && typeof p.then === 'function') {
-            p.then(() => video.pause()).catch(() => { /* expected on iOS pre-interaction */ });
-          }
-        } catch (_) { /* ignore */ }
-      }
-
-      function duration() {
-        return (isFinite(video.duration) && video.duration > 0)
-          ? video.duration
-          : FALLBACK_DURATION;
-      }
-
-      let visible = false;
-      let raf = 0;
-
-      function tick() {
-        raf = 0;
-        if (!visible) return;
-
-        // The OUTER scrub runway is 300vh tall. Inside it sits the
-        // 100vh sticky stage. As the runway scrolls past, rect.top
-        // goes from +viewportHeight (just below fold) → 0 (top of
-        // runway hits top of viewport) → −(300vh − 100vh) (runway's
-        // bottom reaches bottom of viewport). Scrub progress = how
-        // far past the start of the runway, normalised by the
-        // available travel distance (height − vh).
-        const rect = section.getBoundingClientRect();
-        const vh = window.innerHeight || document.documentElement.clientHeight;
-        const total = section.offsetHeight - vh;
-        if (total <= 0) return;
-        const progress = Math.max(0, Math.min(1, -rect.top / total));
-
-        // Seek if delta ≥ 1 frame (24fps → 0.04s). Some browsers will
-        // ignore the seek if the byte range isn't buffered yet — that's
-        // okay, the next rAF after a buffer event picks it up.
-        const target = progress * duration();
-        if (Math.abs(target - video.currentTime) > 0.04) {
-          try { video.currentTime = target; } catch (_) { /* not seekable yet */ }
-        }
-      }
-
-      function schedule() {
-        if (raf) return;
-        raf = requestAnimationFrame(tick);
-      }
-
-      // IntersectionObserver wakes the rAF loop only while the section
-      // intersects the viewport. First intersection also triggers the
-      // iOS wake-up dance so currentTime becomes seekable.
-      const io = new IntersectionObserver((entries) => {
-        entries.forEach((e) => {
-          visible = e.isIntersecting;
-          if (visible) {
-            if (video.readyState < 2) {
-              video.load();
-              wake();
-            }
-            schedule();
-          }
-        });
-      }, { threshold: 0 });
-      io.observe(section);
-
-      window.addEventListener('scroll',  schedule, { passive: true });
-      window.addEventListener('resize',  schedule, { passive: true });
-      // Re-schedule on every readiness event so the first scrub catches
-      // up the moment the browser has enough bytes to seek.
-      ['loadedmetadata','loadeddata','canplay','canplaythrough','seeked','progress']
-        .forEach(ev => video.addEventListener(ev, schedule));
-
-      // Kick once after DOM settles — in case the section is already in
-      // view on reload (mid-page hash, deep link, etc.).
-      requestAnimationFrame(schedule);
-    })();
-  </script>
+  <!-- Reach-map globe video + scroll-scrub JS retired 2026-05-14.
+       The section is now a typographic city ledger only. -->
 
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
 </body>
