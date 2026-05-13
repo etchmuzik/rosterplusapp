@@ -105,6 +105,8 @@
   <div class="page-shell">
     <div id="nav-root"></div>
   <a id="main-content" tabindex="-1" class="sr-only">Main content</a>
+    <main id="main-content-wrap" role="main">
+  <h1 class="sr-only">Electronic Press Kit — ROSTR+</h1>
     <div class="epk-container">
       <div id="epk-content">
         <div style="text-align:center;padding:var(--space-3xl);color:var(--text-tertiary)">Loading EPK...</div>
@@ -315,7 +317,7 @@
             <button class="btn btn-ghost btn-sm" onclick="window.print()">Save PDF</button>
           </div>
           <div style="text-align:center">
-            <img src="${qrUrl}" alt="QR Code" width="100" height="100" style="border-radius:var(--radius-sm);border:1px solid var(--border-subtle)">
+            <img src="${qrUrl}" alt="QR Code" width="100" height="100" style="border-radius:var(--radius-sm);border:1px solid var(--border-subtle)" onerror="this.replaceWith(Object.assign(document.createElement('div'),{textContent:'QR unavailable',style:'width:100px;height:100px;display:flex;align-items:center;justify-content:center;color:var(--text-tertiary);font-size:0.7rem;background:var(--bg-card);border:1px dashed var(--border-subtle);border-radius:var(--radius-sm)'}))">
             <div style="font-size:0.68rem;color:var(--text-tertiary);margin-top:4px">Scan to view EPK</div>
           </div>
         </div>
@@ -484,6 +486,7 @@
   </script>
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
     <!-- Site-wide footer (rendered by app.js renderFooter()) -->
+    </main>
     <site-footer id="site-footer"></site-footer>
 </body>
 </html>

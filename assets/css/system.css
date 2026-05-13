@@ -572,9 +572,14 @@ a:hover { color: var(--gold); }
   background: rgba(248,113,113,0.18);
 }
 
-.btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+.btn-sm { padding: 8px 14px; font-size: 0.8rem; min-height: 36px; }
 .btn-lg { padding: 14px 28px; font-size: 1rem; }
-.btn-icon { padding: 8px; width: 36px; height: 36px; }
+/* 2026-05-13 audit v2 P1-9 — bumped from 36×36 to 44×44 to meet
+   WCAG 2.5.5 Target Size minimum (24×24 AA / 44×44 AAA). Modal
+   close buttons + admin toolbar icon-only buttons now hit-safe on
+   touch. Padding bumped to 10 so the visible glyph stays at 14-16
+   px (was hugging the edge). */
+.btn-icon { padding: 10px; width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; }
 
 /* ── Form elements ── */
 .form-group { margin-bottom: var(--space-lg); }
@@ -4294,6 +4299,8 @@ tr:hover td { background: rgba(255,255,255,0.015); }
 .mt-space-lg  { margin-top: var(--space-lg); }
 .p-space-sm   { padding: var(--space-sm); }
 .p-space-xl-center { padding: var(--space-xl); text-align: center; }
+.empty-state-muted { text-align: center; padding: var(--space-xl); color: var(--text-tertiary); }
+.empty-state-error { text-align: center; padding: var(--space-xl); color: var(--status-cancelled); }
 .fw-500       { font-weight: 500; }
 .tabular-nums { font-variant-numeric: tabular-nums; }
 .m-0          { margin: 0; }

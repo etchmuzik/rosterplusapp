@@ -131,13 +131,13 @@
             <div class="stat-card"><div class="card-inner"><div class="stat-label">This Month</div><div class="stat-value" id="stat-month">—</div></div></div>
           </div>
 
-          <h3 class="mb-space-md">Pending Requests</h3>
+          <h2 class="mb-space-md h-as-h3">Pending Requests</h2>
           <div id="pending-requests" class="table-wrap mb-space-2xl"></div>
 
-          <h3 class="mb-space-md">Upcoming Gigs</h3>
+          <h2 class="mb-space-md h-as-h3">Upcoming Gigs</h2>
           <div id="upcoming-gigs" class="table-wrap mb-space-2xl"></div>
 
-          <h3 class="mb-space-md">Recent Messages</h3>
+          <h2 class="mb-space-md h-as-h3">Recent Messages</h2>
           <div id="recent-messages" style="display:flex;flex-direction:column;gap:var(--space-sm);margin-bottom:var(--space-xl)"></div>
 
           <!-- Quick-block availability: preset buttons + custom date, plus a
@@ -872,6 +872,13 @@
       });
     });
   </script>
+<script>
+    // 2026-05-13 audit v2 P1-5: bind Escape + focus-trap to every modal
+    // on this page. UI.bindModal lives in assets/js/app.js. Idempotent.
+    document.addEventListener('DOMContentLoaded', () => {
+      try { UI.bindModal(document.getElementById('action-modal'), () => closeActionModal()); } catch (_) {}
+    });
+</script>
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
     <!-- Site-wide footer (rendered by app.js renderFooter()) -->
     <site-footer id="site-footer"></site-footer>

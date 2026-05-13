@@ -349,12 +349,13 @@
 <body>
   <div id="nav-root"></div>
   <a id="main-content" tabindex="-1" class="sr-only">Main content</a>
+    <main id="main-content-wrap" role="main">
   <div class="page-shell">
     <div class="chat-layout" id="chatLayout">
       <!-- Conversations Panel -->
       <div class="conv-panel">
         <div class="conv-header">
-          <h3>Messages</h3>
+          <h1 class="h-as-h3" style="margin:0">Messages</h1>
           <div class="conv-search">
             <div class="conv-search-icon" id="searchIcon"></div>
             <input type="text" placeholder="Search conversations..." id="convSearch" oninput="filterConversations()">
@@ -396,7 +397,7 @@
           <div style="background:var(--bg-raised);border:1px solid var(--border-medium);border-radius:var(--radius-lg);padding:var(--space-lg);width:min(520px,94vw);max-height:80vh;overflow-y:auto;box-shadow:var(--shadow-lg)">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-md)">
               <div>
-                <h3 style="margin:0 0 2px">Quick-reply templates</h3>
+                <h2 class="h-as-h3" style="margin:0 0 2px">Quick-reply templates</h2>
                 <div style="font-size:0.78rem;color:var(--text-tertiary)">One-tap replies for common responses. Up to 20 saved.</div>
               </div>
               <button class="btn btn-ghost btn-sm" onclick="closeQrModal()" aria-label="Close">&times;</button>
@@ -534,7 +535,7 @@
       document.getElementById('chatAvatar').innerHTML = UI.avatar(partnerName || '?', 36);
       document.getElementById('chatName').textContent = headerTitle;
       document.getElementById('chatStatus').innerHTML = esc(headerSub) + ` · <a href="booking-detail.html?id=${esc(bookingId)}" style="color:var(--accent-soft)">Open booking</a>`;
-      document.getElementById('messagesArea').innerHTML = `<div style="text-align:center;padding:var(--space-xl);color:var(--text-tertiary)">Loading messages...</div>`;
+      document.getElementById('messagesArea').innerHTML = `<div class="empty-state-muted">Loading messages...</div>`;
       document.getElementById('chatInputBar').style.display = '';
       renderQrChips();
       document.getElementById('chatLayout').classList.add('chat-open');
@@ -545,7 +546,7 @@
         activeMessages = result.data;
         renderMessages(activeMessages);
       } else {
-        document.getElementById('messagesArea').innerHTML = `<div style="text-align:center;padding:var(--space-xl);color:var(--status-cancelled)">Failed to load messages</div>`;
+        document.getElementById('messagesArea').innerHTML = `<div class="empty-state-error">Failed to load messages</div>`;
       }
 
       subscribeRealtime();
@@ -557,7 +558,7 @@
       document.getElementById('chatAvatar').innerHTML = UI.avatar(name, 36);
       document.getElementById('chatName').textContent = name;
       document.getElementById('chatStatus').textContent = 'Direct message';
-      document.getElementById('messagesArea').innerHTML = `<div style="text-align:center;padding:var(--space-xl);color:var(--text-tertiary)">Loading messages...</div>`;
+      document.getElementById('messagesArea').innerHTML = `<div class="empty-state-muted">Loading messages...</div>`;
       document.getElementById('chatInputBar').style.display = '';
       renderQrChips();
       document.getElementById('chatLayout').classList.add('chat-open');
@@ -568,7 +569,7 @@
         activeMessages = result.data;
         renderMessages(activeMessages);
       } else {
-        document.getElementById('messagesArea').innerHTML = `<div style="text-align:center;padding:var(--space-xl);color:var(--status-cancelled)">Failed to load messages</div>`;
+        document.getElementById('messagesArea').innerHTML = `<div class="empty-state-error">Failed to load messages</div>`;
       }
 
       subscribeRealtime();
@@ -916,6 +917,7 @@
   </script>
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
     <!-- Site-wide footer (rendered by app.js renderFooter()) -->
+    </main>
     <site-footer id="site-footer"></site-footer>
 </body>
 </html>

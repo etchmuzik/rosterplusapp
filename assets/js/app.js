@@ -490,6 +490,71 @@ const UI = {
     return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
   },
 
+  // ── Modal a11y helper (2026-05-13 audit v2 P1-5) ──
+  // Wires up Escape-to-close + Tab focus-trap on any modal element.
+  // Call `UI.bindModal(modalEl, closeFn)` once per modal on mount.
+  // Sets `role="dialog"` + `aria-modal="true"` if not already present.
+  // Returns an unbind function to call when the modal is destroyed.
+  //
+  // Idempotent: re-binding the same element replaces the previous
+  // handler so callers don't have to track state.
+  bindModal(modalEl, closeFn) {
+    if (!modalEl) return () => {};
+    if (modalEl.__rostrModalBound) {
+      modalEl.__rostrModalBound();  // unbind previous
+    }
+    if (!modalEl.hasAttribute('role')) modalEl.setAttribute('role', 'dialog');
+    modalEl.setAttribute('aria-modal', 'true');
+
+    const focusables = () => Array.from(modalEl.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    )).filter(el => !el.disabled && el.offsetParent !== null);
+
+    const onKey = (e) => {
+      // Only act when this modal is the currently-open one (no .hidden class).
+      if (modalEl.classList.contains('hidden') || modalEl.style.display === 'none') return;
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (typeof closeFn === 'function') closeFn();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const list = focusables();
+      if (list.length === 0) return;
+      const first = list[0];
+      const last = list[list.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault(); last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault(); first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+
+    // Auto-focus first focusable inside the modal when it becomes visible.
+    // Observe class changes since modals are toggled by adding/removing
+    // .hidden or .active in this codebase.
+    const observer = new MutationObserver(() => {
+      const visible = !modalEl.classList.contains('hidden') && modalEl.style.display !== 'none';
+      if (visible) {
+        const list = focusables();
+        if (list.length && document.activeElement !== list[0]) {
+          // Tiny delay so the modal's transition finishes before focus.
+          setTimeout(() => list[0].focus(), 50);
+        }
+      }
+    });
+    observer.observe(modalEl, { attributes: true, attributeFilter: ['class', 'style'] });
+
+    const unbind = () => {
+      document.removeEventListener('keydown', onKey);
+      observer.disconnect();
+      modalEl.__rostrModalBound = null;
+    };
+    modalEl.__rostrModalBound = unbind;
+    return unbind;
+  },
+
   // Format date
   formatDate(date) {
     return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -766,7 +831,7 @@ const UI = {
         </div>
         <div style="display:flex;justify-content:center;margin-bottom:var(--space-md)">
           <div style="background:#fff;padding:12px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center">
-            <img src="${qrSrc}" alt="QR code" width="180" height="180" style="display:block" onerror="this.style.opacity='0.3';this.alt='QR unavailable'">
+            <img src="${qrSrc}" alt="QR code" width="180" height="180" style="display:block" onerror="this.replaceWith(Object.assign(document.createElement('div'),{textContent:'QR unavailable',style:'width:180px;height:180px;display:flex;align-items:center;justify-content:center;color:var(--text-tertiary);font-size:0.78rem;background:var(--bg-card);border:1px dashed var(--border-subtle);border-radius:6px'}))">
           </div>
         </div>
         <div style="font-size:0.76rem;color:var(--text-tertiary);text-align:center;margin-bottom:var(--space-md)">Scan with a phone camera</div>

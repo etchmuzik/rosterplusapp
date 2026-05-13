@@ -103,7 +103,7 @@
             <div class="head">
               <div>
                 <span class="eyebrow">Pipeline</span>
-                <h3>Booking funnel</h3>
+                <h2 class="h-as-h3">Booking funnel</h2>
               </div>
               <span class="label-mono-sm" id="pipeline-total">—</span>
             </div>
@@ -115,7 +115,7 @@
             <div class="head">
               <div>
                 <span class="eyebrow">Inbox</span>
-                <h3>Recent messages</h3>
+                <h2 class="h-as-h3">Recent messages</h2>
               </div>
               <a href="messages.html" class="label-mono-sm text-accent-soft">Open &rarr;</a>
             </div>
@@ -656,6 +656,13 @@
       if (e.target === this) this.classList.remove('active');
     });
   </script>
+<script>
+    // 2026-05-13 audit v2 P1-5: bind Escape + focus-trap to every modal
+    // on this page. UI.bindModal lives in assets/js/app.js. Idempotent.
+    document.addEventListener('DOMContentLoaded', () => {
+      try { UI.bindModal(document.getElementById('message-modal'), () => document.getElementById('message-modal').classList.remove('active')); } catch (_) {}
+    });
+</script>
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
     <!-- Site-wide footer (rendered by app.js renderFooter()) -->
     <site-footer id="site-footer"></site-footer>

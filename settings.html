@@ -48,13 +48,14 @@
   <div class="page-shell">
     <div id="nav-root"></div>
   <a id="main-content" tabindex="-1" class="sr-only">Main content</a>
+    <main id="main-content-wrap" role="main">
     <div class="settings-container">
       <h1 style="margin-bottom:var(--space-xs)">Settings</h1>
       <p class="text-tertiary" style="margin-bottom:var(--space-2xl)">Manage your account and preferences</p>
 
       <!-- Profile Section -->
       <div class="settings-section">
-        <div class="settings-header">Profile</div>
+        <h2 class="settings-header h-as-h3">Profile</h2>
         <div id="profile-completion" style="margin-bottom:var(--space-lg)"></div>
         <div class="avatar-edit" style="margin-bottom:var(--space-lg)">
           <div class="avatar-large" id="avatar-preview"></div>
@@ -109,14 +110,14 @@
 
       <!-- Artist-only: link to the artist profile editor (rate card, genres, tech rider) -->
       <div class="settings-section role-artist" style="display:none">
-        <div class="settings-header">Artist Profile</div>
+        <h2 class="settings-header h-as-h3">Artist Profile</h2>
         <p class="text-secondary" style="font-size:0.9rem;margin-bottom:var(--space-md)">Your stage name, genres, base fee, social links and tech rider live in a dedicated editor.</p>
         <a href="artist-profile-edit.html" class="btn btn-secondary btn-sm">Edit Artist Profile &rarr;</a>
       </div>
 
       <!-- Security Section -->
       <div class="settings-section">
-        <div class="settings-header">Security</div>
+        <h2 class="settings-header h-as-h3">Security</h2>
         <div class="form-group" style="margin-bottom:var(--space-md)">
           <label class="form-label" for="new-password">New Password</label>
           <input type="password" class="form-input" id="new-password" placeholder="Enter new password" minlength="8">
@@ -143,7 +144,7 @@
 
       <!-- Notifications Section -->
       <div class="settings-section">
-        <div class="settings-header">Notifications</div>
+        <h2 class="settings-header h-as-h3">Notifications</h2>
         <div class="settings-row">
           <div>
             <div class="settings-label">Browser push notifications</div>
@@ -190,7 +191,7 @@
 
       <!-- Danger Zone -->
       <div class="settings-section">
-        <div class="settings-header" style="color:var(--status-cancelled)">Danger Zone</div>
+        <h2 class="settings-header h-as-h3" style="color:var(--status-cancelled)">Danger Zone</h2>
         <div class="danger-zone">
           <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:var(--space-md)">Once you delete your account, there is no going back. All your data will be permanently removed.</p>
           <button class="btn btn-danger btn-sm" onclick="if(confirm('Are you sure? This cannot be undone.')) UI.toast('Contact hi@rosterplus.io to delete your account','info')">Delete Account</button>
@@ -387,6 +388,7 @@
   </script>
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
     <!-- Site-wide footer (rendered by app.js renderFooter()) -->
+    </main>
     <site-footer id="site-footer"></site-footer>
 </body>
 </html>

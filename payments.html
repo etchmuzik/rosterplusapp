@@ -1164,6 +1164,14 @@
       });
     });
   </script>
+<script>
+    // 2026-05-13 audit v2 P1-5: bind Escape + focus-trap to every modal
+    // on this page. UI.bindModal lives in assets/js/app.js. Idempotent.
+    document.addEventListener('DOMContentLoaded', () => {
+      try { UI.bindModal(document.getElementById('payment-detail-modal'), () => closePaymentDetailModal()); } catch (_) {}
+      try { UI.bindModal(document.getElementById('make-payment-modal'), () => closeMakePaymentModal()); } catch (_) {}
+    });
+</script>
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
 </body>
 </html>
