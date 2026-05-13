@@ -278,45 +278,43 @@ serve(async (req) => {
     });
   }
 
-  // 2026-05-13 audit v2 P0-1: previously this function had no auth
-  // check and accepted any POST — anyone could send transactional
-  // email from book@rosterplus.io with any of the 11 template
-  // bodies, consuming Resend quota and enabling phishing. Now requires
-  // a valid signed-in user OR a service-role key (used by the
-  // booking-reminders / onboarding-drip / review-prompts cron jobs).
+  // 2026-05-13 audit v2 P0-1 — closed the open-relay. The function
+  // previously accepted any unauthenticated POST. Now:
+  //   - Service-role bearer  → cron / server-side caller, allow all
+  //   - End-user JWT         → any authenticated user, allow all
+  //                            (the platform's emails legitimately
+  //                            cross between users — promoters email
+  //                            artists for bookings, artists email
+  //                            promoters with accept/reject, etc.)
+  //   - No bearer + same-origin (rosterplus.io) → allow ONLY
+  //     `to === book@rosterplus.io` (the EPK inquiry form's path —
+  //     anonymous promoter sends a lead to our inbox). Direct
+  //     artist-email fanout from the EPK form goes through the
+  //     authenticated /booking.html flow instead.
+  //   - Anything else        → 401
+  //
+  // The combined effect: an attacker without a real account can
+  // only send mail to our own inbox, which we monitor anyway.
+  // Mailbomb potential is bounded to the EPK inquiry rate limit
+  // (a future P1 — for now bounded only by Resend's own per-IP
+  // throttling).
   const authHeader = req.headers.get('authorization') || '';
   const bearer = authHeader.replace(/^Bearer\s+/i, '').trim();
+  const requestOrigin = origin || '';
+  const isSameOrigin = ALLOWED_ORIGINS.has(requestOrigin);
   let isServiceRole = false;
-  let callerEmail: string | null = null;
+  let isAuthenticatedUser = false;
+
   if (bearer && bearer === SERVICE_ROLE) {
-    // Cron / internal call. Allow all template types.
     isServiceRole = true;
   } else if (bearer && SUPABASE_URL && SERVICE_ROLE) {
-    // End-user JWT — verify by calling auth.getUser with the user's token.
-    // (Use service-role client so the verification call itself has
-    // permission to read the user record.)
     try {
       const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
       const { data: ures, error } = await admin.auth.getUser(bearer);
-      if (error || !ures?.user) {
-        return new Response(JSON.stringify({ error: 'unauthorized' }), {
-          status: 401,
-          headers: { ...cors, 'Content-Type': 'application/json' },
-        });
+      if (!error && ures?.user) {
+        isAuthenticatedUser = true;
       }
-      callerEmail = ures.user.email ?? null;
-    } catch (_e) {
-      return new Response(JSON.stringify({ error: 'unauthorized' }), {
-        status: 401,
-        headers: { ...cors, 'Content-Type': 'application/json' },
-      });
-    }
-  } else {
-    // No bearer + not service-role — reject.
-    return new Response(JSON.stringify({ error: 'unauthorized' }), {
-      status: 401,
-      headers: { ...cors, 'Content-Type': 'application/json' },
-    });
+    } catch (_e) { /* fall through */ }
   }
 
   try {
@@ -330,26 +328,23 @@ serve(async (req) => {
       });
     }
 
-    // End-user calls (non-service-role) can only address their own
-    // email address. Cron / admin paths (service-role) bypass this.
-    // The EPK inquiry flow (unauthenticated promoter contacting an
-    // artist) is intentionally still gated: a logged-in user must
-    // submit it, otherwise it 401s above.
-    if (!isServiceRole) {
-      if (typeof to !== 'string' || !to.includes('@')) {
-        return new Response(JSON.stringify({ error: 'invalid_to' }), {
-          status: 400,
-          headers: { ...cors, 'Content-Type': 'application/json' },
-        });
-      }
-      // Allowlist: the caller's own email OR our internal forwarding
-      // address (used by the EPK inquiry form so promoters can reach
-      // book@rosterplus.io as their starting point).
-      const allowedSelf = callerEmail && to.toLowerCase() === callerEmail.toLowerCase();
-      const allowedInbox = to.toLowerCase() === 'book@rosterplus.io';
-      if (!allowedSelf && !allowedInbox) {
-        return new Response(JSON.stringify({ error: 'forbidden_recipient' }), {
-          status: 403,
+    if (typeof to !== 'string' || !to.includes('@')) {
+      return new Response(JSON.stringify({ error: 'invalid_to' }), {
+        status: 400,
+        headers: { ...cors, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Authorization decision:
+    //  - service-role / auth'd user: allow any `to`
+    //  - same-origin anonymous (EPK inquiry form): allow only
+    //    `to == book@rosterplus.io`
+    //  - everyone else: reject
+    if (!isServiceRole && !isAuthenticatedUser) {
+      const inboxOnly = to.toLowerCase() === 'book@rosterplus.io';
+      if (!isSameOrigin || !inboxOnly) {
+        return new Response(JSON.stringify({ error: 'unauthorized' }), {
+          status: 401,
           headers: { ...cors, 'Content-Type': 'application/json' },
         });
       }
