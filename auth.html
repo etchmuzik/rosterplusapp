@@ -148,6 +148,11 @@
     }
 
     .role-option {
+      /* Now a <button> (2026-05-13 a11y P0-14) — reset browser
+         defaults so it looks like the old <div>. */
+      font: inherit;
+      color: inherit;
+      width: 100%;
       padding: var(--space-md);
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);
@@ -155,6 +160,10 @@
       cursor: pointer;
       transition: all var(--duration-fast) var(--ease-out);
       text-align: center;
+    }
+    .role-option:focus-visible {
+      outline: 2px solid var(--gold);
+      outline-offset: 2px;
     }
 
     .role-option:hover {
@@ -270,15 +279,15 @@
     <!-- Right panel — form -->
     <div class="auth-right">
       <div class="auth-form-wrap">
-        <div class="auth-tabs">
-          <button class="auth-tab active" onclick="switchTab('login')">Sign In</button>
-          <button class="auth-tab" onclick="switchTab('signup')">Create Account</button>
+        <div class="auth-tabs" role="tablist" aria-label="Sign in or create account">
+          <button class="auth-tab active" role="tab" id="auth-tab-login" aria-selected="true" aria-controls="login-form" type="button" onclick="switchTab('login')">Sign In</button>
+          <button class="auth-tab" role="tab" id="auth-tab-signup" aria-selected="false" aria-controls="signup-form" type="button" onclick="switchTab('signup')">Create Account</button>
         </div>
 
         <div id="auth-error" class="auth-error"></div>
 
         <!-- Login Form -->
-        <form id="login-form" onsubmit="handleLogin(event)">
+        <form id="login-form" role="tabpanel" aria-labelledby="auth-tab-login" onsubmit="handleLogin(event)">
           <div class="form-group">
             <label class="form-label" for="login-email">Email</label>
             <input type="email" class="form-input" id="login-email" placeholder="you@company.com" required>
@@ -310,20 +319,20 @@
         </form>
 
         <!-- Signup Form -->
-        <form id="signup-form" style="display:none" onsubmit="handleSignup(event)">
+        <form id="signup-form" role="tabpanel" aria-labelledby="auth-tab-signup" style="display:none" onsubmit="handleSignup(event)">
           <div class="form-group">
-            <label class="form-label">I am a</label>
-            <div class="role-select">
-              <div class="role-option selected" onclick="selectRole('promoter', this)">
+            <div class="form-label" id="role-group-label">I am a</div>
+            <div class="role-select" role="radiogroup" aria-labelledby="role-group-label">
+              <button type="button" class="role-option selected" role="radio" aria-checked="true" tabindex="0" onclick="selectRole('promoter', this)">
                 <div class="role-icon" id="role-icon-promoter"></div>
                 <h5>Promoter</h5>
                 <small>Book artists for events</small>
-              </div>
-              <div class="role-option" onclick="selectRole('artist', this)">
+              </button>
+              <button type="button" class="role-option" role="radio" aria-checked="false" tabindex="-1" onclick="selectRole('artist', this)">
                 <div class="role-icon" id="role-icon-artist"></div>
                 <h5>Artist</h5>
                 <small>Get booked for gigs</small>
-              </div>
+              </button>
             </div>
           </div>
           <div class="form-group">
@@ -402,14 +411,45 @@
     let selectedRole = 'promoter';
 
     function switchTab(tab) {
+      // tab is 'login' | 'signup' | 'reset'. Only login/signup are
+      // proper tablist items; reset is a sub-flow reached from the
+      // login footer link.
+      const tabIsLogin  = tab === 'login';
+      const tabIsSignup = tab === 'signup';
+
       document.querySelectorAll('.auth-tab').forEach((el, i) => {
-        el.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'signup' && i === 1));
+        const isActive = (tabIsLogin && i === 0) || (tabIsSignup && i === 1);
+        el.classList.toggle('active', isActive);
+        el.setAttribute('aria-selected', String(isActive));
+        // Roving tabindex: active tab is reachable via Tab, the other
+        // is reached via arrow keys from the active one.
+        el.setAttribute('tabindex', isActive ? '0' : '-1');
       });
-      document.getElementById('login-form').style.display = tab === 'login' ? '' : 'none';
-      document.getElementById('signup-form').style.display = tab === 'signup' ? '' : 'none';
-      document.getElementById('reset-form').style.display = tab === 'reset' ? '' : 'none';
+      document.getElementById('login-form').style.display  = tabIsLogin  ? '' : 'none';
+      document.getElementById('signup-form').style.display = tabIsSignup ? '' : 'none';
+      document.getElementById('reset-form').style.display  = tab === 'reset' ? '' : 'none';
       document.getElementById('auth-error').style.display = 'none';
     }
+
+    // Arrow-key navigation between the two tabs (WAI-ARIA tablist
+    // pattern). Home/End jump to first/last. (2026-05-13 audit P0-15.)
+    document.addEventListener('keydown', function (e) {
+      const t = e.target;
+      if (!t || !t.classList || !t.classList.contains('auth-tab')) return;
+      const tabs = Array.from(document.querySelectorAll('.auth-tab'));
+      const idx = tabs.indexOf(t);
+      if (idx < 0) return;
+      let next = -1;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (idx + 1) % tabs.length;
+      else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (idx - 1 + tabs.length) % tabs.length;
+      else if (e.key === 'Home') next = 0;
+      else if (e.key === 'End') next = tabs.length - 1;
+      if (next >= 0) {
+        e.preventDefault();
+        switchTab(next === 0 ? 'login' : 'signup');
+        tabs[next].focus();
+      }
+    });
 
     async function handleReset(e) {
       e.preventDefault();
@@ -433,9 +473,31 @@
     function selectRole(role, el) {
       selectedRole = role;
       document.getElementById('signup-role').value = role;
-      document.querySelectorAll('.role-option').forEach(o => o.classList.remove('selected'));
-      el.classList.add('selected');
+      document.querySelectorAll('.role-option').forEach(o => {
+        const isSelected = o === el;
+        o.classList.toggle('selected', isSelected);
+        o.setAttribute('aria-checked', String(isSelected));
+        o.setAttribute('tabindex', isSelected ? '0' : '-1');
+      });
     }
+
+    // WAI-ARIA radiogroup arrow-key nav for the role picker.
+    // (2026-05-13 audit P0-14.)
+    document.addEventListener('keydown', function (e) {
+      const t = e.target;
+      if (!t || !t.classList || !t.classList.contains('role-option')) return;
+      const opts = Array.from(document.querySelectorAll('.role-option'));
+      const idx = opts.indexOf(t);
+      if (idx < 0) return;
+      let next = -1;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (idx + 1) % opts.length;
+      else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (idx - 1 + opts.length) % opts.length;
+      if (next >= 0) {
+        e.preventDefault();
+        opts[next].click();
+        opts[next].focus();
+      }
+    });
 
     function showError(msg) {
       const el = document.getElementById('auth-error');
