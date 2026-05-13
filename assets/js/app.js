@@ -72,7 +72,7 @@ function _showConnectionErrorBanner() {
     const bar = document.createElement('div');
     bar.id = 'rostr-sdk-error-banner';
     bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9500;background:#f87171;color:#1a1a1a;padding:10px 16px;font-size:0.85rem;font-weight:500;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.35)';
-    bar.innerHTML = 'Connection issue — the platform could not load. Check your network or an ad-blocker, then <a href="javascript:location.reload()" style="color:#1a1a1a;text-decoration:underline;font-weight:700">reload</a>.';
+    bar.innerHTML = 'Connection issue. The platform could not load. Check your network or an ad-blocker, then <a href="javascript:location.reload()" style="color:#1a1a1a;text-decoration:underline;font-weight:700">reload</a>.';
     if (document.body) document.body.appendChild(bar);
   };
   if (document.body) mount();
@@ -1046,7 +1046,7 @@ function renderAppStoreBadge({ size = 'md', context = 'footer' } = {}) {
   // CTA path and the visitor needs the next-step prompt.
   const caption = context === 'hero'
     ? 'TestFlight beta open'
-    : 'TestFlight beta open — request access';
+    : 'TestFlight beta open. Request access';
   return `
     <div class="app-badge-block" data-size="${size}">
       <a class="app-badge app-badge--ios"
@@ -1093,7 +1093,7 @@ function renderFooter() {
 
         <div class="site-footer-brand">
           <div class="site-footer-wordmark">ROSTR<span class="plus">+</span></div>
-          <p class="site-footer-tagline">GCC nightlife booking, on rails. Discover, request, e-sign, message and pay — all timestamped, all on one platform.</p>
+          <p class="site-footer-tagline">GCC nightlife booking, on rails. Discover, request, e-sign, message and pay: all timestamped, all on one platform.</p>
           <div class="site-footer-badges">
             ${renderAppStoreBadge({ size: 'md', context: 'footer' })}
             ${renderWebLiveBadge()}
@@ -2625,10 +2625,10 @@ const DB = {
   _prettyAdminError(rawErr) {
     const msg = String(rawErr || '');
     if (msg.includes('rate_limited')) {
-      return 'Rate limit hit — slow down and try again in an hour.';
+      return 'Rate limit hit. Slow down and try again in an hour.';
     }
     if (msg.includes('forbidden')) {
-      return 'Forbidden. Your session may have expired — reload and try again.';
+      return 'Forbidden. Your session may have expired. Reload and try again.';
     }
     return msg;
   },
@@ -2706,7 +2706,7 @@ const DB = {
       if (!res.ok) {
         // Edge function returns 429 + {error: 'rate_limited', detail: '...'} when throttled.
         if (res.status === 429 || body.error === 'rate_limited') {
-          return { success: false, error: 'Rate limit hit — slow down and try again in an hour.' };
+          return { success: false, error: 'Rate limit hit. Slow down and try again in an hour.' };
         }
         return { success: false, error: body.error || `HTTP ${res.status}` };
       }

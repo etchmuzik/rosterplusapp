@@ -120,14 +120,14 @@
 
   <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700,900&f[]=chillax@500,600,700&display=swap">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap">
-  <link rel="stylesheet" href="assets/css/system.css?v=2521872">
+  <link rel="stylesheet" href="assets/css/system.css?v=2521873">
   <!-- All three scripts `defer` — they stay in document order (supabase
        SDK runs first, then error-logger, then app.js) but don't block
        HTML parsing. Without this, the SDK script (60KB gzipped) blocks
        render on every page for ~200ms. -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="assets/js/error-logger.js?v=2521872" defer></script>
-  <script src="assets/js/app.js?v=2521872" defer></script>
+  <script src="assets/js/error-logger.js?v=2521873" defer></script>
+  <script src="assets/js/app.js?v=2521873" defer></script>
 </head>
 <body>
   <div class="page-shell">
@@ -157,7 +157,7 @@
              pushing the hero headline below the fold on smaller laptops. -->
 
         <h1 id="hero-headline" class="hero-headline hero-anim hero-d-1">
-          Where Gulf and Red Sea nightlife gets booked.
+          Where Gulf and Red Sea nightlife gets&nbsp;booked.
         </h1>
 
         <div class="hero-meta hero-anim hero-d-4">
@@ -621,6 +621,13 @@
           <a href="auth.html?role=promoter" class="btn btn-secondary btn-lg">I'm a promoter</a>
           <span class="lp-cohort-meta"><span id="lp-cohort-progress">11</span> / 50 claimed · closes June 30</span>
         </div>
+        <!-- Plan-B escape hatch for the visitor who scrolled the whole
+             page and isn't ready to sign up yet. Quiet, single-line,
+             sits below the CTAs so it doesn't compete. Lifts H9/H10
+             (error recovery + help) per the 2026-05-14 critique. -->
+        <p class="lp-cta-talk">
+          Not sure where you fit? <a href="mailto:hi@rosterplus.io?subject=ROSTR%2B%20question">Talk to us first</a>.
+        </p>
       </div>
     </section>
 

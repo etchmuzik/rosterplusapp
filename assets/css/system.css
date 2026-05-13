@@ -2085,6 +2085,27 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   letter-spacing: 0.08em;
   margin-left: 8px;
 }
+/* Quiet escape-hatch line under the closing CTA. Centers under the
+   button row, uses tertiary text so it doesn't compete with the
+   primary action, and underlines the contact link inline so the
+   affordance is unambiguous. */
+.lp-cta-talk {
+  margin: var(--space-md) 0 0;
+  font-size: 0.92rem;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+.lp-cta-talk a {
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-medium);
+  padding-bottom: 1px;
+  transition: color var(--duration-fast) var(--ease-out),
+              border-color var(--duration-fast) var(--ease-out);
+}
+.lp-cta-talk a:hover {
+  color: var(--text-primary);
+  border-bottom-color: var(--text-secondary);
+}
 @media (max-width: 600px) {
   .lp-cohort-meta { display: block; width: 100%; text-align: center; margin: var(--space-sm) 0 0; }
 }
@@ -3875,22 +3896,23 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   align-items: center;
   gap: 6px;
 }
-/* "Live now" pulse dot. Was a stock green (#4ade80); now uses --warm
-   so the page's two status moments (Founding-50 pill + Live-now dot)
-   share a colour family. Reads as a system, not a one-off. */
+/* "Live now" pulse dot. Uses --status-confirmed (green) so the warm
+   accent stays reserved for the closing-CTA Founding-50 pill — the
+   one piece of category-native urgency on the page. Status is not
+   the same as scarcity; separating them lets each signal land. */
 .app-badge-pulse {
   display: inline-block;
   width: 7px;
   height: 7px;
   border-radius: 999px;
-  background: var(--warm);
-  box-shadow: 0 0 0 0 var(--warm-rim-32);
+  background: var(--status-confirmed);
+  box-shadow: 0 0 0 0 rgba(142, 230, 181, 0.45);
   animation: appBadgePulse 2200ms cubic-bezier(0.16, 1, 0.3, 1) infinite;
 }
 @keyframes appBadgePulse {
-  0%   { box-shadow: 0 0 0 0 var(--warm-rim-32); }
-  70%  { box-shadow: 0 0 0 8px oklch(0.78 0.16 75 / 0); }
-  100% { box-shadow: 0 0 0 0 oklch(0.78 0.16 75 / 0); }
+  0%   { box-shadow: 0 0 0 0 rgba(142, 230, 181, 0.45); }
+  70%  { box-shadow: 0 0 0 8px rgba(142, 230, 181, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(142, 230, 181, 0); }
 }
 
 /* ═══════════════════════════════════════════════════════════════════
