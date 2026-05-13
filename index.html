@@ -296,19 +296,18 @@
           </div>
           <div class="lp-feature-visual">
             <div id="lp-feature-gallery" style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px">
-              <!-- Six initials-only placeholder tiles. Visible immediately
-                   on load so the grid never appears empty. The hydration
-                   script below replaces these with live roster tiles
-                   (each tile points at /assets/images/artists/<handle>.jpg
-                   via the shared artistPhotoSrc() helper). If DB.getArtists
-                   fails, these initials stay. No generic gallery-N.jpg
-                   anymore — the per-artist photos read better. -->
-              <div class="lp-gallery-tile"><span class="lp-gallery-initials">01</span></div>
-              <div class="lp-gallery-tile"><span class="lp-gallery-initials">02</span></div>
-              <div class="lp-gallery-tile"><span class="lp-gallery-initials">03</span></div>
-              <div class="lp-gallery-tile"><span class="lp-gallery-initials">04</span></div>
-              <div class="lp-gallery-tile"><span class="lp-gallery-initials">05</span></div>
-              <div class="lp-gallery-tile"><span class="lp-gallery-initials">06</span></div>
+              <!-- Six empty placeholder tiles. JS hydration below replaces
+                   these with live roster tiles pointing at
+                   /assets/images/artists/<handle>.jpg via artistPhotoSrc().
+                   Initials are intentionally NOT rendered — operator
+                   call 2026-05-13: a tile with no photo should read as
+                   a calm dark card, not a letter watermark. -->
+              <div class="lp-gallery-tile"></div>
+              <div class="lp-gallery-tile"></div>
+              <div class="lp-gallery-tile"></div>
+              <div class="lp-gallery-tile"></div>
+              <div class="lp-gallery-tile"></div>
+              <div class="lp-gallery-tile"></div>
             </div>
           </div>
         </div>
@@ -830,13 +829,14 @@
         // because we now have per-artist photos that read better.
         const gallery = document.getElementById('lp-feature-gallery');
         if (gallery && count > 0) {
+          // No initials overlay (operator call 2026-05-13). A tile with
+          // no photo reads as a calm dark card; with a photo it shows
+          // just the photo. Letters-on-photos was reading as a watermark.
           const tile = (a) => {
             const name = a.name || a.stage_name || '?';
-            const initials = name.split(/\s+/).map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
             const photoSrc = artistPhotoSrc(a);
             return `<div class="lp-gallery-tile">
               ${photoSrc ? `<img src="${esc(photoSrc)}" alt="${esc(name)}" loading="lazy" decoding="async" onerror="this.remove()">` : ''}
-              <span class="lp-gallery-initials">${esc(initials)}</span>
             </div>`;
           };
           gallery.innerHTML = artists.slice(0, 6).map(tile).join('');
