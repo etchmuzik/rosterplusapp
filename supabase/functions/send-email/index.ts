@@ -3,10 +3,30 @@
 // gets from ROSTR+ looks like it came from the same system.
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
+const SUPABASE_URL   = Deno.env.get('SUPABASE_URL') ?? '';
+const SERVICE_ROLE   = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const FROM_EMAIL = 'ROSTER+ <book@rosterplus.io>';
 const SITE_URL = 'https://rosterplus.io';
+
+// CORS — restricted to the production origin and Netlify preview deploys.
+// Wildcard removed 2026-05-13 audit v2 P1-3 (was on send-push) + P0-1
+// (this function). Update if the deploy URL changes.
+const ALLOWED_ORIGINS = new Set([
+  'https://rosterplus.io',
+  'https://www.rosterplus.io',
+]);
+function corsHeaders(origin: string | null): Record<string, string> {
+  const allowed = origin && ALLOWED_ORIGINS.has(origin) ? origin : 'https://rosterplus.io';
+  return {
+    'Access-Control-Allow-Origin': allowed,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Vary': 'Origin',
+  };
+}
 
 interface EmailPayload {
   to: string;
@@ -244,19 +264,58 @@ const templates: Record<string, (d: Record<string, string>) => { subject: string
 
 // ── Server ──────────────────────────────────────────────────────
 serve(async (req) => {
+  const origin = req.headers.get('origin');
+  const cors = corsHeaders(origin);
+
   if (req.method === 'OPTIONS') {
-    return new Response('ok', {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-      },
-    });
+    return new Response('ok', { headers: cors });
   }
 
   if (!RESEND_API_KEY) {
     return new Response(JSON.stringify({ error: 'RESEND_API_KEY not configured' }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...cors, 'Content-Type': 'application/json' },
+    });
+  }
+
+  // 2026-05-13 audit v2 P0-1: previously this function had no auth
+  // check and accepted any POST — anyone could send transactional
+  // email from book@rosterplus.io with any of the 11 template
+  // bodies, consuming Resend quota and enabling phishing. Now requires
+  // a valid signed-in user OR a service-role key (used by the
+  // booking-reminders / onboarding-drip / review-prompts cron jobs).
+  const authHeader = req.headers.get('authorization') || '';
+  const bearer = authHeader.replace(/^Bearer\s+/i, '').trim();
+  let isServiceRole = false;
+  let callerEmail: string | null = null;
+  if (bearer && bearer === SERVICE_ROLE) {
+    // Cron / internal call. Allow all template types.
+    isServiceRole = true;
+  } else if (bearer && SUPABASE_URL && SERVICE_ROLE) {
+    // End-user JWT — verify by calling auth.getUser with the user's token.
+    // (Use service-role client so the verification call itself has
+    // permission to read the user record.)
+    try {
+      const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
+      const { data: ures, error } = await admin.auth.getUser(bearer);
+      if (error || !ures?.user) {
+        return new Response(JSON.stringify({ error: 'unauthorized' }), {
+          status: 401,
+          headers: { ...cors, 'Content-Type': 'application/json' },
+        });
+      }
+      callerEmail = ures.user.email ?? null;
+    } catch (_e) {
+      return new Response(JSON.stringify({ error: 'unauthorized' }), {
+        status: 401,
+        headers: { ...cors, 'Content-Type': 'application/json' },
+      });
+    }
+  } else {
+    // No bearer + not service-role — reject.
+    return new Response(JSON.stringify({ error: 'unauthorized' }), {
+      status: 401,
+      headers: { ...cors, 'Content-Type': 'application/json' },
     });
   }
 
@@ -267,8 +326,33 @@ serve(async (req) => {
     if (!to || !type || !templates[type]) {
       return new Response(JSON.stringify({ error: 'Invalid payload' }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...cors, 'Content-Type': 'application/json' },
       });
+    }
+
+    // End-user calls (non-service-role) can only address their own
+    // email address. Cron / admin paths (service-role) bypass this.
+    // The EPK inquiry flow (unauthenticated promoter contacting an
+    // artist) is intentionally still gated: a logged-in user must
+    // submit it, otherwise it 401s above.
+    if (!isServiceRole) {
+      if (typeof to !== 'string' || !to.includes('@')) {
+        return new Response(JSON.stringify({ error: 'invalid_to' }), {
+          status: 400,
+          headers: { ...cors, 'Content-Type': 'application/json' },
+        });
+      }
+      // Allowlist: the caller's own email OR our internal forwarding
+      // address (used by the EPK inquiry form so promoters can reach
+      // book@rosterplus.io as their starting point).
+      const allowedSelf = callerEmail && to.toLowerCase() === callerEmail.toLowerCase();
+      const allowedInbox = to.toLowerCase() === 'book@rosterplus.io';
+      if (!allowedSelf && !allowedInbox) {
+        return new Response(JSON.stringify({ error: 'forbidden_recipient' }), {
+          status: 403,
+          headers: { ...cors, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     const { subject, html, text } = templates[type](data);
@@ -290,18 +374,18 @@ serve(async (req) => {
     if (!res.ok) {
       return new Response(JSON.stringify({ error: result }), {
         status: res.status,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...cors, 'Content-Type': 'application/json' },
       });
     }
 
     return new Response(JSON.stringify({ success: true, id: result.id }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...cors, 'Content-Type': 'application/json' },
     });
 
   } catch (err) {
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...cors, 'Content-Type': 'application/json' },
     });
   }
 });

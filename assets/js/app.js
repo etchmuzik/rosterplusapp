@@ -1230,17 +1230,26 @@ function renderSearchResults() {
     booking:  { icon: 'calendar', label: 'Booking' },
     contract: { icon: 'fileText', label: 'Contract' },
   };
+  // 2026-05-13 audit v2 P1-2: r.href and r.meta were previously
+  // interpolated into innerHTML without escaping. They come from
+  // DB-row status / link fields and shouldn't contain unsafe chars
+  // today, but defense-in-depth: same escape pass as r.title/r.subtitle.
+  // r.href also goes through _isSafeInternalHref() \u2014 if it doesn't
+  // pass, the row falls back to a non-anchor div (still clickable
+  // via the dropdown's outer event listener, just not as a deep link).
+  const esc = (s) => (s || '').replace(/[<>&"']/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
   host.innerHTML = _searchResults.map((r, i) => {
     const m = kindMeta[r.kind] || { icon: 'search', label: r.kind };
     const isSel = i === _searchSelected;
+    const safeHref = (typeof r.href === 'string' && _isSafeInternalHref(r.href)) ? r.href : '#';
     return `
-      <a href="${r.href}" data-idx="${i}" style="display:flex;align-items:center;gap:var(--space-md);padding:10px var(--space-lg);text-decoration:none;color:inherit;border-left:3px solid ${isSel ? 'var(--accent)' : 'transparent'};background:${isSel ? 'var(--bg-card)' : 'transparent'};transition:background 80ms ease">
+      <a href="${esc(safeHref)}" data-idx="${i}" style="display:flex;align-items:center;gap:var(--space-md);padding:10px var(--space-lg);text-decoration:none;color:inherit;border-left:3px solid ${isSel ? 'var(--accent)' : 'transparent'};background:${isSel ? 'var(--bg-card)' : 'transparent'};transition:background 80ms ease">
         <div style="width:28px;height:28px;border-radius:8px;background:var(--bg-card);border:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:center;color:var(--text-tertiary);flex-shrink:0">${UI.icon(m.icon, 14)}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:0.9rem;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${(r.title || '').replace(/[<>&]/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</div>
-          ${r.subtitle ? `<div style="font-size:0.75rem;color:var(--text-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${(r.subtitle || '').replace(/[<>&]/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</div>` : ''}
+          <div style="font-size:0.9rem;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.title)}</div>
+          ${r.subtitle ? `<div style="font-size:0.75rem;color:var(--text-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.subtitle)}</div>` : ''}
         </div>
-        <div style="font-family:var(--font-mono);font-size:0.68rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.08em">${m.label}${r.meta ? ' \u00b7 ' + r.meta : ''}</div>
+        <div style="font-family:var(--font-mono);font-size:0.68rem;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.08em">${esc(m.label)}${r.meta ? ' \u00b7 ' + esc(r.meta) : ''}</div>
       </a>
     `;
   }).join('');
@@ -3836,11 +3845,17 @@ function renderNotifications() {
       : '';
     // Separate explicit "mark read" affordance for keyboard users and for
     // notifications that don't have a deep-link href.
+    // 2026-05-13 audit v2 P1-4: previously `${n.id}` was raw-interpolated
+    // into onclick attribute strings — relied on n.id being a clean UUID.
+    // Now escaped through the same /[<>&"']/ filter as other DB fields.
+    // UUIDs survive escape unchanged; any future non-UUID id can't break
+    // out of the single-quote context.
+    const safeId = String(n.id || '').replace(/[<>&"']/g, '');
     const markReadBtn = !n.read
-      ? `<button title="Mark read" aria-label="Mark read" onclick="event.stopPropagation(); markNotificationRead('${n.id}')" style="position:absolute;bottom:8px;right:12px;background:none;border:none;color:var(--text-tertiary);cursor:pointer;font-size:0.68rem;padding:2px 6px;font-family:var(--font-mono)">mark read</button>`
+      ? `<button title="Mark read" aria-label="Mark read" onclick="event.stopPropagation(); markNotificationRead('${safeId}')" style="position:absolute;bottom:8px;right:12px;background:none;border:none;color:var(--text-tertiary);cursor:pointer;font-size:0.68rem;padding:2px 6px;font-family:var(--font-mono)">mark read</button>`
       : '';
     return `
-      <div onclick="openNotification('${n.id}')" style="position:relative;padding:10px 14px;border-bottom:1px solid var(--border-subtle);display:flex;gap:10px;align-items:flex-start;cursor:pointer;${n.read ? 'opacity:0.7' : ''};transition:background 80ms ease"
+      <div onclick="openNotification('${safeId}')" style="position:relative;padding:10px 14px;border-bottom:1px solid var(--border-subtle);display:flex;gap:10px;align-items:flex-start;cursor:pointer;${n.read ? 'opacity:0.7' : ''};transition:background 80ms ease"
            onmouseover="this.style.background='var(--bg-card)'" onmouseout="this.style.background=''">
         <div style="width:28px;height:28px;border-radius:8px;background:var(--bg-card);border:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:center;color:var(--text-tertiary);flex-shrink:0;margin-top:2px">${UI.icon(iconName, 14)}</div>
         <div style="flex:1;min-width:0;padding-right:20px">

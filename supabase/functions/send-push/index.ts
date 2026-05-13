@@ -34,6 +34,34 @@ const APNS_HOST =
 
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
+// 2026-05-13 audit v2 P1-3: this function had no caller authentication.
+// Any unauthenticated POST with {user_id, title, body} could spam push
+// notifications to any user given their UUID — a phishing / harassment
+// vector. Now requires either the service-role key (used by the
+// pg_net trigger on notifications INSERT) OR a valid signed-in user's
+// JWT, in which case the caller must be the target user OR an admin.
+async function authorizeCaller(req: Request, targetUserId: string): Promise<{ ok: true } | { ok: false; status: number; message: string }> {
+  const authHeader = req.headers.get("authorization") || "";
+  const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (!bearer) return { ok: false, status: 401, message: "unauthorized" };
+
+  // Service role token — trusted internal caller (pg_net trigger).
+  if (bearer === SERVICE_ROLE_KEY) return { ok: true };
+
+  // End-user JWT — verify + check that they're the target or an admin.
+  try {
+    const { data: ures, error } = await admin.auth.getUser(bearer);
+    if (error || !ures?.user) return { ok: false, status: 401, message: "unauthorized" };
+    if (ures.user.id === targetUserId) return { ok: true };
+    // Check admin via email allowlist (mirror of public.is_admin()).
+    const adminEmails = new Set(["h.saied@outlook.com", "beyondtech.eg@gmail.com"]);
+    if (ures.user.email && adminEmails.has(ures.user.email.toLowerCase())) return { ok: true };
+    return { ok: false, status: 403, message: "forbidden" };
+  } catch (_e) {
+    return { ok: false, status: 401, message: "unauthorized" };
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") {
     return new Response("method not allowed", { status: 405 });
@@ -48,6 +76,11 @@ Deno.serve(async (req: Request) => {
 
   if (!payload.user_id || !payload.title) {
     return json({ error: "user_id and title are required" }, 400);
+  }
+
+  const authz = await authorizeCaller(req, payload.user_id);
+  if (!authz.ok) {
+    return json({ error: authz.message }, authz.status);
   }
 
   const { data: tokens, error } = await admin

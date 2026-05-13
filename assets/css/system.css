@@ -1526,19 +1526,9 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   height: 100%;
   object-fit: cover;
 }
-.lp-gallery-initials {
-  position: relative;
-  z-index: 0;
-}
-/* Hide the initials fallback when the tile actually has an <img>.
-   The initials are the no-photo state — once we have an artist's
-   real face on the tile, doubling up reads as a watermark, not a
-   fallback. Mirrors the partner-logo wordmark behavior. If the
-   <img> 404s, `onerror="this.remove()"` strips it from the DOM
-   and `:has()` no longer matches, so the initials come back. */
-.lp-gallery-tile:has(img) .lp-gallery-initials {
-  display: none;
-}
+/* .lp-gallery-initials + .lp-gallery-tile:has(img) rules removed
+   2026-05-13 audit v2 P2-B — initials concept retired from the
+   homepage roster gallery; tiles are now just <img> or empty card. */
 
 /* Featured artist card (MiniNowPlaying) */
 .lp-mini-card {
@@ -4306,6 +4296,10 @@ tr:hover td { background: rgba(255,255,255,0.015); }
 .p-space-xl-center { padding: var(--space-xl); text-align: center; }
 .fw-500       { font-weight: 500; }
 .tabular-nums { font-variant-numeric: tabular-nums; }
+.m-0          { margin: 0; }
+.text-right   { text-align: right; }
+.flex-2-min-200 { flex: 2; min-width: 200px; }
+.stack-xs-md  { display: flex; flex-direction: column; gap: var(--space-xs); margin-bottom: var(--space-md); }
 
 /* Generic flex-row + center alignment + gap helpers */
 .flex-center        { display: flex; align-items: center; }

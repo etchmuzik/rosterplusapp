@@ -20,16 +20,17 @@
 //   - Web Push — handlers at the bottom of this file. Receives payloads
 //     from send-push edge function and surfaces them via Notification API.
 
-const CACHE_NAME = 'rostr-b95b4ef';
+const CACHE_NAME = 'rostr-dev';
 
 // Core shell — precached on install so first offline navigation works.
 // Everything else populates the cache as the user visits it (lazy).
+// 2026-05-13 audit v2 P2-3: trimmed list — was precaching /auth.html and
+// /dashboard.html for every visitor on the homepage, but anonymous
+// visitors bounce ~95% and never need those. They populate naturally
+// when actually visited.
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
-  '/auth.html',
-  '/dashboard.html',
-  '/directory.html',
   '/offline.html',
   '/404.html',
   '/assets/css/system.css',

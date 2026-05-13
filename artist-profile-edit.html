@@ -18,6 +18,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
+  <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700,900&f[]=chillax@500,600,700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap">
   <link rel="stylesheet" href="assets/css/system.css?v=2521872">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="assets/js/error-logger.js?v=2521872" defer></script>
@@ -68,7 +70,7 @@
       </div>
 
       <h1 style="margin-bottom:var(--space-xs)">Edit Your Profile</h1>
-      <p class="text-tertiary" style="margin-bottom:var(--space-2xl)">This info appears on your public profile and EPK</p>
+      <p class="text-tertiary mb-space-2xl">This info appears on your public profile and EPK</p>
 
       <!-- ═══ SHARE-LINK CARD ═══════════════════════════════════════
            Per-artist Linktree URL. The handle was auto-derived from
@@ -229,7 +231,7 @@
         <!-- Gallery -->
         <div class="form-section">
           <div class="section-header">Photo Gallery</div>
-          <p class="text-tertiary" style="font-size:0.82rem;margin-bottom:var(--space-md)">Upload up to 6 performance photos. These appear on your profile and EPK.</p>
+          <p class="text-tertiary fs-sm mb-space-md">Upload up to 6 performance photos. These appear on your profile and EPK.</p>
           <div id="gallery-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-sm);margin-bottom:var(--space-md)"></div>
           <label class="btn btn-secondary btn-sm" style="cursor:pointer">
             Add Photo
@@ -243,8 +245,8 @@
              /a/<handle> as compact link rows. -->
         <div class="form-section">
           <div class="section-header">Mixes &amp; Videos</div>
-          <p class="text-tertiary" style="font-size:0.82rem;margin-bottom:var(--space-md)">Add SoundCloud sets, YouTube reels, Mixcloud shows. Promoters see these front-and-centre on your profile.</p>
-          <div id="video-items" style="display:flex;flex-direction:column;gap:var(--space-xs);margin-bottom:var(--space-md)"></div>
+          <p class="text-tertiary fs-sm mb-space-md">Add SoundCloud sets, YouTube reels, Mixcloud shows. Promoters see these front-and-centre on your profile.</p>
+          <div id="video-items" class="stack-xs-md"></div>
           <div style="display:flex;gap:var(--space-sm);flex-wrap:wrap;align-items:flex-start">
             <select class="form-input" id="video-platform" style="flex:0 0 140px">
               <option value="soundcloud">SoundCloud</option>
@@ -253,7 +255,7 @@
               <option value="vimeo">Vimeo</option>
               <option value="instagram">Instagram</option>
             </select>
-            <input type="url" class="form-input" id="video-url" placeholder="https://..." style="flex:2;min-width:200px">
+            <input type="url" class="form-input flex-2-min-200" id="video-url" placeholder="https://...">
             <input type="text" class="form-input" id="video-title" placeholder="Title (optional)" style="flex:1;min-width:140px">
             <button type="button" class="btn btn-secondary btn-sm" onclick="addVideoLink()">Add</button>
           </div>
@@ -262,11 +264,11 @@
         <!-- Tech Rider -->
         <div class="form-section">
           <div class="section-header">Technical Rider</div>
-          <p class="text-tertiary" style="font-size:0.82rem;margin-bottom:var(--space-md)">Specify your technical requirements for venues.</p>
-          <div id="rider-items" style="display:flex;flex-direction:column;gap:var(--space-xs);margin-bottom:var(--space-md)"></div>
+          <p class="text-tertiary fs-sm mb-space-md">Specify your technical requirements for venues.</p>
+          <div id="rider-items" class="stack-xs-md"></div>
           <div style="display:flex;gap:var(--space-sm)">
-            <input type="text" class="form-input" id="rider-category" placeholder="Category (e.g., DJ Equipment)" style="flex:1">
-            <input type="text" class="form-input" id="rider-item" placeholder="Item (e.g., 2x CDJ-3000)" style="flex:1">
+            <input type="text" class="form-input flex-1" id="rider-category" placeholder="Category (e.g., DJ Equipment)">
+            <input type="text" class="form-input flex-1" id="rider-item" placeholder="Item (e.g., 2x CDJ-3000)">
             <button type="button" class="btn btn-secondary btn-sm" onclick="addRiderItem()">Add</button>
           </div>
         </div>
@@ -274,11 +276,11 @@
         <!-- Press Quotes -->
         <div class="form-section">
           <div class="section-header">Press Quotes</div>
-          <p class="text-tertiary" style="font-size:0.82rem;margin-bottom:var(--space-md)">Add press mentions or client testimonials.</p>
-          <div id="quote-items" style="display:flex;flex-direction:column;gap:var(--space-xs);margin-bottom:var(--space-md)"></div>
+          <p class="text-tertiary fs-sm mb-space-md">Add press mentions or client testimonials.</p>
+          <div id="quote-items" class="stack-xs-md"></div>
           <div style="display:flex;gap:var(--space-sm);flex-wrap:wrap">
             <input type="text" class="form-input" id="quote-source" placeholder="Source (e.g., TimeOut Dubai)" style="flex:1;min-width:150px">
-            <input type="text" class="form-input" id="quote-text" placeholder="Quote text..." style="flex:2;min-width:200px">
+            <input type="text" class="form-input flex-2-min-200" id="quote-text" placeholder="Quote text...">
             <button type="button" class="btn btn-secondary btn-sm" onclick="addQuote()">Add</button>
           </div>
         </div>
@@ -311,12 +313,12 @@
             <p class="text-tertiary" style="font-size:0.78rem;margin-top:4px">e.g. Dubai, Riyadh, Doha, Abu Dhabi, Jeddah</p>
           </div>
           <div class="form-group" style="display:flex;align-items:center;gap:var(--space-md)">
-            <label class="form-label" style="margin:0">Available for bookings</label>
+            <label class="form-label m-0">Available for bookings</label>
             <div class="toggle" id="availability-toggle" onclick="this.classList.toggle('active')"></div>
           </div>
           <div class="form-group" style="display:flex;align-items:center;gap:var(--space-md)">
             <div>
-              <label class="form-label" style="margin:0">Tour mode</label>
+              <label class="form-label m-0">Tour mode</label>
               <p class="text-tertiary" style="font-size:0.78rem;margin-top:2px">Show "Flexible on travel" — promoters in other cities see you first.</p>
             </div>
             <div class="toggle" id="tour-mode-toggle" onclick="this.classList.toggle('active')"></div>

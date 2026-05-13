@@ -18,7 +18,7 @@
   <meta property="og:site_name" content="ROSTR+ GCC">
   <meta property="og:title" content="Artist Profile — ROSTR+ GCC">
   <meta property="og:description" content="View detailed artist profile, bookings, and rates.">
-  <meta property="og:image" content="https://rosterplus.io/icons/og-default.png">
+  <meta property="og:image" content="https://rosterplus.io/icons/og-default.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:url" content="https://rosterplus.io/profile.html">
@@ -26,7 +26,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Artist Profile — ROSTR+ GCC">
   <meta name="twitter:description" content="View detailed artist profile, bookings, and rates.">
-  <meta name="twitter:image" content="https://rosterplus.io/icons/og-default.png">
+  <meta name="twitter:image" content="https://rosterplus.io/icons/og-default.jpg">
 
   <link rel="canonical" href="https://rosterplus.io/profile.html">
   <script type="application/ld+json" id="artist-ld-json"></script>
@@ -38,6 +38,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
+  <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700,900&f[]=chillax@500,600,700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap">
   <link rel="stylesheet" href="assets/css/system.css?v=2521872">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="assets/js/error-logger.js?v=2521872" defer></script>
@@ -108,7 +110,12 @@
     }
 
     /* Minimal photo lightbox. Creates the overlay node lazily on
-       first call, then reuses it. Click anywhere to dismiss. */
+       first call, then reuses it. Click anywhere to dismiss.
+       2026-05-13 audit v2 P0-A: previously did
+       `el.innerHTML = `<img src="${url}">`` which is an XSS sink if a
+       DB-stored gallery URL ever contains `"`. Replaced with direct
+       DOM construction — never touches HTML parsing, so the URL
+       can't break out of the attribute context. */
     function openLightbox(url) {
       let el = document.getElementById('ap-lightbox');
       if (!el) {
@@ -118,7 +125,10 @@
         el.onclick = () => el.classList.remove('open');
         document.body.appendChild(el);
       }
-      el.innerHTML = `<img src="${url}" alt="Photo">`;
+      const img = document.createElement('img');
+      img.src = String(url || '');
+      img.alt = 'Photo';
+      el.replaceChildren(img);
       el.classList.add('open');
     }
 
@@ -449,7 +459,7 @@
       const desc = bio
         ? (bio.length > 160 ? bio.slice(0, 157) + '\u2026' : bio)
         : ([a.genre, a.city].filter(Boolean).join(' \u2014 ') + ' \u00b7 Book on ROSTR+ GCC.').trim();
-      const img = a.avatar_url || 'https://rosterplus.io/icons/og-default.png';
+      const img = a.avatar_url || 'https://rosterplus.io/icons/og-default.jpg';
       const url = `https://rosterplus.io/profile.html?id=${encodeURIComponent(a.id)}`;
       const setMeta = (sel, val) => { const el = document.querySelector(sel); if (el) el.setAttribute('content', val); };
       document.title = `${name} \u2014 ROSTR+ GCC`;
