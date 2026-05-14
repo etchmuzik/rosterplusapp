@@ -130,10 +130,10 @@
         <div class="eyebrow" style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--accent-soft);margin-bottom:6px">Welcome, artist</div>
         <h1 style="margin-bottom:8px">Almost there.</h1>
         <p class="text-secondary" style="font-size:0.95rem;line-height:1.6">
-          Most artists are already on ROSTR+ — added by promoters who've booked them before. If you're one of them, find your name below and claim it to inherit your booking history. Otherwise start fresh and you'll be live in the directory in a few minutes.
+          Most artists are already on ROSTR+, added by promoters who've booked them before. If you're one of them, find your name below and claim it to inherit your booking history. Otherwise start fresh and you'll be live in the directory in a few minutes.
         </p>
         <ul class="value-list">
-          <li>Promoters can book you with a 60-second form — no more WhatsApp chains.</li>
+          <li>Promoters can book you with a 60-second form. No more WhatsApp chains.</li>
           <li>Contracts auto-draft, payments track automatically.</li>
           <li>Share your EPK link with one tap: a live press kit, not a PDF.</li>
         </ul>
@@ -165,7 +165,7 @@
       <!-- Fresh profile card -->
       <div class="claim-card" style="text-align: center">
         <p class="text-secondary" style="margin-bottom: var(--space-md); font-size: 0.9rem;line-height:1.5">
-          Brand new to the scene, or no promoter added you yet? Build your profile from scratch — takes about 3 minutes.
+          Brand new to the scene, or no promoter added you yet? Build your profile from scratch. It takes about 3 minutes.
         </p>
         <a href="artist-profile-edit.html?setup=1" class="btn btn-secondary">Create new profile →</a>
       </div>
@@ -207,12 +207,12 @@
       }
 
       emptyEl.style.display = 'none';
-      summaryEl.textContent = `${res.data.length} match${res.data.length === 1 ? '' : 'es'} — tap "This is me" to claim.`;
+      summaryEl.textContent = `${res.data.length} match${res.data.length === 1 ? '' : 'es'}. Tap "This is me" to claim.`;
       summaryEl.style.display = '';
       resultsEl.innerHTML = res.data.map(a => {
         const genre = Array.isArray(a.genre) ? a.genre.join(', ') : (a.genre || '');
         const cities = Array.isArray(a.cities_active) ? a.cities_active.join(' · ') : '';
-        const meta = [genre, cities].filter(Boolean).join(' — ');
+        const meta = [genre, cities].filter(Boolean).join(' · ');
         return `
           <div class="match-card">
             <div style="flex:1; min-width: 0">
@@ -239,7 +239,7 @@
         if (btn) { btn.disabled = false; btn.textContent = originalText; }
         const msg = {
           'already_has_artist_profile': 'You already have an artist profile.',
-          'artist_not_found_or_already_claimed': 'That profile was just claimed by someone else — refresh to see live matches.',
+          'artist_not_found_or_already_claimed': 'That profile was just claimed by someone else. Refresh to see live matches.',
           'only_artists_can_claim': 'Only artist accounts can claim profiles.',
           'not_authenticated': 'Please log in first.',
         }[res.error] || res.error || 'Claim failed';

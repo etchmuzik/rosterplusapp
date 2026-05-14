@@ -11,13 +11,13 @@
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
   <title>EPK — ROSTR+ GCC</title>
-  <meta name="description" content="Electronic press kit — bio, tech rider, past performances, and booking info for a ROSTR+ GCC artist.">
+  <meta name="description" content="Electronic press kit: bio, tech rider, past performances, and booking info for a ROSTR+ GCC artist.">
 
   <!-- Open Graph / Facebook / WhatsApp -->
   <meta property="og:type" content="profile">
   <meta property="og:site_name" content="ROSTR+ GCC">
   <meta property="og:title" content="Artist EPK — ROSTR+ GCC">
-  <meta property="og:description" content="Electronic press kit — bio, tech rider, past performances, and booking info.">
+  <meta property="og:description" content="Electronic press kit: bio, tech rider, past performances, and booking info.">
   <meta property="og:image" content="https://rosterplus.io/icons/og-default.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -26,7 +26,7 @@
   <!-- Twitter / X -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Artist EPK — ROSTR+ GCC">
-  <meta name="twitter:description" content="Electronic press kit — bio, tech rider, past performances, and booking info.">
+  <meta name="twitter:description" content="Electronic press kit: bio, tech rider, past performances, and booking info.">
   <meta name="twitter:image" content="https://rosterplus.io/icons/og-default.jpg">
 
   <link rel="canonical" href="https://rosterplus.io/epk.html">
@@ -106,7 +106,7 @@
     <div id="nav-root"></div>
   <a id="main-content" tabindex="-1" class="sr-only">Main content</a>
     <main id="main-content-wrap" role="main">
-  <h1 class="sr-only">Electronic Press Kit — ROSTR+</h1>
+  <h1 class="sr-only">Electronic Press Kit · ROSTR+</h1>
     <div class="epk-container">
       <div id="epk-content">
         <div style="text-align:center;padding:var(--space-3xl);color:var(--text-tertiary)">Loading EPK...</div>
@@ -274,7 +274,7 @@
 
         <div class="epk-booking">
           <div class="epk-section-title">Booking</div>
-          <div class="epk-rate">${UI.currency(rateMin, currency)}${rateMax > rateMin ? ' — ' + UI.currency(rateMax, currency) : ''}</div>
+          <div class="epk-rate">${UI.currency(rateMin, currency)}${rateMax > rateMin ? ' – ' + UI.currency(rateMax, currency) : ''}</div>
           <div style="margin-bottom:var(--space-md)">${data.status === 'active' || data.available ? '<span class="tag tag--confirmed">Available</span>' : '<span class="tag tag--draft">Unavailable</span>'}</div>
           <div style="display:flex;gap:var(--space-sm);justify-content:center">
             <a href="booking.html?artist=${artistIdForBooking}" class="btn btn-primary">Book This Artist</a>
@@ -285,7 +285,7 @@
         <!-- Quick Inquiry Form (no login required) -->
         <div class="epk-section">
           <div class="epk-section-title">Quick Inquiry</div>
-          <p style="color:var(--text-tertiary);font-size:0.85rem;margin-bottom:var(--space-md)">Interested in booking ${name}? Send a quick inquiry — no account needed.</p>
+          <p style="color:var(--text-tertiary);font-size:0.85rem;margin-bottom:var(--space-md)">Interested in booking ${name}? Send a quick inquiry. No account needed.</p>
           <form id="epk-inquiry-form" onsubmit="submitInquiry(event)" style="display:flex;flex-direction:column;gap:var(--space-md)">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-md)">
               <input type="text" class="form-input" id="inq-name" placeholder="Your name" required>
@@ -323,7 +323,7 @@
         </div>
 
         <div class="epk-footer">
-          Powered by <strong>ROSTR+</strong> — The GCC Booking Platform
+          Powered by <strong>ROSTR+</strong>, the Gulf and Red Sea booking platform
         </div>
       `;
 
@@ -336,7 +336,7 @@
       // to throw `Identifier 'genres' has already been declared`, which
       // killed the whole script tag at parse time and left every visitor
       // stuck on "Loading EPK...". Reuse the existing locals.
-      const desc = [genres, cityForMeta].filter(Boolean).join(' — ') || 'ROSTR+ GCC artist — bookings open.';
+      const desc = [genres, cityForMeta].filter(Boolean).join(' · ') || 'ROSTR+ GCC artist. Bookings open.';
       const img = data.avatar_url || data.profiles?.avatar_url || 'https://rosterplus.io/icons/og-default.jpg';
       // Use ?id= so OG snippets, the share-bar URL, and the canonical
       // <link> all match what the rest of the platform emits (artist
@@ -431,7 +431,7 @@
       host.innerHTML =
         '<div style="text-align:center;padding:var(--space-xl);color:var(--status-pending)">' +
         '<div style="font-size:1rem;margin-bottom:var(--space-sm)">We couldn\'t send that automatically.</div>' +
-        '<p style="color:var(--text-secondary);margin-bottom:var(--space-md)">No problem — open your email app and send it from there. We\'ve pre-filled the message.</p>' +
+        '<p style="color:var(--text-secondary);margin-bottom:var(--space-md)">No problem. Open your email app and send it from there. We\'ve pre-filled the message.</p>' +
         '<a href="mailto:book@rosterplus.io?subject=' + subject + '&body=' + body + '" class="btn btn-primary">Open in email app</a>' +
         '</div>';
     }

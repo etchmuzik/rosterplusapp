@@ -269,10 +269,10 @@
           else if (errs > 0) cls = 'bad';
           const dayLabel = new Date(r.day + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' });
           const title = total === 0
-            ? `${dayLabel} — no runs recorded`
+            ? `${dayLabel}: no runs recorded`
             : errs > 0
-              ? `${dayLabel} — ${errs}/${total} failed`
-              : `${dayLabel} — ${total} ok`;
+              ? `${dayLabel}: ${errs}/${total} failed`
+              : `${dayLabel}: ${total} ok`;
           return `<div class="day-cell ${cls}" title="${title}"></div>`;
         }).join('');
       } catch (_) {
