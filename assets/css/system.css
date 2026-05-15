@@ -1738,28 +1738,71 @@ tr:hover td { background: rgba(255,255,255,0.015); }
    4 region groups in a responsive auto-fit grid. Rules unchanged
    from the globe-era version; the top border separates the list
    from the section heading above. */
-.lp-map-list {
+/* Reach section — editorial statement (2026-05-14 critique).
+   Replaced the dot-separated city ledger with a lede + region rows
+   that read as prose, not a footer. .lp-map-list is retired; the
+   styles below cover the new HTML. */
+.lp-reach-statement {
   margin-top: var(--space-xl);
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: var(--space-lg);
   padding-top: var(--space-lg);
   border-top: 1px solid var(--border-subtle);
+  max-width: 78ch;
 }
-.lp-map-list .group-label {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--text-tertiary);
-  margin-bottom: 6px;
-}
-.lp-map-list .group {
+.lp-reach-lede {
+  margin: 0 0 var(--space-xl);
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 1.6vw, 1.45rem);
+  line-height: 1.45;
+  letter-spacing: -0.015em;
   color: var(--text-secondary);
-  font-size: 0.9rem;
-  line-height: 1.8;
+  text-wrap: balance;
 }
-.lp-map-list .group span { color: var(--text-primary); font-weight: 500; }
+.lp-reach-lede b {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.lp-reach-regions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
+  margin: 0;
+  padding: 0;
+}
+.lp-reach-row {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: var(--space-md);
+  padding: var(--space-md) 0;
+  border-bottom: 1px dashed var(--border-subtle);
+  align-items: baseline;
+}
+.lp-reach-row:last-child {
+  border-bottom: none;
+}
+.lp-reach-row dt {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  margin: 0;
+}
+.lp-reach-row dd {
+  margin: 0;
+  font-size: 0.98rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+@media (max-width: 600px) {
+  .lp-reach-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .lp-reach-row dt {
+    font-size: 0.72rem;
+  }
+}
 
 /* Trust microcopy row under hero CTA */
 .lp-trust-row {
@@ -1982,6 +2025,22 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   color: var(--accent-soft);
   border-color: var(--accent-dim-20);
 }
+/* Forced-colors fallback (2026-05-14 critique). Windows High Contrast
+   strips custom colors + borders, so the only [open] differentiator
+   becomes the chevron's 45deg rotate. Add an outline on the item
+   itself — outline survives forced-colors as a system color. */
+@media (forced-colors: active) {
+  .lp-faq-item[open] {
+    outline: 2px solid CanvasText;
+    outline-offset: -2px;
+  }
+  .lp-faq-item[open] .lp-faq-icon {
+    /* `border` is stripped in forced-colors; the rotate alone carries
+       the state. Make sure the icon stays visible as text color. */
+    border-color: CanvasText;
+    color: CanvasText;
+  }
+}
 .lp-faq-a {
   padding: 0 var(--space-lg) var(--space-md);
   color: var(--text-secondary);
@@ -2182,8 +2241,14 @@ tr:hover td { background: rgba(255,255,255,0.015); }
 @media (max-width: 900px) {
   .hero-flyer-grid {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "head" "meta" "board";
+    grid-template-areas: "head" "meta";
   }
+  /* Hide the How-it-works panel on mobile (2026-05-14 design critique).
+     On <=900px the panel pushed the feature grid ~1100px below the fold;
+     the same info lives in the feature grid below and in /how-it-works.
+     Desktop keeps the panel — it's earning its space in the right column
+     where the alternative is empty real estate. */
+  .hero-how { display: none; }
 }
 
 .hero-ticker {
@@ -2264,7 +2329,11 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   gap: 14px;
   flex-wrap: wrap;
   font-family: var(--font-mono);
-  font-size: 0.78rem;
+  /* 2026-05-14 critique: bumped from 0.78rem (~12.5px). Mono +
+     uppercase + tracking + tertiary opacity was a 3-way tax on
+     legibility, especially on phones. Bigger font earns its place
+     back. */
+  font-size: 0.82rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-tertiary);
@@ -2390,10 +2459,13 @@ tr:hover td { background: rgba(255,255,255,0.015); }
 }
 .hero-how-role-label {
   font-family: var(--font-mono);
-  font-size: 0.66rem;
+  /* 2026-05-14 critique: bumped from 0.66rem (~10.5px tertiary) which
+     was uncomfortable small + low-contrast. Now 0.72rem secondary —
+     ~11.5px at secondary opacity gives comfortable AA scanning. */
+  font-size: 0.72rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   padding-top: 2px;
 }
 .hero-how-role-text {
@@ -4592,6 +4664,18 @@ tr:hover td { background: rgba(255,255,255,0.015); }
 .text-right   { text-align: right; }
 .flex-2-min-200 { flex: 2; min-width: 200px; }
 .stack-xs-md  { display: flex; flex-direction: column; gap: var(--space-xs); margin-bottom: var(--space-md); }
+
+/* Section padding + max-width helpers (replaces inline style="..."
+   on index.html homepage sections — 2026-05-14 critique). All top-level
+   sections now align to --space-3xl; the closing CTA gets an extra
+   --space-4xl bottom because it's the page closer with no following
+   section before the footer. */
+.section-pad-3xl { padding: var(--space-3xl) 0; }
+.section-pad-cta { padding: var(--space-3xl) 0 var(--space-4xl); }
+.max-w-780      { max-width: 780px; }
+/* Three-column equal-fr grid with 8px gutters (artist-tile gallery
+   inside the hero feature card). */
+.grid-3-tight-8 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 
 /* Generic flex-row + center alignment + gap helpers */
 .flex-center        { display: flex; align-items: center; }

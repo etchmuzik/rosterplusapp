@@ -256,11 +256,11 @@
          classes + `assets/images/partners/README.md` are still in place. -->
 
     <!-- ═══ FEATURE GRID ═══ -->
-    <section class="container" style="padding: var(--space-3xl) 0">
+    <section class="container section-pad-3xl">
       <div class="lp-section-head">
         <div>
           <span class="eyebrow">The platform</span>
-          <h2 style="max-width: 780px">
+          <h2 class="max-w-780">
             Everything a booking actually needs, in one room.
           </h2>
         </div>
@@ -270,14 +270,14 @@
         <div class="lp-feature-item hero-item">
           <div>
             <div class="lp-feature-num">01 / ROSTER</div>
-            <h3 style="margin-top: 8px">A verified, up-to-date directory of GCC talent.</h3>
-            <p style="margin-top: 12px">
+            <h3 class="mt-sm">A verified, up-to-date directory of GCC talent.</h3>
+            <p class="mt-md">
               Riders, availability calendars, and real booking history.
               All surface-ready. No more DM archaeology.
             </p>
           </div>
           <div class="lp-feature-visual">
-            <div id="lp-feature-gallery" style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px">
+            <div id="lp-feature-gallery" class="grid-3-tight-8">
               <!-- Six empty placeholder tiles. JS hydration below replaces
                    these with live roster tiles pointing at
                    /assets/images/artists/<handle>.jpg via artistPhotoSrc().
@@ -350,33 +350,42 @@
     </section>
 
     <!-- ═══ REACH ═══
-         Globe video retired 2026-05-14. Section now reads as a
-         typographic city ledger: headline + grouped city list. No
-         hero visual, no legend (the legend only made sense with the
-         globe to map onto). -->
+         2026-05-14 design critique: the previous dot-list ledger read as
+         a footer. Re-treated as an editorial statement — one bold
+         headline-number, then a sentence per region in the page's voice.
+         The schema.org `areaServed` block above still feeds Google the
+         full city list for SEO; this section is for human readers.
+         (Globe video retired 2026-05-14.) -->
     <section class="lp-reach-section" id="lp-reach-section">
       <div class="container">
         <div class="lp-section-head">
           <span class="eyebrow">Where we book</span>
-          <h2>From the Gulf, worldwide.</h2>
+          <h2>Built for the GCC. Wired for the wider world.</h2>
         </div>
-        <div class="lp-map-list" aria-label="Cities we book in">
-          <div class="group">
-            <div class="group-label">GCC</div>
-            <span>Dubai</span> · <span>Abu Dhabi</span> · <span>Riyadh</span> · <span>Jeddah</span> · <span>Doha</span>
-          </div>
-          <div class="group">
-            <div class="group-label">Egypt + Levant</div>
-            <span>Cairo</span> · <span>Sharm</span> · <span>Hurghada</span> · <span>El Gouna</span> · <span>North Coast</span> · <span>Beirut</span>
-          </div>
-          <div class="group">
-            <div class="group-label">Europe</div>
-            <span>London</span> · <span>Moscow</span> · <span>St. Petersburg</span>
-          </div>
-          <div class="group">
-            <div class="group-label">Asia</div>
-            <span>Bali</span>
-          </div>
+        <div class="lp-reach-statement">
+          <p class="lp-reach-lede">
+            <b>19 cities, 4 regions, one inbox.</b> Every booking flows through the
+            same contract, conflict-check, and payout pipeline — whether the gig
+            lands in Dubai, Cairo, London, or Bali.
+          </p>
+          <dl class="lp-reach-regions">
+            <div class="lp-reach-row">
+              <dt>Gulf</dt>
+              <dd>Dubai, Abu Dhabi, Riyadh, Jeddah, Doha &mdash; the home market and where most of the live roster plays.</dd>
+            </div>
+            <div class="lp-reach-row">
+              <dt>Egypt &amp; Levant</dt>
+              <dd>Cairo, Sharm, Hurghada, El Gouna, North Coast, Beirut &mdash; seasonal peaks and the founding artists' deepest network.</dd>
+            </div>
+            <div class="lp-reach-row">
+              <dt>Europe</dt>
+              <dd>London, Moscow, St. Petersburg &mdash; touring corridors where Gulf-based promoters book international talent.</dd>
+            </div>
+            <div class="lp-reach-row">
+              <dt>Asia</dt>
+              <dd>Bali &mdash; the off-season escape; pilot route for South-East Asia expansion.</dd>
+            </div>
+          </dl>
         </div>
       </div>
     </section>
@@ -385,11 +394,11 @@
          Currently free for both sides during launch. When we turn
          commissions on, this section becomes the canonical pricing page
          reference. Keep it direct and specific. -->
-    <section class="container" style="padding: var(--space-2xl) 0">
+    <section class="container section-pad-3xl">
       <div class="lp-section-head">
         <div>
           <span class="eyebrow">Pricing</span>
-          <h2 style="max-width: 780px">
+          <h2 class="max-w-780">
             Free during launch, fair when it isn't.
           </h2>
         </div>
@@ -454,11 +463,11 @@
          When updating: keep answers under 80 words. The point is to
          remove doubt fast, not to be the canonical legal answer. Link
          out to /terms.html or /privacy.html for the full text. -->
-    <section class="container lp-faq-section" id="faq" style="padding: var(--space-3xl) 0">
+    <section class="container lp-faq-section section-pad-3xl" id="faq">
       <div class="lp-section-head">
         <div>
           <span class="eyebrow">Common questions</span>
-          <h2 style="max-width: 780px">
+          <h2 class="max-w-780">
             What promoters and artists ask us most.
           </h2>
         </div>
@@ -606,7 +615,7 @@
          hook that promoters and artists both respond to. Operator
          updates the "X / 50 remaining" counter manually as the cohort
          fills — keep it honest, never above the real claimed count. -->
-    <section class="container" style="padding: var(--space-3xl) 0 var(--space-4xl)">
+    <section class="container section-pad-cta">
       <div class="lp-cta-panel lp-cta-cohort">
         <div class="lp-urgency-pill">
           <span aria-hidden="true">⚡</span> Founding 50 · <span id="lp-cohort-remaining">39</span> spots left
