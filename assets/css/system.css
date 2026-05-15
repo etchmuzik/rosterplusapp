@@ -1532,6 +1532,45 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   background: rgba(0,0,0,0.25);
   border: 1px solid var(--border-subtle);
 }
+
+/* ── Automations sub-strip ──
+   Lives below the 12-item feature grid. Surfaces the behind-the-scenes
+   lifecycle features (drip emails, review prompts, password resets,
+   ops automations) that don't deserve a hero-tier card but need to
+   exist on the front door because they're real product value the
+   user is otherwise unaware of. Lower visual weight than .lp-feature-grid:
+   tighter padding, no hover lift, mono eyebrow uses accent-soft for
+   the visual differentiation. */
+.lp-automations-strip {
+  margin-top: var(--space-xl);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--border-subtle);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-md);
+}
+.lp-auto-tile {
+  padding: var(--space-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+.lp-auto-eyebrow {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-soft);
+  margin-bottom: 6px;
+}
+.lp-auto-tile p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
 /* Feature-01 gallery tile. Photo on top of a deterministic gradient
    fallback so a missing image still renders something. The initials
    span is below the <img>; visible only when the <img> errors and

@@ -318,7 +318,30 @@
           <p>Every status change appears in the thread the second it happens. Rider tweaks, set times, logistics, all timestamped and in one place.</p>
         </div>
 
+        <!-- 06 / CALENDAR — covers calendar.html + the iOS `availability`
+             route. Artists publish their open dates once; promoters
+             see the live state when they pick a date. Same conflict
+             check that fires on the booking form (item 02) is fed
+             from this data. -->
         <div class="lp-feature-item">
+          <div class="lp-feature-num">06 / CALENDAR</div>
+          <h3>Availability that's actually live.</h3>
+          <p>Artists publish open dates and tour blocks once. Promoters see a green light the moment they pick a working date — and a red flag if they pick a clashing one.</p>
+        </div>
+
+        <!-- 07 / DASHBOARDS — covers dashboard.html (promoter) +
+             artist-dashboard.html. Honest copy from what those pages
+             actually surface: Next shows / Booking funnel / Recent
+             messages on promoter side; Incoming Requests / Confirmed
+             Gigs / Total Earned / This Month on artist side. -->
+        <div class="lp-feature-item">
+          <div class="lp-feature-num">07 / DASHBOARDS</div>
+          <h3>One screen for each side of the table.</h3>
+          <p>Promoters see next shows, booking funnel, recent threads. Artists see incoming requests, confirmed gigs, total earned, this month's payouts. No tab-hopping for the day-to-day.</p>
+        </div>
+
+        <div class="lp-feature-item">
+          <div class="lp-feature-num">08 / EPK</div>
           <h3>Press kit, gallery, tour mode.</h3>
           <p>Artists build an EPK (electronic press kit): bio, gallery, technical rider, and tour calendar in one shareable link that promoters actually read.</p>
           <!-- Live example wired to ETCH's EPK. Per 2026-05-12 homepage
@@ -333,18 +356,70 @@
           </a>
         </div>
 
+        <!-- 09 / ANALYTICS — honest claims about analytics.html: Total
+             Bookings, Total Spend, Avg per Booking, Completion Rate,
+             Bookings by Status chart, Top Artists list. NOT the
+             speculative "genre demand / per-promoter conversion" I had
+             in the draft plan — those don't exist yet. -->
         <div class="lp-feature-item">
+          <div class="lp-feature-num">09 / ANALYTICS</div>
+          <h3>The numbers behind the bookings.</h3>
+          <p>Total bookings, total spend, average per gig, completion rate. Top artists by activity, bookings by status. Patterns you can actually act on.</p>
+        </div>
+
+        <div class="lp-feature-item">
+          <div class="lp-feature-num">10 / VERIFIED</div>
           <h3>Verified profiles &amp; full audit trail.</h3>
-          <p>Verified artists, public status page, audit trail on every contract change. See exactly who did what and when.</p>
+          <p>Three-step verification before the badge appears. Public status page. Audit trail on every contract change. See exactly who did what and when.</p>
           <a class="lp-feature-link" href="/press.html">
             Press coverage
             <span class="js-icon" data-icon="chevronRight" data-size="12"></span>
           </a>
         </div>
 
+        <!-- 11 / NETWORK — covers invite.html + claim-profile.html.
+             Honest copy: invite.html is an email+name+role+message form
+             with a "Sent Invitations" history. claim-profile.html is the
+             flow for unclaimed directory artists. -->
         <div class="lp-feature-item">
-          <h3>iOS, web, push everywhere.</h3>
-          <p>Sign a contract on the train, get a counteroffer ping at the venue. Push notifications on iOS native and web. Same backbone.</p>
+          <div class="lp-feature-num">11 / NETWORK</div>
+          <h3>Invite who you trust. Claim who's already here.</h3>
+          <p>Promoters and artists send role-tagged invites with a personal note. Artists already in the directory can claim their existing profile and step into a live, verified slot — no rebuild.</p>
+        </div>
+
+        <div class="lp-feature-item">
+          <div class="lp-feature-num">12 / EVERYWHERE</div>
+          <h3>iOS, web, push, email.</h3>
+          <p>Sign a contract on the train, get a counteroffer ping at the venue, read the booking confirmation in your inbox. Native iOS, web, web-push, transactional email. Same backbone.</p>
+        </div>
+      </div>
+
+      <!-- ═══ AUTOMATIONS SUB-STRIP ═══
+           Below the main grid (lower visual weight). Surfaces the
+           lifecycle features that don't need a hero card but ARE
+           real product value invisible elsewhere. Each tile maps to
+           one or more edge functions:
+             LIFECYCLE → send-artist-onboarding-drip, send-booking-reminders
+             REVIEWS   → send-review-prompts
+             RECOVERY  → send-password-reset, send-email
+             OPS       → admin-daily-digest, health, stripe-webhook, resend-webhook
+           -->
+      <div class="lp-automations-strip" aria-label="Behind-the-scenes automations">
+        <div class="lp-auto-tile">
+          <span class="lp-auto-eyebrow">Lifecycle</span>
+          <p>Welcome drip for new artists. Booking reminders that fire on the right day. Onboarding sequence for promoters who haven't shipped their first gig.</p>
+        </div>
+        <div class="lp-auto-tile">
+          <span class="lp-auto-eyebrow">Reviews</span>
+          <p>Post-gig review prompts to both sides. Real social proof, written the day it happened — not pulled from stale testimonials.</p>
+        </div>
+        <div class="lp-auto-tile">
+          <span class="lp-auto-eyebrow">Recovery</span>
+          <p>Password resets, email-change confirmations, magic-link sign-in. All branded, all logged, all routed through Resend.</p>
+        </div>
+        <div class="lp-auto-tile">
+          <span class="lp-auto-eyebrow">Ops</span>
+          <p>Daily digest to admin. Health checks every five minutes. Stripe webhooks reconciled automatically against pending payouts.</p>
         </div>
       </div>
     </section>
