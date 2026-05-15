@@ -343,13 +343,16 @@
         <div class="lp-feature-item">
           <div class="lp-feature-num">08 / EPK</div>
           <h3>Press kit, gallery, tour mode.</h3>
-          <p>Artists build an EPK (electronic press kit): bio, gallery, technical rider, and tour calendar in one shareable link that promoters actually read.</p>
+          <p>Artists build an EPK (electronic press kit): bio, gallery, technical rider, and tour calendar — a single dossier promoters actually read. <em>Pair it with their ROSTR+ link (card 13) for the social-bio surface.</em></p>
           <!-- Live example wired to ETCH's EPK. Per 2026-05-12 homepage
                audit (#9): visitors can't picture what an "EPK" is until
                they see one. The link below is a real, in-production EPK
                so the abstraction becomes concrete in one click. If ETCH
                ever leaves the roster, swap the UUID to another verified
-               artist with a fleshed-out profile. -->
+               artist with a fleshed-out profile.
+               2026-05-16 link-feature add: copy reworked to disambiguate
+               from card 13 (ROSTR+ link). EPK = the one-pager dossier;
+               Link = the Linktree-style social-bio page. -->
           <a class="lp-feature-link" href="/epk.html?id=49f85dd9-6f67-42db-b657-c75f91326c49">
             View a live EPK
             <span class="js-icon" data-icon="chevronRight" data-size="12"></span>
@@ -391,6 +394,23 @@
           <div class="lp-feature-num">12 / EVERYWHERE</div>
           <h3>iOS, web, push, email.</h3>
           <p>Sign a contract on the train, get a counteroffer ping at the venue, read the booking confirmation in your inbox. Native iOS, web, web-push, transactional email. Same backbone.</p>
+        </div>
+
+        <!-- 13 / LINK — covers /link (brand Linktree) and /a.html?id=
+             (per-artist Linktree). profile-share edge function renders
+             artist-specific OG meta when these URLs are shared on
+             WhatsApp / Instagram / Slack so the preview shows the right
+             photo + name. The demo link uses /a.html?id=<UUID> because
+             /a/<UUID> isn't rewritten in .htaccess (verified 2026-05-16).
+             ETCH's UUID matches the EPK card for consistency. -->
+        <div class="lp-feature-item">
+          <div class="lp-feature-num">13 / LINK</div>
+          <h3>One link in bio. Every artist. Every promoter.</h3>
+          <p>ROSTR+ link is a Linktree-style URL — one for the platform, one for each verified artist. WhatsApp, Instagram, Slack previews render the right photo, the right name, the right bookable artist. No more "tap the bio for the booking form."</p>
+          <a class="lp-feature-link" href="/a.html?id=49f85dd9-6f67-42db-b657-c75f91326c49">
+            See an artist's link
+            <span class="js-icon" data-icon="chevronRight" data-size="12"></span>
+          </a>
         </div>
       </div>
 

@@ -1109,6 +1109,7 @@ function renderFooter() {
             <li><a href="/payments.html">Payments</a></li>
             <li><a href="/messages.html">Messages</a></li>
             <li><a href="/directory.html">Artist EPKs</a></li>
+            <li><a href="/link">Link in bio</a></li>
             <li><a href="/calendar.html">Calendar</a></li>
             <li><a href="/analytics.html">Analytics</a></li>
           </ul>
