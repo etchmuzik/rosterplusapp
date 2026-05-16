@@ -219,7 +219,12 @@
           { key: 'city',         label: 'Set your city', desc: 'We surface local artists first', href: '/settings.html', done: !isMissing('city') },
           { key: 'first_booking', label: 'Send your first booking', desc: 'Browse the directory and send a request', href: '/directory.html', done: (_allBookings && _allBookings.length > 0) },
         ];
-        host.innerHTML = UI.onboardingChecklist(steps, { heading: 'Finish setting up your account', dismissId: 'dash' });
+        // Headline percentage matches DB.getProfileCompletion so the
+        // dashboard nudge and the settings completion meter agree on
+        // one number. The 5-item checklist body stays independent —
+        // one item ("send first booking") isn't a profile field, so
+        // its denominator wouldn't line up with settings either way.
+        host.innerHTML = UI.onboardingChecklist(steps, { heading: `Finish setting up your account — ${c.percent}% done`, dismissId: 'dash' });
         return;
       }
 
