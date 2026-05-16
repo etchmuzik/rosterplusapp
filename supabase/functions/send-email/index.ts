@@ -18,6 +18,21 @@ const ALLOWED_ORIGINS = new Set([
   'https://rosterplus.io',
   'https://www.rosterplus.io',
 ]);
+/**
+ * Constant-time string compare. Use for any secret comparison that
+ * runs against a request-supplied value, otherwise the response-time
+ * difference leaks the secret one byte at a time.
+ * 2026-05-16 audit HIGH.
+ */
+function constantTimeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
 function corsHeaders(origin: string | null): Record<string, string> {
   const allowed = origin && ALLOWED_ORIGINS.has(origin) ? origin : 'https://rosterplus.io';
   return {
@@ -305,7 +320,7 @@ serve(async (req) => {
   let isServiceRole = false;
   let isAuthenticatedUser = false;
 
-  if (bearer && bearer === SERVICE_ROLE) {
+  if (bearer && SERVICE_ROLE && constantTimeEqual(bearer, SERVICE_ROLE)) {
     isServiceRole = true;
   } else if (bearer && SUPABASE_URL && SERVICE_ROLE) {
     try {

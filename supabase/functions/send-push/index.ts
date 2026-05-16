@@ -40,13 +40,32 @@ const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 // vector. Now requires either the service-role key (used by the
 // pg_net trigger on notifications INSERT) OR a valid signed-in user's
 // JWT, in which case the caller must be the target user OR an admin.
+/**
+ * Constant-time string compare. Use for any secret comparison that
+ * runs against a request-supplied value, otherwise the response-time
+ * difference between mismatch-at-position-1 and mismatch-at-position-N
+ * leaks the secret one byte at a time. Returns false fast on length
+ * mismatch (length itself isn't secret here — both sides are JWTs of
+ * a known fixed length).
+ */
+function constantTimeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
 async function authorizeCaller(req: Request, targetUserId: string): Promise<{ ok: true } | { ok: false; status: number; message: string }> {
   const authHeader = req.headers.get("authorization") || "";
   const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
   if (!bearer) return { ok: false, status: 401, message: "unauthorized" };
 
   // Service role token — trusted internal caller (pg_net trigger).
-  if (bearer === SERVICE_ROLE_KEY) return { ok: true };
+  // Constant-time compare so the response time doesn't leak the secret
+  // one byte at a time. 2026-05-16 audit HIGH.
+  if (constantTimeEqual(bearer, SERVICE_ROLE_KEY)) return { ok: true };
 
   // End-user JWT — verify + check that they're the target or an admin.
   try {
