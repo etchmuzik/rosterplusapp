@@ -67,44 +67,103 @@
 
     .earnings-total { font-family: var(--font-display); font-size: 2.4rem; font-weight: 700; color: var(--accent-soft); letter-spacing: -0.04em; }
 
-    @media (max-width: 1024px) { .layout-sidebar { grid-template-columns: 1fr; } .sidebar { display: none; } .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+    /* Mobile tab strip — only appears <=1024px where the sidebar collapses.
+       2026-05-16 audit F2: before this, tablet/phone artists could only
+       see the Overview tab. Horizontal scroll on narrow viewports so all
+       7 tabs stay reachable without wrapping. */
+    .mobile-tabs { display: none; }
+    @media (max-width: 1024px) {
+      .layout-sidebar { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .mobile-tabs {
+        display: flex;
+        gap: 4px;
+        margin: 0 calc(-1 * var(--space-2xl)) var(--space-xl);
+        padding: 0 var(--space-2xl) 8px;
+        overflow-x: auto;
+        scroll-snap-type: x proximity;
+        -webkit-overflow-scrolling: touch;
+        border-bottom: 1px solid var(--border-subtle);
+      }
+      .mobile-tabs::-webkit-scrollbar { display: none; }
+      .mobile-tabs { scrollbar-width: none; }
+      .mobile-tabs button {
+        flex: 0 0 auto;
+        scroll-snap-align: start;
+        background: none;
+        border: 1px solid transparent;
+        border-radius: var(--radius-sm);
+        padding: 8px 14px;
+        font-family: var(--font-mono);
+        font-size: 0.78rem;
+        font-weight: 500;
+        letter-spacing: 0.06em;
+        color: var(--text-secondary);
+        white-space: nowrap;
+        cursor: pointer;
+        transition: all var(--duration-fast) var(--ease-out);
+      }
+      .mobile-tabs button:hover { color: var(--text-primary); }
+      .mobile-tabs button.active {
+        background: var(--accent-dim-10);
+        border-color: var(--accent-dim-30);
+        color: var(--accent-soft);
+      }
+    }
     @media (max-width: 768px) { .stats-grid { grid-template-columns: 1fr; } .quick-actions { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
   <div class="page-shell">
     <div id="nav-root"></div>
+    <a id="main-content" tabindex="-1" class="sr-only">Main content</a>
     <div class="layout-sidebar">
       <aside class="sidebar">
-        <div class="sidebar-section">
+        <div class="sidebar-section" role="tablist" aria-label="Dashboard sections">
           <div class="sidebar-label">Dashboard</div>
-          <button class="sidebar-item active" data-view="overview" onclick="switchView('overview')">
+          <button type="button" class="sidebar-item active" data-view="overview" role="tab" aria-selected="true"  aria-controls="view-overview"  onclick="switchView('overview')">
             <span class="js-icon" data-icon="home" data-size="16"></span> Overview
           </button>
-          <button class="sidebar-item" data-view="requests" onclick="switchView('requests')">
+          <button type="button" class="sidebar-item"        data-view="requests" role="tab" aria-selected="false" aria-controls="view-requests"  onclick="switchView('requests')">
             <span class="js-icon" data-icon="inbox" data-size="16"></span> Booking Requests
           </button>
-          <button class="sidebar-item" data-view="upcoming" onclick="switchView('upcoming')">
+          <button type="button" class="sidebar-item"        data-view="upcoming" role="tab" aria-selected="false" aria-controls="view-upcoming"  onclick="switchView('upcoming')">
             <span class="js-icon" data-icon="calendar" data-size="16"></span> Upcoming Gigs
           </button>
-          <button class="sidebar-item" data-view="calendar" onclick="switchView('calendar')">
+          <button type="button" class="sidebar-item"        data-view="calendar" role="tab" aria-selected="false" aria-controls="view-calendar"  onclick="switchView('calendar')">
             <span class="js-icon" data-icon="grid" data-size="16"></span> Calendar
           </button>
-          <button class="sidebar-item" data-view="contracts" onclick="switchView('contracts')">
+          <button type="button" class="sidebar-item"        data-view="contracts" role="tab" aria-selected="false" aria-controls="view-contracts" onclick="switchView('contracts')">
             <span class="js-icon" data-icon="fileText" data-size="16"></span> Contracts
           </button>
-          <button class="sidebar-item" data-view="earnings" onclick="switchView('earnings')">
+          <button type="button" class="sidebar-item"        data-view="earnings" role="tab" aria-selected="false" aria-controls="view-earnings"  onclick="switchView('earnings')">
             <span class="js-icon" data-icon="dollar" data-size="16"></span> Earnings
           </button>
-          <button class="sidebar-item" data-view="payouts" onclick="switchView('payouts')">
+          <button type="button" class="sidebar-item"        data-view="payouts"  role="tab" aria-selected="false" aria-controls="view-payouts"   onclick="switchView('payouts')">
             <span class="js-icon" data-icon="activity" data-size="16"></span> Payouts
           </button>
         </div>
       </aside>
 
-      <main id="main-content" class="main-content">
+      <main id="main-content-wrap" role="main" class="main-content">
+        <!-- Mobile-only tab strip. The sidebar collapses at <=1024px (CSS
+             above); this strip restores access to all 7 views without
+             requiring a hamburger or a sidebar drawer. Calls the same
+             switchView() the sidebar uses, so JS is shared.
+             2026-05-16 audit F2. -->
+        <nav class="mobile-tabs" role="tablist" aria-label="Dashboard sections">
+          <button type="button" data-view="overview"  class="active" role="tab" aria-selected="true"  aria-controls="view-overview"  onclick="switchView('overview')">Overview</button>
+          <button type="button" data-view="requests"             role="tab" aria-selected="false" aria-controls="view-requests"  onclick="switchView('requests')">Requests</button>
+          <button type="button" data-view="upcoming"             role="tab" aria-selected="false" aria-controls="view-upcoming"  onclick="switchView('upcoming')">Upcoming</button>
+          <button type="button" data-view="calendar"             role="tab" aria-selected="false" aria-controls="view-calendar"  onclick="switchView('calendar')">Calendar</button>
+          <button type="button" data-view="contracts"            role="tab" aria-selected="false" aria-controls="view-contracts" onclick="switchView('contracts')">Contracts</button>
+          <button type="button" data-view="earnings"             role="tab" aria-selected="false" aria-controls="view-earnings"  onclick="switchView('earnings')">Earnings</button>
+          <button type="button" data-view="payouts"              role="tab" aria-selected="false" aria-controls="view-payouts"   onclick="switchView('payouts')">Payouts</button>
+        </nav>
+
         <!-- OVERVIEW -->
-        <section id="view-overview" class="view-section active">
+        <section id="view-overview" class="view-section active" role="tabpanel">
           <div class="mb-space-2xl">
             <div class="eyebrow" style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-tertiary);margin-bottom:8px">
               <span id="welcome-date">—</span>
@@ -175,7 +234,7 @@
         </section>
 
         <!-- BOOKING REQUESTS -->
-        <section id="view-requests" class="view-section">
+        <section id="view-requests" class="view-section" role="tabpanel">
           <h2 class="mb-space-md">Booking Requests</h2>
           <div style="display:flex;gap:var(--space-xs);margin-bottom:var(--space-lg);flex-wrap:wrap" id="request-filters">
             <button class="btn btn-sm btn-secondary fs-fine" onclick="filterRequests('all')" data-filter="all">All</button>
@@ -187,13 +246,13 @@
         </section>
 
         <!-- UPCOMING GIGS -->
-        <section id="view-upcoming" class="view-section">
+        <section id="view-upcoming" class="view-section" role="tabpanel">
           <h2 class="mb-space-lg">Upcoming Gigs</h2>
           <div id="all-upcoming" class="table-wrap"></div>
         </section>
 
         <!-- CALENDAR -->
-        <section id="view-calendar" class="view-section">
+        <section id="view-calendar" class="view-section" role="tabpanel">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-lg)">
             <h2 id="cal-title">April 2026</h2>
             <div style="display:flex;gap:var(--space-sm)">
@@ -206,14 +265,14 @@
         </section>
 
         <!-- CONTRACTS -->
-        <section id="view-contracts" class="view-section">
+        <section id="view-contracts" class="view-section" role="tabpanel">
           <h2 class="mb-space-md">Contracts</h2>
           <p class="text-secondary" style="margin-bottom:var(--space-lg);font-size:0.9rem">Contracts sent by promoters for gigs you've agreed to. Review and sign to lock in the booking.</p>
           <div id="artist-contracts-list" style="display:flex;flex-direction:column;gap:var(--space-md)"></div>
         </section>
 
         <!-- EARNINGS -->
-        <section id="view-earnings" class="view-section">
+        <section id="view-earnings" class="view-section" role="tabpanel">
           <h2 class="mb-space-lg">Earnings</h2>
           <div class="stats-grid mb-space-2xl">
             <div class="stat-card"><div class="card-inner"><div class="stat-label">Total Earned</div><div class="earnings-total" id="earn-total">—</div></div></div>
@@ -225,7 +284,7 @@
         </section>
 
         <!-- PAYOUTS -->
-        <section id="view-payouts" class="view-section">
+        <section id="view-payouts" class="view-section" role="tabpanel">
           <h2 class="mb-space-md">Payouts</h2>
           <p class="text-secondary" style="margin-bottom:var(--space-lg);font-size:0.9rem">Money received for completed gigs. A payout appears here once the promoter releases it.</p>
           <div class="stats-grid mb-space-2xl">
@@ -267,11 +326,32 @@
     let _actionBookingId = null;
     let _actionType = null;
 
+    // Whitelist of valid view names — mirrors the seven <section> ids
+    // below. Used by switchView() and the hash-routing init to reject
+    // bogus hash values (e.g. someone hand-types #foo) and fall back
+    // to 'overview' instead of leaving every section hidden.
+    const _VALID_VIEWS = ['overview','requests','upcoming','calendar','contracts','earnings','payouts'];
+
     function switchView(view) {
+      if (!_VALID_VIEWS.includes(view)) view = 'overview';
       document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
       document.getElementById('view-' + view)?.classList.add('active');
-      document.querySelectorAll('.sidebar-item').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+      // Sync both control sets (sidebar + mobile tab strip). aria-selected
+      // mirrors .active so screen readers announce the change.
+      // 2026-05-16 audit F4 + F5.
+      document.querySelectorAll('.sidebar-item, .mobile-tabs button').forEach(b => {
+        const match = b.dataset.view === view;
+        b.classList.toggle('active', match);
+        b.setAttribute('aria-selected', match ? 'true' : 'false');
+      });
+      // Persist tab state in the URL so refresh + deep-links work.
+      // replaceState (not pushState) so each tab change doesn't pollute
+      // the browser back stack.
+      if (location.hash !== '#' + view) {
+        history.replaceState(null, '', '#' + view);
+      }
     }
+    window.switchView = switchView;
 
     function renderBookingRow(b, showActions) {
       const promoter = esc(b.promoter_name || b.promoter?.display_name || '—');
@@ -648,15 +728,10 @@
       }).join('');
     }
 
-    async function artistSignContract(contractId) {
-      if (!confirm('Sign this contract? This is legally binding.')) return;
-      const { error } = await DB.signContract(contractId, 'artist');
-      if (error) { UI.toast('Failed to sign: ' + (error.message || error), 'error'); return; }
-      UI.toast('Contract signed ✓', 'success');
-      const res = await DB.getMyContracts();
-      _contracts = res.success ? res.data : [];
-      renderContracts();
-    }
+    // artistSignContract() removed 2026-05-16 audit (F8). Dead code —
+    // the "Review & Sign" button in renderContracts() is an
+    // <a href="contract.html?id=…">, not an onclick. Actual signing
+    // happens on contract.html via the contract-page signature flow.
 
     // ── Payouts (artist view) ──
     let _payouts = [];
@@ -729,6 +804,16 @@
       }
 
       document.getElementById('nav-root').innerHTML = renderNav('artist-dashboard');
+
+      // Hash routing — open the tab named in the URL hash, falling back
+      // to Overview if no hash or an unknown view. Live-update on
+      // hashchange too (browser back/forward navigates between tabs).
+      // 2026-05-16 audit F5.
+      const _hashView = () => (location.hash || '').replace(/^#/, '');
+      const _initial = _hashView();
+      if (_initial && _initial !== 'overview') switchView(_initial);
+      window.addEventListener('hashchange', () => switchView(_hashView() || 'overview'));
+
       // Editorial welcome: date line + first-name + contextual sub
       const now = new Date();
       const city = Auth.user?.city || '';

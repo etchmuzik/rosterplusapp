@@ -25,12 +25,13 @@
 <body>
   <div class="page-shell">
     <nav-root id="nav-root"></nav-root>
+    <a id="main-content" tabindex="-1" class="sr-only">Main content</a>
 
-    <main id="main-content" class="container" style="padding-top: var(--space-xl); padding-bottom: var(--space-3xl)">
+    <main id="main-content-wrap" role="main" class="container" style="padding-top: var(--space-xl); padding-bottom: var(--space-3xl)">
       <!-- ═══ Welcome ═══ -->
       <div class="dash-welcome lp-anim">
         <div>
-          <div class="eyebrow" class="label-mono">
+          <div class="eyebrow label-mono">
             <span id="welcome-date">—</span>
           </div>
           <h1>Good evening, <em id="welcome-name">there</em>.</h1>
@@ -60,12 +61,12 @@
         </div>
         <div class="dash-stat lp-anim lp-d-2">
           <div class="label">Confirmed</div>
-          <div class="value" class="text-status-confirmed" id="stat-confirmed">—</div>
+          <div class="value text-status-confirmed" id="stat-confirmed">—</div>
           <div class="sub" id="stat-confirmed-sub">—</div>
         </div>
         <div class="dash-stat lp-anim lp-d-3">
           <div class="label">Pending</div>
-          <div class="value" class="text-status-pending" id="stat-pending">—</div>
+          <div class="value text-status-pending" id="stat-pending">—</div>
           <div class="sub" id="stat-pending-sub">—</div>
         </div>
         <div class="dash-stat lp-anim lp-d-4">
@@ -82,18 +83,18 @@
       <div class="dash-body">
         <!-- Timeline -->
         <div class="lp-anim lp-d-5">
-          <div class="lp-section-head" class="items-end">
+          <div class="lp-section-head items-end">
             <div>
               <span class="eyebrow">Upcoming</span>
               <h2 style="margin-top: 4px; font-family: var(--font-display); font-size: 1.5rem; letter-spacing: -0.03em">Next shows</h2>
             </div>
             <div class="dash-filter" role="tablist" aria-label="Filter upcoming shows by time range">
-              <button data-filter="week" class="active" role="tab" aria-label="Show this week's bookings">Week</button>
-              <button data-filter="month" role="tab" aria-label="Show this month's bookings">Month</button>
-              <button data-filter="all" role="tab" aria-label="Show all upcoming bookings">All</button>
+              <button id="filter-week" data-filter="week" class="active" role="tab" aria-selected="true" aria-controls="timeline-root" aria-label="Show this week's bookings">Week</button>
+              <button id="filter-month" data-filter="month" role="tab" aria-selected="false" aria-controls="timeline-root" aria-label="Show this month's bookings">Month</button>
+              <button id="filter-all" data-filter="all" role="tab" aria-selected="false" aria-controls="timeline-root" aria-label="Show all upcoming bookings">All</button>
             </div>
           </div>
-          <div id="timeline-root"></div>
+          <div id="timeline-root" role="tabpanel" aria-labelledby="filter-week"></div>
         </div>
 
         <!-- Side column -->
@@ -123,8 +124,8 @@
           </div>
 
           <!-- Suggestion -->
-          <div class="dash-suggest" id="suggestion-root" class="is-hidden">
-            <span class="eyebrow" class="label-mono">Suggested for you</span>
+          <div class="dash-suggest is-hidden" id="suggestion-root">
+            <span class="eyebrow label-mono">Suggested for you</span>
             <div class="who">
               <div class="tile" id="sug-initials">—</div>
               <div class="flex-1">
@@ -140,25 +141,10 @@
     </main>
   </div>
 
-  <!-- Message modal (kept from the v2 dashboard for realtime toasts) -->
-  <div id="message-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="message-modal-from">
-    <div class="modal">
-      <div class="modal-header">
-        <div>
-          <h3 id="message-modal-from"></h3>
-          <div class="text-secondary" style="font-size: 0.85rem; margin-top: 4px" id="message-modal-time"></div>
-        </div>
-        <button class="btn btn-ghost btn-icon" onclick="document.getElementById('message-modal').classList.remove('active')" aria-label="Close message preview">
-          <span class="js-icon" data-icon="x" data-size="16" aria-hidden="true"></span>
-        </button>
-      </div>
-      <div id="message-modal-preview" style="color: var(--text-secondary); line-height: 1.6; margin-bottom: var(--space-lg)"></div>
-      <div class="flex-row gap-sm">
-        <a class="btn btn-primary flex-1" href="messages.html" class="text-center">View Full Message</a>
-        <button class="btn btn-secondary flex-1" onclick="document.getElementById('message-modal').classList.remove('active')">Close</button>
-      </div>
-    </div>
-  </div>
+  <!-- Message-modal removed 2026-05-16 dashboard audit (F3). The modal
+       DOM + JS shipped but was never opened — realtime message handler
+       (renderInbox + UI.toast) is the right UX, opening a modal on every
+       incoming message would be intrusive. See plan-file F3 for details. -->
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="assets/js/error-logger.js?v=2521872" defer></script>
@@ -417,7 +403,7 @@
       const root = document.getElementById('timeline-root');
       if (list.length === 0) {
         root.innerHTML = `
-          <div class="dir-empty" class="mt-sm">
+          <div class="dir-empty mt-sm">
             <h3 class="mb-md">Nothing on the calendar</h3>
             <p style="color: var(--text-tertiary); font-size: 0.9rem; margin-bottom: 16px">
               No upcoming bookings in this range. Pick an artist to get started.
@@ -629,11 +615,20 @@
       renderInbox();
       renderSuggestion();
 
-      // Filter pill listeners
+      // Filter pill listeners — sync aria-selected alongside .active so
+      // screen readers announce the selected tab. Tabpanel's
+      // aria-labelledby is also updated to point at the active tab's id
+      // (2026-05-16 audit F4).
       document.querySelectorAll('.dash-filter button').forEach(btn => {
         btn.addEventListener('click', () => {
-          document.querySelectorAll('.dash-filter button').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.dash-filter button').forEach(b => {
+            b.classList.remove('active');
+            b.setAttribute('aria-selected', 'false');
+          });
           btn.classList.add('active');
+          btn.setAttribute('aria-selected', 'true');
+          const panel = document.getElementById('timeline-root');
+          if (panel) panel.setAttribute('aria-labelledby', btn.id);
           _currentFilter = btn.dataset.filter;
           renderTimeline();
         });
@@ -656,18 +651,9 @@
       });
     });
 
-    // Close modal on outside click (kept for realtime toasts)
-    document.getElementById('message-modal').addEventListener('click', function(e) {
-      if (e.target === this) this.classList.remove('active');
-    });
   </script>
-<script>
-    // 2026-05-13 audit v2 P1-5: bind Escape + focus-trap to every modal
-    // on this page. UI.bindModal lives in assets/js/app.js. Idempotent.
-    document.addEventListener('DOMContentLoaded', () => {
-      try { UI.bindModal(document.getElementById('message-modal'), () => document.getElementById('message-modal').classList.remove('active')); } catch (_) {}
-    });
-</script>
+<!-- bindModal block removed 2026-05-16 audit (F3) — no modals on this page. -->
+
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
     <!-- Site-wide footer (rendered by app.js renderFooter()) -->
     <site-footer id="site-footer"></site-footer>

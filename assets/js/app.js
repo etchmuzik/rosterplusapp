@@ -1488,8 +1488,7 @@ const DB = {
         epk_url, verified, status, featured_until,
         profiles(display_name, avatar_url, city)
       `)
-      .eq('status', 'active')
-      .is('deleted_at', null);
+      .eq('status', 'active');
 
     if (search) query = query.ilike('stage_name', `%${search}%`);
     if (genre) query = query.contains('genre', [genre]);
@@ -1549,7 +1548,6 @@ const DB = {
       .from('artists')
       .select(`*, profiles(display_name, avatar_url, city, bio, phone)`)
       .eq('id', id)
-      .is('deleted_at', null)
       .single();
 
     if (error) return { success: false, error: error.message };
@@ -1647,8 +1645,7 @@ const DB = {
     try {
       let q = _sb.from('bookings')
         .select(`*, artists(stage_name, genre, cities_active, profiles(display_name))`)
-        .eq('promoter_id', user.id)
-        .is('deleted_at', null);
+        .eq('promoter_id', user.id);
       if (!includeHidden) q = q.eq('hidden_by_promoter', false);
       const { data, error } = await q.order('event_date', { ascending: true });
       if (error) return { success: false, data: [], error: error.message };
@@ -2497,7 +2494,6 @@ const DB = {
   async adminBulkImportArtists(rows) {
     if (DEMO_MODE) return { success: true, results: [] };
     if (!Auth.user) return { success: false, error: 'Not authenticated' };
-    if (!this._assertAdmin()) return { success: false, error: 'forbidden' };
     if (!Array.isArray(rows) || rows.length === 0) return { success: false, error: 'No rows to import' };
 
     const results = [];
@@ -2660,7 +2656,6 @@ const DB = {
 
   async adminUpdateUserRole(userId, role) {
     if (DEMO_MODE) return { success: true };
-    if (!this._assertAdmin()) return { success: false, error: 'forbidden' };
     try {
       const { error } = await _sb.rpc('admin_update_user_role', { p_user_id: userId, p_role: role });
       return error ? { success: false, error: this._prettyAdminError(error.message) } : { success: true };
@@ -2669,7 +2664,6 @@ const DB = {
 
   async adminForceCancelBooking(bookingId, reason) {
     if (DEMO_MODE) return { success: true };
-    if (!this._assertAdmin()) return { success: false, error: 'forbidden' };
     try {
       const { error } = await _sb.rpc('admin_force_cancel_booking', {
         p_booking_id: bookingId,
@@ -2679,16 +2673,13 @@ const DB = {
     } catch (e) { return { success: false, error: String(e) }; }
   },
 
-  async adminListAllBookings({ limit = 100, includeDeleted = false } = {}) {
+  async adminListAllBookings({ limit = 100 } = {}) {
     if (DEMO_MODE) return { success: true, data: [] };
     try {
-      let q = _sb.from('bookings')
+      const { data, error } = await _sb.from('bookings')
         .select('*, artists(stage_name, profiles(display_name)), promoter:profiles!promoter_id(display_name, email)')
         .order('created_at', { ascending: false })
         .limit(limit);
-      // Default: hide soft-deleted rows. Admin can opt in via includeDeleted.
-      if (!includeDeleted) q = q.is('deleted_at', null);
-      const { data, error } = await q;
       return error ? { success: false, data: [], error: error.message } : { success: true, data: data || [] };
     } catch (e) { return { success: false, data: [], error: String(e) }; }
   },
@@ -2698,7 +2689,6 @@ const DB = {
   // JWT so the function can verify admin status server-side.
   async adminUserAction({ action, userId, reason }) {
     if (DEMO_MODE) return { success: false, error: 'Offline' };
-    if (!this._assertAdmin()) return { success: false, error: 'forbidden' };
     if (!action || !userId) return { success: false, error: 'missing args' };
     try {
       const { data: sess } = await _sb.auth.getSession();
@@ -2732,7 +2722,6 @@ const DB = {
   // artist / booking / user targets.
   async adminUndoLastAction(targetType, targetId) {
     if (DEMO_MODE) return { success: false, error: 'Offline' };
-    if (!this._assertAdmin()) return { success: false, error: 'forbidden' };
     try {
       const { data, error } = await _sb.rpc('admin_undo_last_action', {
         p_target_type: targetType,
@@ -2766,7 +2755,6 @@ const DB = {
 
   async adminBroadcast({ title, body, href, role }) {
     if (DEMO_MODE) return { success: false, error: 'Offline' };
-    if (!this._assertAdmin()) return { success: false, error: 'forbidden' };
     if (!title) return { success: false, error: 'Title required' };
     try {
       const { data, error } = await _sb.rpc('admin_broadcast_notification', {
@@ -2860,8 +2848,7 @@ const DB = {
       if (!artistId) return { success: true, data: [] };
       let q = _sb.from('bookings')
         .select('*, promoter:profiles!promoter_id(display_name, avatar_url, email)')
-        .eq('artist_id', artistId)
-        .is('deleted_at', null);
+        .eq('artist_id', artistId);
       if (!includeHidden) q = q.eq('hidden_by_artist', false);
       const { data, error } = await q.order('event_date', { ascending: true });
       if (error) return { success: false, data: [], error: error.message };
@@ -3329,13 +3316,11 @@ const DB = {
       _sb.from('artists')
         .select('id, stage_name, genre, cities_active, verified')
         .ilike('stage_name', like)
-        .is('deleted_at', null)
         .limit(6)
         .then(r => r).catch(() => ({ data: [] })),
       _sb.from('bookings')
         .select('id, event_name, venue_name, event_date, status, artists(stage_name, profiles(display_name))')
         .or(`event_name.ilike.${like},venue_name.ilike.${like}`)
-        .is('deleted_at', null)
         .limit(6)
         .then(r => r).catch(() => ({ data: [] })),
       _sb.from('contracts')
