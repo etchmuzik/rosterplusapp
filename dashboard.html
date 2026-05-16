@@ -496,15 +496,15 @@
       `).join('');
     }
 
-    /* ── Inbox ── */
+    /* ── Inbox ──
+       _allMessages is the output of DB.getConversations(), which already
+       dedupes to one entry per conversation partner and exposes the
+       summary shape { other_user_id, other_user_name, content,
+       last_message_time, unread }. Don't treat these as raw `messages`
+       rows — fields like sender_id/receiver_id/read aren't on the
+       summary object. */
     function renderInbox() {
-      const seen = new Set();
-      const convos = _allMessages.filter(msg => {
-        const partnerId = msg.sender_id === Auth.user?.id ? msg.receiver_id : msg.sender_id;
-        if (seen.has(partnerId)) return false;
-        seen.add(partnerId);
-        return true;
-      }).slice(0, 3);
+      const convos = (_allMessages || []).slice(0, 3);
 
       const root = document.getElementById('inbox-root');
       if (convos.length === 0) {
@@ -518,17 +518,16 @@
         return;
       }
 
-      root.innerHTML = convos.map(msg => {
-        const isMe = msg.sender_id === Auth.user?.id;
-        const partner = isMe ? msg.receiver : msg.sender;
-        const name = partner?.display_name || 'Unknown';
-        const preview = msg.content || '';
-        const time = UI.timeAgo(msg.created_at);
-        const unread = !msg.read && !isMe;
-        // If this message is tied to a booking, deep-link into that
-        // thread; otherwise fall through to the flat inbox.
-        const href = msg.booking_id
-          ? `messages.html?booking=${encodeURIComponent(msg.booking_id)}`
+      root.innerHTML = convos.map(c => {
+        const name = c.other_user_name || 'Unknown';
+        const preview = c.content || c.last_message || '';
+        const time = UI.timeAgo(c.last_message_time || c.created_at);
+        const unread = !!c.unread;
+        // Conversation summaries don't carry booking_id (they're
+        // partner-scoped, not booking-scoped). Deep-link by partner so
+        // the messages page opens that thread directly.
+        const href = c.other_user_id
+          ? `messages.html?user=${encodeURIComponent(c.other_user_id)}`
           : 'messages.html';
         return `
           <div class="row" onclick="window.location.href='${href}'">

@@ -1643,8 +1643,12 @@ const DB = {
     const user = Auth.user;
     if (!user) return { success: false, error: 'Not authenticated' };
     try {
+      // contracts(id, status) is embedded so callers can do
+      // `b.contracts?.length` / `b.contracts?.[0]?.status` without a
+      // second round-trip. dashboard.html action-required + bookings.html
+      // contract column both depend on it.
       let q = _sb.from('bookings')
-        .select(`*, artists(stage_name, genre, cities_active, profiles(display_name))`)
+        .select(`*, artists(stage_name, genre, cities_active, profiles(display_name)), contracts(id, status)`)
         .eq('promoter_id', user.id);
       if (!includeHidden) q = q.eq('hidden_by_promoter', false);
       const { data, error } = await q.order('event_date', { ascending: true });
@@ -1727,8 +1731,12 @@ const DB = {
     const user = Auth.user;
     if (!user) return { success: false, error: 'Not authenticated' };
     try {
+      // `promoter:profiles!promoter_id(...)` aliases the FK join so
+      // callers can read `booking.promoter.display_name` directly
+      // (artist-dashboard contracts list needs this — without it, the
+      // artist sees no counterparty name at all).
       const { data, error } = await _sb.from('contracts')
-        .select(`*, bookings(event_name, event_date, venue_name, fee, currency, promoter_id, artist_id, artists(stage_name, profiles(display_name)))`)
+        .select(`*, bookings(event_name, event_date, venue_name, fee, currency, promoter_id, artist_id, artists(stage_name, profiles(display_name)), promoter:profiles!promoter_id(display_name, company))`)
         .order('created_at', { ascending: false });
       if (error) return { success: false, data: [], error: error.message };
       return { success: true, data: data || [] };

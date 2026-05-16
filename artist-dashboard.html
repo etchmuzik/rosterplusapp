@@ -700,7 +700,10 @@
         const booking = c.bookings || {};
         const eventName = esc(booking.event_name || c.title || 'Performance');
         const eventDate = booking.event_date ? UI.formatDate(booking.event_date) : '—';
-        const promoter = esc(booking.artists?.profiles?.display_name || '');
+        // Counterparty for an artist is the promoter — pull from the
+        // promoter:profiles!promoter_id join surfaced by getMyContracts.
+        // Falls back to company name, then a generic label.
+        const promoter = esc(booking.promoter?.company || booking.promoter?.display_name || 'Promoter');
         const fee = UI.currency(booking.fee || 0, booking.currency || 'AED');
         const artistSigned = c.artist_signed;
         const promoterSigned = c.promoter_signed;
