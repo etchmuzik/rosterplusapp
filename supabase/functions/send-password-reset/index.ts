@@ -29,6 +29,34 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
+/*
+ * Per-isolate sliding-window rate limiter. Caps each
+ * email+IP key at 5 requests per 60 seconds. Bypassable across edge
+ * isolates (Supabase fans these out under load) — the goal is to
+ * raise the bar enough that a casual scripted-attacker burns through
+ * a Resend quota or floods the Supabase audit log slowly enough to be
+ * noticed. A DB-backed per-IP limit lands when the next batch adds a
+ * `public.rate_limit_counter` table.
+ * 2026-05-16 audit HIGH.
+ */
+const RATE_WINDOW_MS = 60_000;
+const RATE_MAX = 5;
+const rateBuckets = new Map<string, number[]>();
+
+function rateLimited(key: string): boolean {
+  const now = Date.now();
+  const hits = (rateBuckets.get(key) || []).filter(t => now - t < RATE_WINDOW_MS);
+  hits.push(now);
+  rateBuckets.set(key, hits);
+  // Opportunistic cleanup so the Map doesn't grow unboundedly.
+  if (rateBuckets.size > 5_000) {
+    for (const [k, ts] of rateBuckets) {
+      if (!ts.some(t => now - t < RATE_WINDOW_MS)) rateBuckets.delete(k);
+    }
+  }
+  return hits.length > RATE_MAX;
+}
+
 function resetEmailHTML(resetUrl: string): string {
   return `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#08090b;color:#fff;padding:40px;border-radius:12px">
     <h1 style="color:#f3f5f8;font-size:24px;margin-bottom:8px;letter-spacing:-0.02em">Reset your password</h1>
@@ -72,6 +100,20 @@ Deno.serve(async (req: Request) => {
   if (!email || !email.includes('@')) {
     return new Response(JSON.stringify({ error: 'invalid_email' }), {
       status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  // Rate-limit per email+IP so a scripted attacker can't burn through
+  // Resend quota or pollute auth.audit_log_entries unbounded. Returns
+  // the same 200/success shape as a real call so attackers can't
+  // distinguish rate-limited from "no such account".
+  const ip = req.headers.get('cf-connecting-ip')
+    || req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || 'unknown';
+  if (rateLimited(`${email}|${ip}`)) {
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
