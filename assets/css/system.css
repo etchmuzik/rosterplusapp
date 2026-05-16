@@ -2282,12 +2282,9 @@ tr:hover td { background: rgba(255,255,255,0.015); }
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: "head" "meta";
   }
-  /* Hide the How-it-works panel on mobile (2026-05-14 design critique).
-     On <=900px the panel pushed the feature grid ~1100px below the fold;
-     the same info lives in the feature grid below and in /how-it-works.
-     Desktop keeps the panel — it's earning its space in the right column
-     where the alternative is empty real estate. */
-  .hero-how { display: none; }
+  /* .hero-how { display: none } moved to a later @media block below the
+     base .hero-how rule — see comment near line ~2538. Source-order
+     cascade was reinstating display:flex here otherwise. */
 }
 
 .hero-ticker {
@@ -2528,6 +2525,16 @@ tr:hover td { background: rgba(255,255,255,0.015); }
 @media (max-width: 640px) {
   .hero-flyer { padding-top: 24px; }
   .hero-headline { font-size: clamp(1.6rem, 6.5vw, 2.2rem); max-width: none; }
+}
+
+/* Mobile hide of How-it-works panel must appear AFTER the base
+   .hero-how rule (line ~2399) or source-order cascade reinstates
+   display:flex and the aside reflows the hero grid into implicit
+   columns, crushing the headline to ~99px on phones. The original
+   rule at the @media block near .hero-flyer-grid lost the cascade
+   for that reason. (2026-05-16 mobile audit fix.) */
+@media (max-width: 900px) {
+  .hero-how { display: none; }
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -3444,11 +3451,16 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   margin-right: 4px;
 }
 @media (max-width: 640px) {
+  /* Drop the leading time column on phones (the day header above
+     each event group already shows the date). Keep fee visible —
+     money-at-a-glance is the dashboard's core purpose, so hiding
+     it on mobile defeats the use case. (2026-05-16 mobile audit.) */
   .event-row {
-    grid-template-columns: 44px 1fr auto;
+    grid-template-columns: 44px 1fr auto auto;
+    gap: 8px;
   }
-  .event-row .time,
-  .event-row .fee { display: none; }
+  .event-row .time { display: none; }
+  .event-row .fee { font-size: 0.82rem; padding-left: 4px; }
 }
 
 /* Sidebar-right cards: pipeline, inbox, suggestion */

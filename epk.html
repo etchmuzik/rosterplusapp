@@ -74,8 +74,20 @@
     .rider-value { color: var(--text-tertiary); font-family: var(--font-mono); font-size: 0.82rem; }
     .epk-booking { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-xl); text-align: center; }
     .epk-rate { font-family: var(--font-display); font-size: 1.8rem; font-weight: 700; color: var(--gold-text); margin-bottom: var(--space-md); }
-    .share-bar { display: flex; align-items: center; gap: var(--space-md); padding: var(--space-lg); background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); margin-top: var(--space-2xl); }
-    .share-url { flex: 1; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .share-bar { display: flex; align-items: center; gap: var(--space-md); padding: var(--space-lg); background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); margin-top: var(--space-2xl); flex-wrap: wrap; }
+    .share-url { flex: 1 1 100%; min-width: 0; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* Share + QR row collapses to single column on phones so the
+       row doesn't push the body past the viewport. min-width:0 on
+       the grid items lets the .share-url text shrink (intrinsic
+       sizing of the nowrap URL otherwise blew the grid track wide
+       enough to push past the viewport). (2026-05-16 mobile audit:
+       bodyW was 1106 vs vw 583 before this.) */
+    .epk-share-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-xl); align-items: start; margin-top: var(--space-xl); }
+    .epk-share-row > * { min-width: 0; }
+    @media (max-width: 700px) {
+      .epk-share-row { grid-template-columns: minmax(0, 1fr); }
+      .epk-share-row > div:last-child { justify-self: center; }
+    }
     .epk-footer { text-align: center; margin-top: var(--space-3xl); padding-top: var(--space-xl); border-top: 1px solid var(--border-subtle); color: var(--text-tertiary); font-size: 0.78rem; }
     .edit-btn { position: absolute; top: var(--space-sm); right: var(--space-sm); opacity: 0; transition: opacity var(--duration-fast); }
     .epk-section:hover .edit-btn { opacity: 1; }
@@ -325,7 +337,7 @@
         </div>
 
         <!-- QR Code + Share -->
-        <div style="display:grid;grid-template-columns:1fr auto;gap:var(--space-xl);align-items:start;margin-top:var(--space-xl)">
+        <div class="epk-share-row">
           <div class="share-bar" style="margin:0">
             <span style="font-size:0.85rem;color:var(--text-secondary)">Share:</span>
             <div class="share-url" id="share-url">${window.location.href}</div>
