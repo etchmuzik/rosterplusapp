@@ -4716,6 +4716,125 @@ tr:hover td { background: rgba(255,255,255,0.015); }
    inside the hero feature card). */
 .grid-3-tight-8 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 
+/* ═══════════════════════════════════════════════════════════
+   Dashboard utilities (2026-05-16 F7 sweep)
+   Replaces inline style="…" attrs on dashboard.html and
+   artist-dashboard.html. Same approach as the homepage sweep:
+   every inline style becomes a named class (even singletons),
+   so the markup tells the story. Dynamic styles (JS variable
+   interpolations) stay inline — they can't be classes.
+   ═══════════════════════════════════════════════════════════ */
+
+/* — Page chrome — */
+.main-pad-y-dash    { padding-top: var(--space-xl); padding-bottom: var(--space-3xl); }
+.h2-display-sm      { margin-top: 4px; font-family: var(--font-display); font-size: 1.5rem; letter-spacing: -0.03em; }
+.welcome-date-mono  { font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-tertiary); margin-bottom: 8px; }
+.welcome-headline   { font-family: var(--font-display); font-size: clamp(2rem, 4vw, 2.8rem); letter-spacing: -0.04em; line-height: 1.05; }
+.welcome-name-em    { color: var(--accent-soft); }
+.welcome-sub        { margin-top: 6px; color: var(--text-secondary); max-width: 60ch; }
+
+/* — Action-required card (promoter dashboard) — */
+.action-req-card    { border: 1px solid var(--accent-dim-20); box-shadow: var(--accent-glow); }
+.action-req-head    { display: flex; align-items: center; gap: 10px; margin-bottom: var(--space-md); }
+.action-req-icon    { width: 28px; height: 28px; border-radius: 8px; background: var(--accent-dim-10); display: flex; align-items: center; justify-content: center; color: var(--accent); }
+.action-req-eyebrow { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; font-family: var(--font-mono); color: var(--accent); }
+.action-req-title   { font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-top: 2px; }
+.action-req-list    { display: flex; flex-direction: column; gap: 8px; }
+.action-req-row     { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); text-decoration: none; color: inherit; transition: border-color 120ms ease; }
+.action-req-row:hover { border-color: var(--border-medium); }
+.action-req-row-icon  { width: 32px; height: 32px; border-radius: 8px; background: var(--bg-raised); border: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: center; color: var(--text-tertiary); flex-shrink: 0; }
+.action-req-row-title { font-size: 0.88rem; color: var(--text-primary); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.action-req-row-body  { font-size: 0.74rem; color: var(--text-tertiary); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.action-req-row-cta   { font-size: 0.76rem; color: var(--accent); white-space: nowrap; flex-shrink: 0; font-weight: 500; }
+
+/* — Suggestion card (promoter dashboard) — */
+.sug-link-full      { margin-top: 12px; width: 100%; justify-content: center; }
+.empty-soft-help    { color: var(--text-tertiary); font-size: 0.9rem; margin-bottom: 16px; }
+
+/* — Timeline event row (promoter dashboard) — */
+.timeline-city-dot  { width: 2px; height: 2px; border-radius: 50%; background: var(--text-quaternary); }
+.timeline-city-pill { display: inline-flex; align-items: center; gap: 4px; }
+
+/* — Pipeline bar fill is dynamic (width + color from JS) — must stay inline — */
+
+/* — Artist dashboard layout helpers — */
+.qb-toolbar         { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); margin-bottom: var(--space-md); flex-wrap: wrap; }
+.qb-h3-fine         { margin: 0 0 2px; font-size: 1rem; }
+.qb-presets         { display: flex; gap: var(--space-xs); flex-wrap: wrap; margin-bottom: var(--space-md); }
+.qb-custom-row      { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.qb-date-input      { background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 6px 10px; color: var(--text-primary); font-size: 0.82rem; color-scheme: dark; }
+.qb-list            { display: flex; flex-direction: column; gap: 6px; }
+.qb-empty-fine      { font-size: 0.78rem; color: var(--text-tertiary); padding: var(--space-sm) 0; }
+.qb-blocked-pill    { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); padding: 8px 12px; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 0.82rem; }
+.qb-unblock-btn     { font-size: 0.72rem; padding: 4px 10px; }
+
+/* Share-EPK quick-action card uses <button> instead of <a> — reset
+   button defaults so it matches its <a> siblings visually. */
+.qa-share-btn       { background: none; border: 1px solid var(--border-subtle); cursor: pointer; font-family: inherit; color: inherit; width: 100%; text-align: center; }
+
+/* — Recent messages (artist + promoter shared) — */
+.recent-msgs-list   { display: flex; flex-direction: column; gap: var(--space-sm); margin-bottom: var(--space-xl); }
+.recent-msg-row     { display: flex; align-items: center; gap: var(--space-md); }
+.recent-msg-name    { font-size: 0.9rem; }
+.recent-msg-preview { font-size: 0.82rem; margin: 2px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* — Request/Earnings filter row (artist) — */
+.filter-row-wrap    { display: flex; gap: var(--space-xs); margin-bottom: var(--space-lg); flex-wrap: wrap; }
+.filter-row-tight   { display: flex; gap: var(--space-xs); flex-wrap: wrap; }
+
+/* — Calendar (artist) — */
+.cal-header-row     { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-lg); }
+.cal-day-panel      { display: none; margin-top: var(--space-md); background: var(--glass-bg); backdrop-filter: blur(var(--glass-blur)); border: 1px solid var(--glass-border); border-radius: var(--radius-md); overflow: hidden; }
+.cal-day-panel.is-open { display: block; }
+.cal-day-panel-head { padding: var(--space-md); border-bottom: 1px solid var(--border-subtle); font-weight: 600; font-size: 0.9rem; }
+.cal-day-row        { padding: var(--space-md); border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; gap: var(--space-md); }
+.cal-day-row-name   { font-weight: 500; font-size: 0.88rem; }
+
+/* — Contracts (artist) — */
+.contracts-list     { display: flex; flex-direction: column; gap: var(--space-md); }
+.contracts-explain  { margin-bottom: var(--space-lg); font-size: 0.9rem; }
+.contract-card-inner { display: flex; justify-content: space-between; align-items: center; gap: var(--space-md); flex-wrap: wrap; }
+.contract-card-body  { flex: 1; min-width: 200px; }
+.contract-card-title { font-weight: 600; margin-bottom: 4px; }
+.contract-card-meta  { font-size: 0.82rem; }
+.contract-status-fine { font-size: 0.8rem; }
+.contract-status-margin { margin-top: 6px; }
+.contract-card-actions { display: flex; gap: var(--space-sm); }
+
+/* — Payouts (artist) — */
+.payouts-empty      { padding: var(--space-xl); text-align: center; }
+.payouts-amount     { text-align: right; font-variant-numeric: tabular-nums; }
+.payouts-type-cell  { text-transform: capitalize; }
+
+/* — Earnings (artist) — */
+.earnings-empty     { padding: var(--space-xl); text-align: center; }
+
+/* — Accept/Reject modal (artist) — */
+.modal-narrow-500   { max-width: 500px; }
+.modal-header-row   { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-lg); }
+.modal-details-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-lg); }
+.modal-action-row   { display: flex; gap: var(--space-sm); }
+
+/* — Media nudge (artist) — */
+.media-nudge-card   { border-color: var(--accent-dim-30); background: linear-gradient(180deg, var(--accent-dim-05), var(--bg-card)); margin-bottom: var(--space-xl); }
+.media-nudge-row    { display: flex; align-items: flex-start; gap: var(--space-md); flex-wrap: wrap; }
+.media-nudge-body   { flex: 1; min-width: 240px; }
+.media-nudge-eyebrow { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-soft); margin-bottom: 6px; }
+.media-nudge-text   { margin: 0; color: var(--text-secondary); line-height: 1.6; }
+.media-nudge-actions { display: flex; gap: var(--space-sm); flex-wrap: wrap; align-items: center; }
+
+/* — Contract sign-status colors — */
+.sign-status-confirmed { color: var(--status-confirmed); font-size: 0.8rem; }
+.sign-status-waiting   { color: var(--gold-text); font-size: 0.8rem; }
+.sign-status-pending   { color: var(--status-pending); font-size: 0.8rem; }
+
+/* — Misc utilities used across dashboards — */
+.text-secondary-color  { color: var(--text-secondary); }
+.text-primary-color    { color: var(--text-primary); }
+.color-gold-text       { color: var(--gold-text); }
+.cursor-pointer        { cursor: pointer; }
+.display-none          { display: none; }
+
 /* Generic flex-row + center alignment + gap helpers */
 .flex-center        { display: flex; align-items: center; }
 .flex-center-gap-sm { display: flex; align-items: center; gap: 8px; }

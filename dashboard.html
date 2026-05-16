@@ -27,7 +27,7 @@
     <nav-root id="nav-root"></nav-root>
     <a id="main-content" tabindex="-1" class="sr-only">Main content</a>
 
-    <main id="main-content-wrap" role="main" class="container" style="padding-top: var(--space-xl); padding-bottom: var(--space-3xl)">
+    <main id="main-content-wrap" role="main" class="container main-pad-y-dash">
       <!-- ═══ Welcome ═══ -->
       <div class="dash-welcome lp-anim">
         <div>
@@ -86,7 +86,7 @@
           <div class="lp-section-head items-end">
             <div>
               <span class="eyebrow">Upcoming</span>
-              <h2 style="margin-top: 4px; font-family: var(--font-display); font-size: 1.5rem; letter-spacing: -0.03em">Next shows</h2>
+              <h2 class="h2-display-sm">Next shows</h2>
             </div>
             <div class="dash-filter" role="tablist" aria-label="Filter upcoming shows by time range">
               <button id="filter-week" data-filter="week" class="active" role="tab" aria-selected="true" aria-controls="timeline-root" aria-label="Show this week's bookings">Week</button>
@@ -134,7 +134,7 @@
               </div>
             </div>
             <p id="sug-desc">—</p>
-            <a id="sug-link" class="btn btn-secondary btn-sm" style="margin-top: 12px; width: 100%; justify-content: center">View profile</a>
+            <a id="sug-link" class="btn btn-secondary btn-sm sug-link-full">View profile</a>
           </div>
         </div>
       </div>
@@ -315,26 +315,28 @@
       // Cap at 5 — keeps the section tight and forces the user to clear
       // the top items before more surface.
       const top = items.slice(0, 5);
+      // F7 sweep: every inline style here moved to .action-req-*
+      // classes in system.css. CSS :hover replaces the onmouseover/out
+      // pair on .action-req-row.
       host.innerHTML = `
-        <div class="card" style="border:1px solid var(--accent-dim-20);box-shadow:var(--accent-glow)">
+        <div class="card action-req-card">
           <div class="card-inner">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:var(--space-md)">
-              <div style="width:28px;height:28px;border-radius:8px;background:var(--accent-dim-10);display:flex;align-items:center;justify-content:center;color:var(--accent)">${UI.icon('activity', 14)}</div>
+            <div class="action-req-head">
+              <div class="action-req-icon">${UI.icon('activity', 14)}</div>
               <div class="flex-1">
-                <div style="font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;font-family:var(--font-mono);color:var(--accent)">Action required</div>
-                <div style="font-size:1rem;font-weight:600;color:var(--text-primary);margin-top:2px">${top.length} item${top.length === 1 ? '' : 's'} need your attention</div>
+                <div class="action-req-eyebrow">Action required</div>
+                <div class="action-req-title">${top.length} item${top.length === 1 ? '' : 's'} need your attention</div>
               </div>
             </div>
-            <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="action-req-list">
               ${top.map(it => `
-                <a href="${it.href}" style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);text-decoration:none;color:inherit;transition:border-color 120ms ease"
-                   onmouseover="this.style.borderColor='var(--border-medium)'" onmouseout="this.style.borderColor='var(--border-subtle)'">
-                  <div style="width:32px;height:32px;border-radius:8px;background:var(--bg-raised);border:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:center;color:var(--text-tertiary);flex-shrink:0">${UI.icon(it.icon, 16)}</div>
+                <a href="${it.href}" class="action-req-row">
+                  <div class="action-req-row-icon">${UI.icon(it.icon, 16)}</div>
                   <div class="flex-1">
-                    <div style="font-size:0.88rem;color:var(--text-primary);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${it.title}</div>
-                    <div style="font-size:0.74rem;color:var(--text-tertiary);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${it.body}</div>
+                    <div class="action-req-row-title">${it.title}</div>
+                    <div class="action-req-row-body">${it.body}</div>
                   </div>
-                  <div style="font-size:0.76rem;color:var(--accent);white-space:nowrap;flex-shrink:0;font-weight:500">${it.cta} \u2192</div>
+                  <div class="action-req-row-cta">${it.cta} \u2192</div>
                 </a>
               `).join('')}
             </div>
@@ -405,7 +407,7 @@
         root.innerHTML = `
           <div class="dir-empty mt-sm">
             <h3 class="mb-md">Nothing on the calendar</h3>
-            <p style="color: var(--text-tertiary); font-size: 0.9rem; margin-bottom: 16px">
+            <p class="empty-soft-help">
               No upcoming bookings in this range. Pick an artist to get started.
             </p>
             <a href="directory.html" class="btn btn-primary btn-sm">Browse roster</a>
@@ -445,7 +447,7 @@
                       <div class="meta-name">${esc(artistName)}</div>
                       <div class="meta-venue">
                         <span>${esc(venueName)}</span>
-                        ${city ? `<span style="width:2px;height:2px;border-radius:50%;background:var(--text-quaternary)"></span><span style="display:inline-flex;align-items:center;gap:4px">${UI.icon('mapPin', 10)} ${esc(city)}</span>` : ''}
+                        ${city ? `<span class="timeline-city-dot"></span><span class="timeline-city-pill">${UI.icon('mapPin', 10)} ${esc(city)}</span>` : ''}
                       </div>
                     </div>
                     ${UI.statusTag(b.status)}

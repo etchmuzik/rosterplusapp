@@ -165,13 +165,13 @@
         <!-- OVERVIEW -->
         <section id="view-overview" class="view-section active" role="tabpanel">
           <div class="mb-space-2xl">
-            <div class="eyebrow" style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-tertiary);margin-bottom:8px">
+            <div class="eyebrow welcome-date-mono">
               <span id="welcome-date">—</span>
             </div>
-            <h1 style="font-family:var(--font-display);font-size:clamp(2rem,4vw,2.8rem);letter-spacing:-0.04em;line-height:1.05">
-              Welcome back, <span id="welcome-name" style="color:var(--accent-soft)">Artist</span>.
+            <h1 class="welcome-headline">
+              Welcome back, <span id="welcome-name" class="welcome-name-em">Artist</span>.
             </h1>
-            <p style="margin-top:6px;color:var(--text-secondary);max-width:60ch" id="welcome-sub">Here's your booking activity.</p>
+            <p class="welcome-sub" id="welcome-sub">Here's your booking activity.</p>
           </div>
 
           <!-- ═══ Profile completion nudge ═══ -->
@@ -186,7 +186,7 @@
           <div class="stats-grid">
             <div class="stat-card"><div class="card-inner"><div class="stat-label">Incoming Requests</div><div class="stat-value" id="stat-requests">0</div></div></div>
             <div class="stat-card"><div class="card-inner"><div class="stat-label">Confirmed Gigs</div><div class="stat-value text-status-confirmed" id="stat-confirmed">0</div></div></div>
-            <div class="stat-card"><div class="card-inner"><div class="stat-label">Total Earned</div><div class="stat-value" id="stat-earned" style="color:var(--gold-text)">—</div></div></div>
+            <div class="stat-card"><div class="card-inner"><div class="stat-label">Total Earned</div><div class="stat-value color-gold-text" id="stat-earned">—</div></div></div>
             <div class="stat-card"><div class="card-inner"><div class="stat-label">This Month</div><div class="stat-value" id="stat-month">—</div></div></div>
           </div>
 
@@ -197,46 +197,46 @@
           <div id="upcoming-gigs" class="table-wrap mb-space-2xl"></div>
 
           <h2 class="mb-space-md h-as-h3">Recent Messages</h2>
-          <div id="recent-messages" style="display:flex;flex-direction:column;gap:var(--space-sm);margin-bottom:var(--space-xl)"></div>
+          <div id="recent-messages" class="recent-msgs-list"></div>
 
           <!-- Quick-block availability: preset buttons + custom date, plus a
                list of already-blocked upcoming dates with one-click unblock.
                Writes straight into artists.blocked_dates — promoters see the
                effect immediately in the directory filter + availability check. -->
           <div class="card mb-space-xl"><div class="card-inner">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-md);margin-bottom:var(--space-md);flex-wrap:wrap">
+            <div class="qb-toolbar">
               <div>
-                <h3 style="margin:0 0 2px;font-size:1rem">Mark yourself unavailable</h3>
+                <h3 class="qb-h3-fine">Mark yourself unavailable</h3>
                 <div class="fs-fine text-tertiary">Block dates so promoters don't send requests you'll have to decline.</div>
               </div>
               <a href="artist-profile-edit.html#availability" class="btn btn-ghost btn-sm fs-fine">Full calendar →</a>
             </div>
 
-            <div style="display:flex;gap:var(--space-xs);flex-wrap:wrap;margin-bottom:var(--space-md)">
+            <div class="qb-presets">
               <button class="btn btn-secondary btn-sm fs-fine" onclick="quickBlock('thisWeekend')">This weekend</button>
               <button class="btn btn-secondary btn-sm fs-fine" onclick="quickBlock('nextWeekend')">Next weekend</button>
               <button class="btn btn-secondary btn-sm fs-fine" onclick="quickBlock('nextWeek')">Next week</button>
-              <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
-                <input type="date" id="quick-block-date" style="background:var(--bg-input);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:6px 10px;color:var(--text-primary);font-size:0.82rem;color-scheme:dark">
+              <div class="qb-custom-row">
+                <input type="date" id="quick-block-date" class="qb-date-input">
                 <button class="btn btn-primary btn-sm fs-fine" onclick="quickBlockCustom()">Block</button>
               </div>
             </div>
 
-            <div id="my-blocked-dates" style="display:flex;flex-direction:column;gap:6px"></div>
+            <div id="my-blocked-dates" class="qb-list"></div>
           </div></div>
 
           <div class="quick-actions">
             <a href="artist-profile-edit.html" class="card card--interactive"><div class="card-inner p-space-xl-center"><span class="js-icon" data-icon="music" data-size="24"></span><div class="mt-space-sm fw-500">Edit Profile</div></div></a>
             <a href="epk.html" class="card card--interactive"><div class="card-inner p-space-xl-center"><span class="js-icon" data-icon="fileText" data-size="24"></span><div class="mt-space-sm fw-500">Build EPK</div></div></a>
             <a href="messages.html" class="card card--interactive"><div class="card-inner p-space-xl-center"><span class="js-icon" data-icon="inbox" data-size="24"></span><div class="mt-space-sm fw-500">Messages</div></div></a>
-            <button onclick="shareMyEpk()" class="card card--interactive" style="background:none;border:1px solid var(--border-subtle);cursor:pointer;font-family:inherit;color:inherit;width:100%;text-align:center"><div class="card-inner p-space-xl-center"><span class="js-icon" data-icon="send" data-size="24"></span><div class="mt-space-sm fw-500">Share my EPK</div></div></button>
+            <button onclick="shareMyEpk()" class="card card--interactive qa-share-btn"><div class="card-inner p-space-xl-center"><span class="js-icon" data-icon="send" data-size="24"></span><div class="mt-space-sm fw-500">Share my EPK</div></div></button>
           </div>
         </section>
 
         <!-- BOOKING REQUESTS -->
         <section id="view-requests" class="view-section" role="tabpanel">
           <h2 class="mb-space-md">Booking Requests</h2>
-          <div style="display:flex;gap:var(--space-xs);margin-bottom:var(--space-lg);flex-wrap:wrap" id="request-filters">
+          <div class="filter-row-wrap" id="request-filters">
             <button class="btn btn-sm btn-secondary fs-fine" onclick="filterRequests('all')" data-filter="all">All</button>
             <button class="btn btn-sm btn-ghost fs-fine" onclick="filterRequests('pending')" data-filter="pending">Pending</button>
             <button class="btn btn-sm btn-ghost fs-fine" onclick="filterRequests('confirmed')" data-filter="confirmed">Confirmed</button>
@@ -253,22 +253,22 @@
 
         <!-- CALENDAR -->
         <section id="view-calendar" class="view-section" role="tabpanel">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-lg)">
+          <div class="cal-header-row">
             <h2 id="cal-title">April 2026</h2>
-            <div style="display:flex;gap:var(--space-sm)">
+            <div class="modal-action-row">
               <button class="btn btn-ghost btn-sm" onclick="changeMonth(-1)">&larr; Prev</button>
               <button class="btn btn-ghost btn-sm" onclick="changeMonth(1)">Next &rarr;</button>
             </div>
           </div>
           <div id="calendar-grid" class="calendar-grid"></div>
-          <div id="artist-cal-panel" style="display:none;margin-top:var(--space-md);background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur));border:1px solid var(--glass-border);border-radius:var(--radius-md);overflow:hidden"></div>
+          <div id="artist-cal-panel" class="cal-day-panel"></div>
         </section>
 
         <!-- CONTRACTS -->
         <section id="view-contracts" class="view-section" role="tabpanel">
           <h2 class="mb-space-md">Contracts</h2>
-          <p class="text-secondary" style="margin-bottom:var(--space-lg);font-size:0.9rem">Contracts sent by promoters for gigs you've agreed to. Review and sign to lock in the booking.</p>
-          <div id="artist-contracts-list" style="display:flex;flex-direction:column;gap:var(--space-md)"></div>
+          <p class="text-secondary contracts-explain">Contracts sent by promoters for gigs you've agreed to. Review and sign to lock in the booking.</p>
+          <div id="artist-contracts-list" class="contracts-list"></div>
         </section>
 
         <!-- EARNINGS -->
@@ -286,7 +286,7 @@
         <!-- PAYOUTS -->
         <section id="view-payouts" class="view-section" role="tabpanel">
           <h2 class="mb-space-md">Payouts</h2>
-          <p class="text-secondary" style="margin-bottom:var(--space-lg);font-size:0.9rem">Money received for completed gigs. A payout appears here once the promoter releases it.</p>
+          <p class="text-secondary contracts-explain">Money received for completed gigs. A payout appears here once the promoter releases it.</p>
           <div class="stats-grid mb-space-2xl">
             <div class="stat-card"><div class="card-inner"><div class="stat-label">Paid out</div><div class="stat-value text-status-confirmed" id="payout-paid">—</div></div></div>
             <div class="stat-card"><div class="card-inner"><div class="stat-label">In escrow</div><div class="stat-value text-status-pending" id="payout-escrow">—</div></div></div>
@@ -299,9 +299,9 @@
   </div>
 
   <!-- Accept/Reject Modal -->
-  <div id="action-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title" onclick="if(event.target===this) closeActionModal()" style="display:none">
-    <div class="modal" style="max-width:500px">
-      <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-lg)">
+  <div id="action-modal" class="modal-overlay display-none" role="dialog" aria-modal="true" aria-labelledby="modal-title" onclick="if(event.target===this) closeActionModal()">
+    <div class="modal modal-narrow-500">
+      <div class="modal-header modal-header-row">
         <h3 id="modal-title">Accept Booking</h3>
         <button class="btn btn-ghost btn-icon" onclick="closeActionModal()" aria-label="Close dialog"><span class="js-icon" data-icon="x" data-size="16" aria-hidden="true"></span></button>
       </div>
@@ -310,7 +310,7 @@
         <label class="form-label" id="modal-msg-label">Message to promoter (optional)</label>
         <textarea class="form-textarea" id="modal-message" rows="3" placeholder="Add a note..."></textarea>
       </div>
-      <div style="display:flex;gap:var(--space-sm)">
+      <div class="modal-action-row">
         <button id="modal-confirm" class="btn btn-primary flex-1" onclick="confirmAction()">Confirm</button>
         <button class="btn btn-secondary flex-1" onclick="closeActionModal()">Cancel</button>
       </div>
@@ -401,7 +401,7 @@
         const href = msg.booking_id
           ? `messages.html?booking=${encodeURIComponent(msg.booking_id)}`
           : 'messages.html';
-        return `<div class="card card--interactive" onclick="window.location.href='${href}'"><div class="card-inner" style="display:flex;align-items:center;gap:var(--space-md)">${UI.avatar(name, 36)}<div class="flex-1"><strong style="font-size:0.9rem">${name}</strong><p class="text-tertiary" style="font-size:0.82rem;margin:2px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${preview}</p></div></div></div>`;
+        return `<div class="card card--interactive" onclick="window.location.href='${href}'"><div class="card-inner recent-msg-row">${UI.avatar(name, 36)}<div class="flex-1"><strong class="recent-msg-name">${name}</strong><p class="text-tertiary recent-msg-preview">${preview}</p></div></div></div>`;
       }).join('');
     }
 
@@ -434,7 +434,7 @@
         const isToday = d === today.getDate() && _calMonth === today.getMonth() && _calYear === today.getFullYear();
         const hasBooking = bookingDates.has(d);
         const dateStr = `${_calYear}-${String(_calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-        html += `<div class="calendar-cell ${isToday ? 'today' : ''} ${hasBooking ? 'has-booking' : ''}" onclick="showArtistDayBookings('${dateStr}')" style="cursor:pointer"><div class="day-num">${d}</div></div>`;
+        html += `<div class="calendar-cell cursor-pointer ${isToday ? 'today' : ''} ${hasBooking ? 'has-booking' : ''}" onclick="showArtistDayBookings('${dateStr}')"><div class="day-num">${d}</div></div>`;
       }
       // Next month padding
       const totalCells = firstDay + daysInMonth;
@@ -461,15 +461,17 @@
       document.getElementById('modal-msg-label').textContent = type === 'accept' ? 'Message to promoter (optional)' : 'Reason for declining (optional)';
       document.getElementById('modal-confirm').className = type === 'accept' ? 'btn btn-primary' : 'btn btn-reject';
       document.getElementById('modal-confirm').textContent = type === 'accept' ? 'Accept Booking' : 'Decline Booking';
-      document.getElementById('modal-details').innerHTML = b ? `<div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:var(--space-lg)"><p><strong>Event:</strong> ${esc(b.event_name || b.venue_name || '—')}</p><p><strong>Date:</strong> ${UI.formatDate(b.event_date || b.date)}</p><p><strong>Promoter:</strong> ${esc(b.promoter_name || '—')}</p><p><strong>Fee:</strong> ${UI.currency(b.fee || b.amount || 0, b.currency || 'AED')}</p></div>` : '';
+      document.getElementById('modal-details').innerHTML = b ? `<div class="modal-details-card"><p><strong>Event:</strong> ${esc(b.event_name || b.venue_name || '—')}</p><p><strong>Date:</strong> ${UI.formatDate(b.event_date || b.date)}</p><p><strong>Promoter:</strong> ${esc(b.promoter_name || '—')}</p><p><strong>Fee:</strong> ${UI.currency(b.fee || b.amount || 0, b.currency || 'AED')}</p></div>` : '';
       document.getElementById('modal-message').value = '';
-      document.getElementById('action-modal').style.display = '';
-      document.getElementById('action-modal').classList.add('active');
+      const am = document.getElementById('action-modal');
+      am.classList.remove('display-none');
+      am.classList.add('active');
     }
 
     function closeActionModal() {
-      document.getElementById('action-modal').style.display = 'none';
-      document.getElementById('action-modal').classList.remove('active');
+      const am = document.getElementById('action-modal');
+      am.classList.add('display-none');
+      am.classList.remove('active');
       _actionBookingId = null; _actionType = null;
     }
 
@@ -563,7 +565,7 @@
       const res = await DB.getMyBlockedDates({ upcomingOnly: true });
       const list = res.data || [];
       if (list.length === 0) {
-        host.innerHTML = `<div style="font-size:0.78rem;color:var(--text-tertiary);padding:var(--space-sm) 0">No upcoming dates blocked.</div>`;
+        host.innerHTML = `<div class="qb-empty-fine">No upcoming dates blocked.</div>`;
         return;
       }
       // Collapse consecutive runs for display — "Fri 24 – Sat 25 Apr" reads
@@ -582,9 +584,9 @@
       host.innerHTML = runs.map(r => {
         const label = r.length === 1 ? fmt(r[0]) : `${fmt(r[0])} \u2013 ${fmt(r[r.length - 1])}`;
         const unblockAll = r.map(d => `'${d}'`).join(',');
-        return `<div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-sm);padding:8px 12px;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);font-size:0.82rem">
-          <span style="color:var(--text-secondary)"><strong style="color:var(--text-primary)">${label}</strong> \u2014 blocked</span>
-          <button class="btn btn-ghost btn-sm" style="font-size:0.72rem;padding:4px 10px" onclick="(async () => { for (const d of [${unblockAll}]) { await DB.unblockDates([d]); } renderBlockedDates(); UI.toast('Unblocked', 'success'); })()">Unblock</button>
+        return `<div class="qb-blocked-pill">
+          <span class="text-secondary-color"><strong class="text-primary-color">${label}</strong> \u2014 blocked</span>
+          <button class="btn btn-ghost btn-sm qb-unblock-btn" onclick="(async () => { for (const d of [${unblockAll}]) { await DB.unblockDates([d]); } renderBlockedDates(); UI.toast('Unblocked', 'success'); })()">Unblock</button>
         </div>`;
       }).join('');
     }
@@ -623,14 +625,14 @@
       if (dayBookings.length === 0) {
         panel.innerHTML = UI.emptyState({ icon: 'calendar', title: UI.formatDate(dateStr), body: 'No bookings on this date.', compact: true });
       } else {
-        panel.innerHTML = `<div style="padding:var(--space-md);border-bottom:1px solid var(--border-subtle);font-weight:600;font-size:0.9rem">${UI.formatDate(dateStr)} — ${dayBookings.length} booking${dayBookings.length > 1 ? 's' : ''}</div>` +
+        panel.innerHTML = `<div class="cal-day-panel-head">${UI.formatDate(dateStr)} — ${dayBookings.length} booking${dayBookings.length > 1 ? 's' : ''}</div>` +
           dayBookings.map(b => {
             const pName = esc(b.promoter_name || b.promoter?.display_name || 'Promoter');
             const venue = esc(b.venue_name || b.event_name || '');
-            return `<div style="padding:var(--space-md);border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;gap:var(--space-md)">${UI.avatar(pName, 32)}<div class="flex-1"><div style="font-weight:500;font-size:0.88rem">${venue}</div><div class="fs-fine text-tertiary">${pName}</div></div><div>${UI.statusTag(b.status)}</div></div>`;
+            return `<div class="cal-day-row">${UI.avatar(pName, 32)}<div class="flex-1"><div class="cal-day-row-name">${venue}</div><div class="fs-fine text-tertiary">${pName}</div></div><div>${UI.statusTag(b.status)}</div></div>`;
           }).join('');
       }
-      panel.style.display = 'block';
+      panel.classList.add('is-open');
     }
 
     function refreshUI() {
@@ -652,7 +654,7 @@
       }
 
       renderTable(pending.slice(0, 5), 'pending-requests', true, 'No pending requests — enjoy the downtime!');
-      renderTable(upcoming.slice(0, 5), 'upcoming-gigs', false, 'No upcoming gigs yet — <a href="directory.html" style="color:var(--gold-text)">get discovered</a>');
+      renderTable(upcoming.slice(0, 5), 'upcoming-gigs', false, 'No upcoming gigs yet — <a href="directory.html" class="color-gold-text">get discovered</a>');
       // Apply active filter to requests tab
       filterRequests(_activeRequestFilter);
       renderTable(upcoming, 'all-upcoming', false, 'No upcoming gigs');
@@ -675,7 +677,7 @@
       if (completed.length) {
         earnEl.innerHTML = `<table><thead><tr><th>Date</th><th>Event</th><th>Fee</th><th>Status</th></tr></thead><tbody>${completed.map(b => `<tr><td>${UI.formatDate(b.event_date || b.date)}</td><td>${esc(b.event_name || b.venue_name || '—')}</td><td class="tabular-nums">${UI.currency(b.fee || b.amount || 0, b.currency || 'AED')}</td><td>${UI.statusTag(b.status)}</td></tr>`).join('')}</tbody></table>`;
       } else {
-        earnEl.innerHTML = '<div class="text-tertiary" style="padding:var(--space-xl);text-align:center">Complete gigs to start earning</div>';
+        earnEl.innerHTML = '<div class="text-tertiary earnings-empty">Complete gigs to start earning</div>';
       }
     }
 
@@ -703,22 +705,22 @@
         const artistSigned = c.artist_signed;
         const promoterSigned = c.promoter_signed;
         let statusBadge;
-        if (c.status === 'signed') statusBadge = '<span style="color:var(--status-confirmed);font-size:0.8rem">✓ Fully signed</span>';
-        else if (artistSigned) statusBadge = '<span style="color:var(--gold-text);font-size:0.8rem">Waiting on promoter</span>';
-        else if (promoterSigned) statusBadge = '<span style="color:var(--status-pending);font-size:0.8rem">Awaiting your signature</span>';
-        else statusBadge = `<span class="text-tertiary" style="font-size:0.8rem">${esc(c.status)}</span>`;
+        if (c.status === 'signed') statusBadge = '<span class="sign-status-confirmed">✓ Fully signed</span>';
+        else if (artistSigned) statusBadge = '<span class="sign-status-waiting">Waiting on promoter</span>';
+        else if (promoterSigned) statusBadge = '<span class="sign-status-pending">Awaiting your signature</span>';
+        else statusBadge = `<span class="text-tertiary contract-status-fine">${esc(c.status)}</span>`;
         const signBtn = !artistSigned
           ? `<a class="btn btn-primary btn-sm" href="contract.html?id=${esc(c.id)}">Review &amp; Sign</a>`
           : `<a class="btn btn-secondary btn-sm" href="contract.html?id=${esc(c.id)}">View &amp; Save PDF</a>`;
         return `
           <div class="card">
-            <div class="card-inner" style="display:flex;justify-content:space-between;align-items:center;gap:var(--space-md);flex-wrap:wrap">
-              <div style="flex:1;min-width:200px">
-                <div style="font-weight:600;margin-bottom:4px">${eventName}</div>
-                <div class="text-tertiary" style="font-size:0.82rem">${eventDate} · ${fee}</div>
-                <div style="margin-top:6px">${statusBadge}</div>
+            <div class="card-inner contract-card-inner">
+              <div class="contract-card-body">
+                <div class="contract-card-title">${eventName}</div>
+                <div class="text-tertiary contract-card-meta">${eventDate} · ${fee}</div>
+                <div class="contract-status-margin">${statusBadge}</div>
               </div>
-              <div style="display:flex;gap:var(--space-sm)">
+              <div class="contract-card-actions">
                 ${c.pdf_url ? `<a href="${esc(c.pdf_url)}" target="_blank" class="btn btn-ghost btn-sm">View PDF</a>` : ''}
                 ${signBtn}
               </div>
@@ -748,10 +750,10 @@
       const tbl = document.getElementById('payouts-table');
       if (!tbl) return;
       if (_payouts.length === 0) {
-        tbl.innerHTML = '<div class="text-tertiary" style="padding:var(--space-xl);text-align:center">No payouts yet. Complete a gig to earn your first payout.</div>';
+        tbl.innerHTML = '<div class="text-tertiary payouts-empty">No payouts yet. Complete a gig to earn your first payout.</div>';
         return;
       }
-      tbl.innerHTML = `<table><thead><tr><th>Date</th><th>Event</th><th>From</th><th>Type</th><th>Status</th><th style="text-align:right">Amount</th></tr></thead><tbody>` +
+      tbl.innerHTML = `<table><thead><tr><th>Date</th><th>Event</th><th>From</th><th>Type</th><th>Status</th><th class="text-right">Amount</th></tr></thead><tbody>` +
         _payouts.map(p => {
           const b = p.bookings || {};
           const promoter = esc(b.promoter?.display_name || '—');
@@ -760,9 +762,9 @@
             <td>${date}</td>
             <td>${esc(b.event_name || '—')}</td>
             <td>${promoter}</td>
-            <td style="text-transform:capitalize">${esc(p.type || '—')}</td>
+            <td class="payouts-type-cell">${esc(p.type || '—')}</td>
             <td>${UI.statusTag(p.status)}</td>
-            <td style="text-align:right;font-variant-numeric:tabular-nums">${UI.currency(p.amount || 0, p.currency || 'AED')}</td>
+            <td class="payouts-amount">${UI.currency(p.amount || 0, p.currency || 'AED')}</td>
           </tr>`;
         }).join('') + '</tbody></table>';
     }
@@ -903,17 +905,17 @@
             : (!hasPhotos ? 'photos' : 'video links');
 
           host2.innerHTML = `
-            <div class="section-card" style="border-color:var(--accent-dim-30); background: linear-gradient(180deg, var(--accent-dim-05), var(--bg-card)); margin-bottom: var(--space-xl)">
-              <div style="display:flex; align-items:flex-start; gap:var(--space-md); flex-wrap:wrap">
-                <div style="flex:1; min-width:240px">
-                  <div class="eyebrow" style="font-family:var(--font-mono); font-size:0.7rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--accent-soft); margin-bottom:6px">
+            <div class="section-card media-nudge-card">
+              <div class="media-nudge-row">
+                <div class="media-nudge-body">
+                  <div class="eyebrow media-nudge-eyebrow">
                     Your public profile is missing ${esc(missing)}
                   </div>
-                  <p style="margin:0; color:var(--text-secondary); line-height:1.6">
+                  <p class="media-nudge-text">
                     Profiles with photos and mixes get booked more often. Promoters land on your page from search and DMs — give them something to see and hear.
                   </p>
                 </div>
-                <div style="display:flex; gap:var(--space-sm); flex-wrap:wrap; align-items:center">
+                <div class="media-nudge-actions">
                   <a class="btn btn-primary btn-sm" href="/artist-profile-edit.html#gallery">Edit my EPK</a>
                   <button type="button" class="btn btn-ghost btn-sm" onclick="localStorage.setItem('${dismissKey}','1'); this.closest('.section-card').remove()">Dismiss</button>
                 </div>
