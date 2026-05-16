@@ -3,15 +3,17 @@
 // any failed cron runs. Cheaper than opening the dashboard.
 //
 // Scheduled via pg_cron in the matching migration (20260423_daily_digest_cron.sql).
-// The cron uses pg_net to POST here; we don't gate with a secret because the
-// body is same-VPC and a spammy external caller would just get stats they
-// can see on /status.html anyway. Future: add x-cron-secret if abuse shows up.
+// Gated on CRON_SECRET like the other cron-triggered functions — the
+// public edge URL would otherwise let anyone trigger two real admin
+// emails and pollute /status.html with phantom cron_runs rows.
+// 2026-05-16 audit P1.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
+const CRON_SECRET = Deno.env.get('CRON_SECRET');
 const FROM_EMAIL = 'ROSTER+ <book@rosterplus.io>';
 
 // Email allowlist — mirrors the SQL is_admin() function. If that list
@@ -44,6 +46,20 @@ Deno.serve(async (req) => {
   if (!SUPABASE_URL || !SERVICE_ROLE_KEY || !RESEND_API_KEY) {
     log('error', 'misconfigured');
     return new Response(JSON.stringify({ error: 'misconfigured' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  }
+
+  // Fail-closed shared-secret gate — the pg_cron caller passes
+  // CRON_SECRET via x-cron-secret. Without this anyone could hit the
+  // public edge URL, trigger two real admin emails per call, and
+  // pollute /status.html with phantom cron_runs rows. Same shape as
+  // send-booking-reminders.
+  if (!CRON_SECRET) {
+    log('error', 'cron_secret_not_configured');
+    return new Response(JSON.stringify({ error: 'server_misconfigured' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  }
+  const gotSecret = req.headers.get('x-cron-secret') || '';
+  if (gotSecret !== CRON_SECRET) {
+    return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
   }
 
   const sb = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);

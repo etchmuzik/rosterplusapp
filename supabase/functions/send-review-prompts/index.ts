@@ -96,14 +96,21 @@ serve(async (req) => {
     });
   }
 
-  if (CRON_SECRET) {
-    const got = req.headers.get('x-cron-secret') || '';
-    if (got !== CRON_SECRET) {
-      return new Response(JSON.stringify({ error: 'unauthorized' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+  // Fail-closed if CRON_SECRET is unset (was: silent accept).
+  // Cron job is currently paused per STATUS.md but the public edge
+  // URL still exists and would mailbomb review prompts if hit.
+  if (!CRON_SECRET) {
+    return new Response(JSON.stringify({ error: 'server_misconfigured' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+  const got = req.headers.get('x-cron-secret') || '';
+  if (got !== CRON_SECRET) {
+    return new Response(JSON.stringify({ error: 'unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   if (!RESEND_API_KEY) {

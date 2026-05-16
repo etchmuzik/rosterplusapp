@@ -131,15 +131,21 @@ serve(async (req) => {
     });
   }
 
-  // Shared-secret gate — same idiom as send-booking-reminders.
-  if (CRON_SECRET) {
-    const got = req.headers.get('x-cron-secret') || '';
-    if (got !== CRON_SECRET) {
-      return new Response(JSON.stringify({ error: 'unauthorized' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+  // Shared-secret gate — fail-closed if CRON_SECRET is unset so the
+  // public edge URL can't be used to mailbomb every artist's
+  // onboarding drip queue. Matches resend-webhook + send-booking-reminders.
+  if (!CRON_SECRET) {
+    return new Response(JSON.stringify({ error: 'server_misconfigured' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+  const got = req.headers.get('x-cron-secret') || '';
+  if (got !== CRON_SECRET) {
+    return new Response(JSON.stringify({ error: 'unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   if (!RESEND_API_KEY) {

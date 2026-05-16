@@ -106,12 +106,18 @@ serve(async (req) => {
   }
 
   // Shared-secret gate \u2014 cron passes CRON_SECRET via x-cron-secret.
-  // Without this guard anyone could hit the URL and spam reminders.
-  if (CRON_SECRET) {
-    const got = req.headers.get('x-cron-secret') || '';
-    if (got !== CRON_SECRET) {
-      return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
-    }
+  // Fail-closed: if CRON_SECRET is not configured we reject every
+  // request rather than skip the check. The old `if (CRON_SECRET)`
+  // shape silently accepted anonymous POSTs whenever the env var
+  // wasn't set, which would let any attacker mailbomb every
+  // booking-reminder recipient for tomorrow by hitting the public
+  // edge URL. Matches resend-webhook's pattern (P0 2026-05-13).
+  if (!CRON_SECRET) {
+    return new Response(JSON.stringify({ error: 'server_misconfigured' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  }
+  const got = req.headers.get('x-cron-secret') || '';
+  if (got !== CRON_SECRET) {
+    return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
   }
 
   if (!RESEND_API_KEY) {
