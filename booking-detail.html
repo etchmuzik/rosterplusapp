@@ -264,11 +264,19 @@
       // after loadProfile; we re-render this section once it resolves
       // (see admin-actions mount below). Actions here hit the same
       // audited RPCs the Admin console uses.
+      // 2026-05-16 audit P0: dropped the inline onclick string
+      // interpolation — the previous `esc(...).replace(/'/g,'&#39;')`
+      // was a no-op (esc already turns ' into &#x27; before replace
+      // sees it) and the attribute parser HTML-decodes the entity
+      // back to ' at click time, breaking out of the JS string.
+      // data-* attributes carry the payload; the delegated handler
+      // below reads them via getAttribute (entity-safe).
+      const eventLabel = b.event_name || b.venue_name || 'Event';
       if (Auth.isAdminCached && b.status !== 'cancelled') {
-        actions.push(`<button class="btn btn-ghost btn-sm" style="color:var(--status-cancelled);border-color:rgba(248,113,113,0.3)" onclick="adminForceCancelBooking('${esc(b.id)}','${esc(b.event_name || b.venue_name || 'Event').replace(/'/g,'&#39;')}')">🛡 Force cancel</button>`);
+        actions.push(`<button class="btn btn-ghost btn-sm admin-force-cancel-btn" style="color:var(--status-cancelled);border-color:rgba(248,113,113,0.3)" data-booking-id="${esc(b.id)}" data-event-label="${esc(eventLabel)}">🛡 Force cancel</button>`);
       }
       if (Auth.isAdminCached) {
-        actions.push(`<button class="btn btn-ghost btn-sm" onclick="adminChangeBookingStatus('${esc(b.id)}','${esc(b.status || '')}')" style="color:var(--accent-soft)">🛡 Change status</button>`);
+        actions.push(`<button class="btn btn-ghost btn-sm admin-change-status-btn" style="color:var(--accent-soft)" data-booking-id="${esc(b.id)}" data-current-status="${esc(b.status || '')}">🛡 Change status</button>`);
       }
       return actions.join('');
     }
@@ -648,6 +656,27 @@
       if (!Auth.isLoggedIn()) { Auth.require(); return; }
       document.getElementById('nav-root').innerHTML = renderNav('bookings');
       if (typeof hydrateIcons === 'function') hydrateIcons();
+      // Delegated click handler for admin actions — replaces the
+      // per-button inline onclick that had a stored-XSS sink on
+      // event_name. Reads payload from data-* attributes so the
+      // HTML parser handles entity decoding for us.
+      document.body.addEventListener('click', (e) => {
+        const cancelBtn = e.target.closest('.admin-force-cancel-btn');
+        if (cancelBtn) {
+          adminForceCancelBooking(
+            cancelBtn.getAttribute('data-booking-id') || '',
+            cancelBtn.getAttribute('data-event-label') || 'Event'
+          );
+          return;
+        }
+        const statusBtn = e.target.closest('.admin-change-status-btn');
+        if (statusBtn) {
+          adminChangeBookingStatus(
+            statusBtn.getAttribute('data-booking-id') || '',
+            statusBtn.getAttribute('data-current-status') || ''
+          );
+        }
+      });
       await load();
     });
   </script>

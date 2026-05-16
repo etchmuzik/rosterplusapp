@@ -477,9 +477,19 @@
           const dateLine = t.event_date
             ? new Date(t.event_date + 'T00:00:00').toLocaleDateString('en', { month: 'short', day: 'numeric' })
             : '';
+          // 2026-05-16 audit P0: the old onclick interpolated the
+          // partner name into a JS string after esc()ed it — but esc()
+          // turns `'` into `&#x27;`, then the browser HTML-decodes the
+          // attribute back to `'` at parse time, breaking out of the
+          // JS string. Store payload in data-* attributes (which ARE
+          // entity-decoded by the parser into plain text, safe to read
+          // via getAttribute) and dispatch via a delegated handler.
           return `
             <div class="conv-item ${active}"
-                 onclick="openBookingThread('${esc(t.booking_id)}','${esc(t.other_user_id)}','${safePartner.replace(/'/g, "\\'")}')">
+                 data-thread-kind="booking"
+                 data-booking-id="${esc(t.booking_id)}"
+                 data-other-id="${esc(t.other_user_id)}"
+                 data-other-name="${esc(t.other_user_name || '—')}">
               ${UI.avatar(t.other_user_name || '?', 40)}
               <div class="conv-info">
                 <div class="conv-name" style="display:flex;gap:6px;align-items:center">
@@ -505,7 +515,9 @@
           const preview = (c.last_message || c.content || '').slice(0, 60);
           return `
             <div class="conv-item ${active}"
-                 onclick="openDMThread('${esc(c.other_user_id)}','${esc(name).replace(/'/g, "\\'")}')">
+                 data-thread-kind="dm"
+                 data-other-id="${esc(c.other_user_id)}"
+                 data-other-name="${esc(name)}">
               ${UI.avatar(name, 40)}
               <div class="conv-info">
                 <div class="conv-name">${esc(name)}</div>
@@ -521,6 +533,25 @@
       }
 
       list.innerHTML = html;
+      // Delegated handler — replaces the per-row inline onclick that
+      // had a stored-XSS sink in the partner-name interpolation.
+      // Idempotent: only install once per `list` element.
+      if (!list.__rostrConvDelegated) {
+        list.addEventListener('click', (e) => {
+          const item = e.target.closest('[data-thread-kind]');
+          if (!item) return;
+          const kind = item.getAttribute('data-thread-kind');
+          const otherId = item.getAttribute('data-other-id') || '';
+          const otherName = item.getAttribute('data-other-name') || '';
+          if (kind === 'booking') {
+            const bookingId = item.getAttribute('data-booking-id') || '';
+            openBookingThread(bookingId, otherId, otherName);
+          } else if (kind === 'dm') {
+            openDMThread(otherId, otherName);
+          }
+        });
+        list.__rostrConvDelegated = true;
+      }
     }
 
     // Open a booking-scoped thread. Shows the event name + partner
