@@ -147,6 +147,30 @@
       } catch (_) { return null; }
     }
 
+    /* Safe photo lightbox. 2026-05-16 audit P0: the previous inline
+       onclick interpolated the raw `${url}` into a JS string inside
+       an attribute, which is a stored-XSS sink — any artist who can
+       set `epk_gallery` could land arbitrary JS on every visitor's
+       EPK view (and visitors are unauthenticated). Uses
+       document.createElement + .src assignment so the URL never
+       touches the HTML or attribute parsers. Mirrors profile.html's
+       openLightbox. */
+    function openLightbox(url) {
+      let el = document.getElementById('epk-lightbox');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'epk-lightbox';
+        el.className = 'lightbox';
+        el.onclick = () => el.classList.remove('active');
+        document.body.appendChild(el);
+      }
+      const img = document.createElement('img');
+      img.src = String(url || '');
+      img.alt = 'Photo';
+      el.replaceChildren(img);
+      el.classList.add('active');
+    }
+
     function renderEPK(data) {
       if (!data) { document.getElementById('epk-content').innerHTML = '<div class="empty-state" style="text-align:center;padding:var(--space-3xl)"><h2>EPK Not Found</h2><p>This artist profile doesn\'t exist.</p><a href="directory.html" class="btn btn-primary">Browse Artists</a></div>'; return; }
 
@@ -239,7 +263,7 @@
         ${(social.soundcloud || social.spotify || social.youtube) ? `<div class="epk-section"><div class="epk-section-title">Listen</div>${UI.mediaEmbed(social.soundcloud || social.spotify || social.youtube)}</div>` : ''}
 
         <!-- Photo Gallery with download -->
-        ${(data.epk_gallery && data.epk_gallery.length) ? `<div class="epk-section"><div class="epk-section-title" style="display:flex;justify-content:space-between;align-items:center">Photos <span style="font-size:0.72rem;color:var(--text-tertiary);text-transform:none;letter-spacing:0">Click to zoom · Right-click to download</span></div><div class="photo-gallery">${data.epk_gallery.map((url, idx) => `<img src="${esc(url)}" alt="Press photo ${idx+1}" loading="lazy" decoding="async" onclick="(function(){let lb=document.getElementById('lb');if(!lb){lb=document.createElement('div');lb.id='lb';lb.className='lightbox';lb.onclick=()=>lb.classList.remove('active');document.body.appendChild(lb)}lb.innerHTML='<img src=\\'${url}\\' alt=Photo>';lb.classList.add('active')})()">`).join('')}</div></div>` : ''}
+        ${(data.epk_gallery && data.epk_gallery.length) ? `<div class="epk-section"><div class="epk-section-title" style="display:flex;justify-content:space-between;align-items:center">Photos <span style="font-size:0.72rem;color:var(--text-tertiary);text-transform:none;letter-spacing:0">Click to zoom · Right-click to download</span></div><div class="photo-gallery">${data.epk_gallery.map((url, idx) => `<img src="${esc(url)}" alt="Press photo ${idx+1}" loading="lazy" decoding="async" data-photo-url="${esc(url)}" onclick="openLightbox(this.getAttribute('data-photo-url'))">`).join('')}</div></div>` : ''}
 
         <!-- Mixes & Videos (video_links jsonb column, added 2026-05-13). -->
         ${(Array.isArray(data.video_links) && data.video_links.length) ? `
