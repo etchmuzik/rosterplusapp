@@ -219,12 +219,7 @@
           { key: 'city',         label: 'Set your city', desc: 'We surface local artists first', href: '/settings.html', done: !isMissing('city') },
           { key: 'first_booking', label: 'Send your first booking', desc: 'Browse the directory and send a request', href: '/directory.html', done: (_allBookings && _allBookings.length > 0) },
         ];
-        // Headline percentage matches DB.getProfileCompletion so the
-        // dashboard nudge and the settings completion meter agree on
-        // one number per user. The 5-item checklist below is the
-        // promoter-action surface (one item is "send first booking"
-        // which isn't a profile field) — it stays independent.
-        host.innerHTML = UI.onboardingChecklist(steps, { heading: `Finish setting up your account — ${c.percent}% done`, dismissId: 'dash' });
+        host.innerHTML = UI.onboardingChecklist(steps, { heading: 'Finish setting up your account', dismissId: 'dash' });
         return;
       }
 
