@@ -141,22 +141,16 @@
               <label class="form-label">Stage Name</label>
               <input type="text" class="form-input" id="stage-name" placeholder="Your stage name" required>
             </div>
-            <div class="form-group">
-              <label class="form-label">Primary Genre</label>
-              <select class="form-select" id="genre" onchange="rebuildSubgenrePicker()">
-                <option value="">Select genre...</option>
-                <!-- Primaries populated from window.GENRE_PRIMARIES (app.js) on init. -->
-              </select>
-            </div>
           </div>
           <div class="form-group">
-            <label class="form-label">Subgenres</label>
-            <div class="tag-input-wrap" id="subgenres-wrap">
-              <select id="subgenre-picker" class="form-select" style="flex:1;min-width:160px" onchange="addSubgenreFromPicker()" disabled>
-                <option value="">Pick a primary genre first…</option>
+            <label class="form-label">Genres</label>
+            <div class="tag-input-wrap" id="genres-wrap">
+              <select id="genre-picker" class="form-select" style="flex:1;min-width:180px" onchange="addGenreFromPicker()">
+                <option value="">Add a genre…</option>
+                <!-- <optgroup>s populated from window.GENRES (app.js) on init. -->
               </select>
             </div>
-            <p class="text-tertiary" style="font-size:0.78rem;margin-top:4px">Scoped to your primary genre. Up to 5.</p>
+            <p class="text-tertiary" style="font-size:0.78rem;margin-top:4px">Pick what you play — up to 5. Grouped by family (House, Techno, Trance, Bass, Hip Hop, R&amp;B, Latin, Arabic, etc.).</p>
           </div>
           <div class="form-group">
             <label class="form-label">Bio</label>
@@ -342,7 +336,11 @@
   </div>
 
   <script>
-    let _tags = { subgenres: [], cities: [] };
+    // _tags.genres holds the artist's selected genre chips — flat list
+    // of strings drawn from window.GENRES (any primary name, any
+    // subgenre). All chips go into artists.genre on save; the legacy
+    // artists.subgenres column is left as-is (no longer written).
+    let _tags = { genres: [], cities: [] };
     let _avatarUrl = null;
     let _isSetup = false;
     let _blockedDates = [];
@@ -434,7 +432,7 @@
     function updateCompleteness() {
       const checks = [
         !!document.getElementById('stage-name').value.trim(),
-        !!document.getElementById('genre').value,
+        _tags.genres.length > 0,
         !!document.getElementById('bio').value.trim(),
         !!document.getElementById('rate-min').value,
         !!_avatarUrl,
@@ -483,50 +481,58 @@
     function removeTag(type, idx) {
       _tags[type].splice(idx, 1);
       renderTags(type);
-      // Removing a subgenre chip frees the picker slot — re-include it.
-      if (type === 'subgenres') rebuildSubgenrePicker();
+      // Removing a genre chip frees a picker slot — let the deleted
+      // genre reappear in the dropdown.
+      if (type === 'genres') rebuildGenrePicker();
     }
 
-    // Subgenres are constrained to the picks under the artist's
-    // current primary genre (see window.GENRE_SUBS in app.js). The
-    // picker dropdown rebuilds whenever the primary changes or the
-    // chip list changes, so already-chosen subgenres disappear from
-    // the dropdown options.
-    function rebuildSubgenrePicker() {
-      const primarySel = document.getElementById('genre');
-      const picker = document.getElementById('subgenre-picker');
-      if (!primarySel || !picker) return;
-      const primary = primarySel.value;
-      const subs = (window.GENRE_SUBS && window.GENRE_SUBS[primary]) || [];
-      const available = subs.filter(s => !_tags.subgenres.includes(s));
-      if (!primary) {
-        picker.innerHTML = '<option value="">Pick a primary genre first…</option>';
+    // Single picker for the merged genre+subgenre selection. Options
+    // are grouped by family via <optgroup> — visual hierarchy from
+    // window.GENRES (app.js) — but all picks go into one flat array
+    // (_tags.genres → artists.genre on save). Already-picked entries
+    // are excluded from the dropdown so artists can't dupe.
+    function rebuildGenrePicker() {
+      const picker = document.getElementById('genre-picker');
+      if (!picker) return;
+      const taken = new Set(_tags.genres);
+      const max = 5;
+      if (_tags.genres.length >= max) {
+        picker.innerHTML = '<option value="">Max ' + max + ' genres reached</option>';
         picker.disabled = true;
-      } else if (subs.length === 0) {
-        picker.innerHTML = '<option value="">No subgenres for this category</option>';
-        picker.disabled = true;
-      } else if (available.length === 0) {
-        picker.innerHTML = '<option value="">All subgenres added</option>';
-        picker.disabled = true;
-      } else {
-        picker.innerHTML = '<option value="">Add subgenre…</option>' +
-          available.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
-        picker.disabled = false;
-      }
-    }
-
-    function addSubgenreFromPicker() {
-      const picker = document.getElementById('subgenre-picker');
-      const val = picker.value;
-      if (!val) return;
-      if (_tags.subgenres.length >= 5) {
-        picker.value = '';
-        if (typeof UI !== 'undefined' && UI.toast) UI.toast('Max 5 subgenres', 'info');
         return;
       }
-      _tags.subgenres.push(val);
-      renderTags('subgenres');
-      rebuildSubgenrePicker();
+      picker.disabled = false;
+      const parts = ['<option value="">Add a genre…</option>'];
+      (window.GENRES || []).forEach(g => {
+        // Each family is its own optgroup. The family name itself
+        // counts as a pickable option too (an artist can be tagged
+        // just "House" without claiming a specific subgenre).
+        const items = [];
+        if (!taken.has(g.name)) items.push(g.name);
+        (g.subs || []).forEach(s => { if (!taken.has(s)) items.push(s); });
+        if (items.length === 0) return;
+        parts.push('<optgroup label="' + esc(g.name) + '">');
+        items.forEach(it => {
+          parts.push('<option value="' + esc(it) + '">' + esc(it) + '</option>');
+        });
+        parts.push('</optgroup>');
+      });
+      picker.innerHTML = parts.join('');
+    }
+
+    function addGenreFromPicker() {
+      const picker = document.getElementById('genre-picker');
+      const val = picker.value;
+      if (!val) return;
+      if (_tags.genres.length >= 5) {
+        picker.value = '';
+        if (typeof UI !== 'undefined' && UI.toast) UI.toast('Max 5 genres', 'info');
+        return;
+      }
+      if (_tags.genres.includes(val)) { picker.value = ''; return; }
+      _tags.genres.push(val);
+      renderTags('genres');
+      rebuildGenrePicker();
     }
 
     function renderTags(type) {
@@ -562,7 +568,8 @@
     function populateForm(data) {
       if (!data) return;
       document.getElementById('stage-name').value = data.stage_name || data.name || '';
-      document.getElementById('genre').value = Array.isArray(data.genre) ? data.genre[0] : (data.genre || '');
+      // (Genre chips are hydrated below via _tags.genres + renderTags;
+      // there is no longer a single <select id="genre"> to write to.)
       document.getElementById('bio').value = data.bio || data.profiles?.bio || '';
       updateCharCount(document.getElementById('bio'), 'bio-count');
       document.getElementById('rate-min').value = data.base_fee || data.rate_min || '';
@@ -576,13 +583,24 @@
       document.getElementById('social-spotify').value = social.spotify || '';
       document.getElementById('social-youtube').value = social.youtube || '';
 
-      // Tags
-      _tags.subgenres = Array.isArray(data.subgenres) ? [...data.subgenres] : (data.subgenre ? data.subgenre.split(',').map(s => s.trim()).filter(Boolean) : []);
+      // Tags. Merge existing artists.genre (text[]) + legacy
+      // artists.subgenres (text[]) into one chip list, deduped, cap 5.
+      // The two columns were split historically; this picker treats
+      // them as one set. New saves write everything to artists.genre
+      // and leave subgenres untouched.
+      const incomingGenres = Array.isArray(data.genre) ? data.genre : (data.genre ? [data.genre] : []);
+      const incomingSubs = Array.isArray(data.subgenres) ? data.subgenres
+        : (data.subgenre ? data.subgenre.split(',').map(s => s.trim()).filter(Boolean) : []);
+      const merged = [];
+      for (const v of [...incomingGenres, ...incomingSubs]) {
+        const s = String(v || '').trim();
+        if (s && !merged.includes(s) && merged.length < 5) merged.push(s);
+      }
+      _tags.genres = merged;
       _tags.cities = Array.isArray(data.cities_active) ? [...data.cities_active] : [];
-      renderTags('subgenres');
+      renderTags('genres');
       renderTags('cities');
-      // Primary genre is set above; now scope the subgenre picker to it.
-      rebuildSubgenrePicker();
+      rebuildGenrePicker();
 
       // Availability
       if (data.status === 'active') document.getElementById('availability-toggle').classList.add('active');
@@ -787,8 +805,11 @@
       const payload = {
         stage_name: document.getElementById('stage-name').value.trim(),
         display_name: document.getElementById('stage-name').value.trim(),
-        genre: document.getElementById('genre').value,
-        subgenres: _tags.subgenres,
+        // All picks land in artists.genre. subgenres is set to [] so
+        // legacy data doesn't shadow the new picks. (Schema columns
+        // unchanged, the split just stops being used post-merge.)
+        genre: _tags.genres,
+        subgenres: [],
         bio: document.getElementById('bio').value.trim(),
         base_fee: parseFloat(document.getElementById('rate-min').value) || 0,
         rate_max: parseFloat(document.getElementById('rate-max').value) || 0,
@@ -840,17 +861,11 @@
       document.getElementById('nav-root').innerHTML = renderNav('profile-edit');
       if (typeof hydrateIcons === 'function') hydrateIcons();
 
-      // Populate Primary Genre dropdown from the canonical catalogue in
-      // app.js. The "Select genre…" placeholder stays in the HTML.
-      const genreSel = document.getElementById('genre');
-      (window.GENRE_PRIMARIES || []).forEach(g => {
-        const o = document.createElement('option');
-        o.value = g; o.textContent = g;
-        genreSel.appendChild(o);
-      });
-      // First paint of the subgenre picker — disabled until a primary
-      // is picked (or rebuilt later by populateForm after data loads).
-      rebuildSubgenrePicker();
+      // First paint of the unified genre picker — optgrouped options
+      // come from window.GENRES (app.js). populateForm() calls
+      // rebuildGenrePicker() again after loading the artist's existing
+      // chips so already-picked ones are excluded from the dropdown.
+      rebuildGenrePicker();
 
       _isSetup = new URLSearchParams(window.location.search).has('setup');
       if (_isSetup) {
