@@ -1506,6 +1506,26 @@ window.GENRES = GENRES;
 window.GENRE_PRIMARIES = GENRE_PRIMARIES;
 window.GENRE_SUBS = GENRE_SUBS;
 
+// Merge artists.genre + artists.subgenres into one deduped array
+// (insertion order, trimmed strings only). The two columns were
+// merged 2026-05-17 — new saves go entirely into `genre`, but old
+// rows still have data in `subgenres` until a backfill ships, so
+// every consumer that displays genres should call this helper to
+// see the full set.
+function _mergedGenreList(row) {
+  const seen = new Set();
+  const out = [];
+  const push = v => {
+    const s = String(v == null ? '' : v).trim();
+    if (s && !seen.has(s)) { seen.add(s); out.push(s); }
+  };
+  if (row) {
+    (Array.isArray(row.genre) ? row.genre : (row.genre ? [row.genre] : [])).forEach(push);
+    (Array.isArray(row.subgenres) ? row.subgenres : []).forEach(push);
+  }
+  return out;
+}
+
 // ══════════════════════════════════════════════════════════
 // DB — Live Supabase data access
 // ══════════════════════════════════════════════════════════
@@ -1535,7 +1555,9 @@ const DB = {
     if (error) return { success: false, data: [], error: error.message };
 
     // Normalise to the shape the UI expects
-    const normalised = (data || []).map(a => ({
+    const normalised = (data || []).map(a => {
+      const genres = _mergedGenreList(a);
+      return {
       id: a.id,
       // handle: kebab-case slug for /a/<handle>. Added in
       // 20260512_artists_handle.sql. Also used by the homepage to
@@ -1545,8 +1567,13 @@ const DB = {
       handle: a.handle || null,
       name: a.stage_name || (a.profiles && a.profiles.display_name) || 'Unknown',
       stage_name: a.stage_name || null,
-      genre: Array.isArray(a.genre) ? a.genre[0] : (a.genre || ''),
-      subgenre: Array.isArray(a.subgenres) ? a.subgenres[0] : '',
+      // `genre` (string, first pick) kept for back-compat with
+      // consumers that only render one label (compact cards, OG
+      // meta). `genres` (string[]) is the full picked set merged
+      // from genre + legacy subgenres — use this everywhere new.
+      genre: genres[0] || '',
+      genres,
+      subgenre: genres[1] || '',
       city: (a.cities_active && a.cities_active[0]) || (a.profiles && a.profiles.city) || '',
       country: 'UAE',
       rate_min: a.base_fee || 0,
@@ -1567,7 +1594,8 @@ const DB = {
       social: a.social_links || {},
       bio: (a.profiles && a.profiles.bio) || '',
       email: (a.profiles && a.profiles.email) || '',
-    }));
+      };
+    });
 
     return { success: true, data: normalised };
     } catch(e) {
@@ -1591,13 +1619,15 @@ const DB = {
 
     // Normalise to same shape as getArtists
     const a = data;
+    const genres = _mergedGenreList(a);
     const normalised = {
       id: a.id,
       handle: a.handle || null,
       name: a.stage_name || (a.profiles && a.profiles.display_name) || 'Unknown',
       stage_name: a.stage_name || null,
-      genre: Array.isArray(a.genre) ? a.genre[0] : (a.genre || ''),
-      subgenre: Array.isArray(a.subgenres) ? a.subgenres[0] : '',
+      genre: genres[0] || '',
+      genres,
+      subgenre: genres[1] || '',
       city: (a.cities_active && a.cities_active[0]) || (a.profiles && a.profiles.city) || '',
       country: 'UAE',
       rate_min: a.base_fee || 0,
@@ -2356,7 +2386,12 @@ const DB = {
         .eq('profile_id', Auth.user.id).single();
       if (error) return { success: false, error: error.message };
       if (!data) return { success: false, error: 'No artist profile' };
-      return { success: true, data: { ...data, name: data.stage_name || data.profiles?.display_name || 'Unknown', genre: Array.isArray(data.genre) ? data.genre[0] : data.genre, subgenre: Array.isArray(data.subgenres) ? data.subgenres.join(', ') : '', city: data.cities_active?.[0] || data.profiles?.city || '', bio: data.profiles?.bio || '', avatar_url: data.profiles?.avatar_url, social: data.social_links || {} } };
+      const genres = _mergedGenreList(data);
+      // Preserve raw data.genre/data.subgenres in the spread so
+      // populateForm() in artist-profile-edit.html can do its own
+      // merge. Surface the merged `genres` array + first `genre`
+      // string for other callers (profile.html, link.html).
+      return { success: true, data: { ...data, name: data.stage_name || data.profiles?.display_name || 'Unknown', genres, genre: genres[0] || '', subgenre: genres[1] || '', city: data.cities_active?.[0] || data.profiles?.city || '', bio: data.profiles?.bio || '', avatar_url: data.profiles?.avatar_url, social: data.social_links || {} } };
     } catch(e) { return { success: false, error: String(e) }; }
   },
 
@@ -2367,7 +2402,7 @@ const DB = {
     if (!query || !query.trim()) return { success: true, data: [] };
     try {
       const { data, error } = await _sb.from('artists')
-        .select('id, stage_name, genre, cities_active, verified')
+        .select('id, stage_name, genre, subgenres, cities_active, verified')
         .is('profile_id', null)
         .ilike('stage_name', `%${query.trim()}%`)
         .limit(10);
@@ -2829,8 +2864,12 @@ const DB = {
     if (DEMO_MODE) return { success: true, data: { id: 'demo-artist-1', ...data } };
     if (!Auth.user) return { success: false, error: 'Not authenticated' };
     try {
+      // genre accepts either a string (legacy) or an array (post-merge).
+      // subgenres column is no longer written — new picks go entirely
+      // into artists.genre per the 2026-05-17 column merge.
+      const genreArr = Array.isArray(data.genre) ? data.genre : (data.genre ? [data.genre] : []);
       const { data: result, error } = await _sb.from('artists')
-        .insert({ profile_id: Auth.user.id, stage_name: data.stage_name, genre: data.genre ? [data.genre] : [], subgenres: data.subgenres || [], base_fee: data.base_fee || 0, currency: data.currency || 'AED', cities_active: data.cities_active || [], social_links: data.social_links || {}, status: 'active' })
+        .insert({ profile_id: Auth.user.id, stage_name: data.stage_name, genre: genreArr, base_fee: data.base_fee || 0, currency: data.currency || 'AED', cities_active: data.cities_active || [], social_links: data.social_links || {}, status: 'active' })
         .select().single();
       return error ? { success: false, error: error.message } : { success: true, data: result };
     } catch(e) { return { success: false, error: String(e) }; }

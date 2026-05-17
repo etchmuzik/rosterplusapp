@@ -159,7 +159,12 @@
       const g = document.getElementById('artist-grid');
       g.innerHTML = filteredArtists.map((a, i) => {
         const name = a.name || a.stage_name || 'Artist';
-        const genre = a.genre || '';
+        // Show up to 2 genres on a card — full list lives on the
+        // profile/EPK pages. `a.genres` is the merged array from
+        // DB.getArtists; fallback to `a.genre` for back-compat.
+        const genre = (Array.isArray(a.genres) && a.genres.length)
+          ? a.genres.slice(0, 2).join(' · ')
+          : (a.genre || '');
         const city = a.city || '—';
         const avail = a.available === false ? 'booked' : 'avail';
         const availLabel = avail === 'avail' ? 'Free' : 'Booked';
@@ -206,7 +211,10 @@
       const l = document.getElementById('artist-list');
       l.innerHTML = filteredArtists.map(a => {
         const name = a.name || a.stage_name || 'Artist';
-        const genre = a.genre || '';
+        // List view has more horizontal room — show up to 3 genres.
+        const genre = (Array.isArray(a.genres) && a.genres.length)
+          ? a.genres.slice(0, 3).join(' · ')
+          : (a.genre || '');
         const city = a.city || '—';
         const avail = a.available === false ? 'booked' : 'avail';
         const availLabel = avail === 'avail' ? 'Free' : 'Booked';
@@ -317,9 +325,14 @@
 
       filteredArtists = allArtists.filter(a => {
         const name = (a.name || a.stage_name || '').toLowerCase();
-        const aGenre = (a.genre || '').toLowerCase();
-        if (q && !name.includes(q) && !aGenre.includes(q)) return false;
-        if (genre && aGenre !== genre.toLowerCase()) return false;
+        // Search + filter both check the full genre list so artists
+        // with multiple picks match on any of them, not just the first.
+        const aGenres = Array.isArray(a.genres) && a.genres.length
+          ? a.genres.map(g => String(g || '').toLowerCase())
+          : [(a.genre || '').toLowerCase()];
+        const aGenreText = aGenres.join(' ');
+        if (q && !name.includes(q) && !aGenreText.includes(q)) return false;
+        if (genre && !aGenres.includes(genre.toLowerCase())) return false;
         if (city && (a.city || '').toLowerCase() !== city.toLowerCase()) return false;
         if (availOnly && a.available === false) return false;
         if (rate) {

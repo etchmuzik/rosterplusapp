@@ -210,7 +210,15 @@
       summaryEl.textContent = `${res.data.length} match${res.data.length === 1 ? '' : 'es'}. Tap "This is me" to claim.`;
       summaryEl.style.display = '';
       resultsEl.innerHTML = res.data.map(a => {
-        const genre = Array.isArray(a.genre) ? a.genre.join(', ') : (a.genre || '');
+        // Surface every genre this candidate carries (post-2026-05-17
+        // merge: artists.genre is the main list; artists.subgenres is
+        // legacy but may still hold values until backfill).
+        const _seen = new Set();
+        const _gs = [];
+        const _push = v => { const s = String(v || '').trim(); if (s && !_seen.has(s)) { _seen.add(s); _gs.push(s); } };
+        (Array.isArray(a.genre) ? a.genre : (a.genre ? [a.genre] : [])).forEach(_push);
+        (Array.isArray(a.subgenres) ? a.subgenres : []).forEach(_push);
+        const genre = _gs.join(', ');
         const cities = Array.isArray(a.cities_active) ? a.cities_active.join(' · ') : '';
         const meta = [genre, cities].filter(Boolean).join(' · ');
         return `

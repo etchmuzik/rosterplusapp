@@ -308,7 +308,7 @@
           <div class="bk-artist-card ${selected ? 'selected' : ''}" data-id="${esc(a.id)}">
             <div class="bk-artist-tile" style="${tileStyle(name)}">${esc(initials(name))}</div>
             <div class="bk-artist-name">${esc(name)}</div>
-            <div class="bk-artist-meta">${esc(a.genre || '—')} · ${esc(a.city || '—')}</div>
+            <div class="bk-artist-meta">${esc(((Array.isArray(a.genres) && a.genres.length) ? a.genres.slice(0, 2).join(' · ') : (a.genre || '—')))} · ${esc(a.city || '—')}</div>
           </div>
         `;
       }).join('');
@@ -335,7 +335,7 @@
         <div class="tile" style="${tileStyle(name)}">${esc(initials(name))}</div>
         <div style="flex: 1; min-width: 0">
           <div class="name">${esc(name)}</div>
-          <div class="meta">${esc(_chosen.genre || '—')} · ${esc(_chosen.city || '—')}</div>
+          <div class="meta">${esc(((Array.isArray(_chosen.genres) && _chosen.genres.length) ? _chosen.genres.join(' · ') : (_chosen.genre || '—')))} · ${esc(_chosen.city || '—')}</div>
         </div>
         ${targetId === 'bk-chosen-2' ? '<button class="btn btn-ghost btn-sm" data-go-step="1">Change</button>' : ''}
       `;

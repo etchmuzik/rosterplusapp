@@ -187,13 +187,24 @@
       if (!data) { document.getElementById('epk-content').innerHTML = '<div class="empty-state" style="text-align:center;padding:var(--space-3xl)"><h2>EPK Not Found</h2><p>This artist profile doesn\'t exist.</p><a href="directory.html" class="btn btn-primary">Browse Artists</a></div>'; return; }
 
       const name = esc(data.stage_name || data.name || 'Unknown');
-      const genre = esc(Array.isArray(data.genre) ? data.genre[0] : (data.genre || ''));
-      const subgenres = Array.isArray(data.subgenres) ? data.subgenres : [];
+      // Genre + subgenres column split was merged 2026-05-17 — all picks
+      // now live in artists.genre. Treat legacy artists.subgenres as
+      // additive so artists who haven't re-saved since the merge still
+      // surface their full list. Deduped, in insertion order.
+      const genreList = (() => {
+        const seen = new Set();
+        const out = [];
+        const push = v => { const s = String(v || '').trim(); if (s && !seen.has(s)) { seen.add(s); out.push(s); } };
+        (Array.isArray(data.genre) ? data.genre : (data.genre ? [data.genre] : [])).forEach(push);
+        (Array.isArray(data.subgenres) ? data.subgenres : []).forEach(push);
+        return out;
+      })();
+      const genre = esc(genreList[0] || '');
       const city = esc(data.city || data.cities_active?.[0] || '');
       // Pre-computed strings reused below (both by the inline renderer
       // AND by the OG-meta updater further down). Keep in sync with the
       // duplicate assignments near line 263.
-      const genres      = Array.isArray(data.genre) ? data.genre.join(', ') : (data.genre || '');
+      const genres = genreList.join(' · ');
       const cityForMeta = (data.cities_active && data.cities_active[0]) || data.city || '';
       const bio = esc(data.bio || data.profiles?.bio || '');
       // Avatar fallback chain:
@@ -222,7 +233,7 @@
       const rider = data.tech_rider || [];
       const initials = (data.stage_name || data.name || 'A').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
 
-      const genreTags = [genre, ...subgenres.map(s => esc(s))].filter(Boolean).map(g => `<span class="tag tag--gold">${g}</span>`).join(' ');
+      const genreTags = genreList.map(g => `<span class="tag tag--gold">${esc(g)}</span>`).join(' ');
 
       const socialLinks = Object.entries(social).filter(([k, v]) => v).map(([k, v]) => {
         const icons = { instagram: 'grid', soundcloud: 'music', spotify: 'music', youtube: 'activity' };
@@ -261,7 +272,7 @@
         <div class="epk-hero">
           <div class="avatar-xlarge">${initials}${avatar ? `<img src="${esc(avatar)}" alt="${name}" onerror="this.remove()">` : ''}</div>
           <div class="epk-name">${name}</div>
-          <div class="epk-meta">${city} ${genre ? '· ' + genre : ''}</div>
+          <div class="epk-meta">${city}${genres ? ' · ' + esc(genres) : ''}</div>
           ${badgesHtml}
           <div>${genreTags}</div>
           ${socialLinks ? `<div class="epk-socials">${socialLinks}</div>` : ''}

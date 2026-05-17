@@ -293,12 +293,20 @@
           const op = await DB.getCurrentlyFeatured();
           if (op.success && op.data) {
             // Normalize to the same shape DB.getArtists returns.
+            // Merge artists.genre + legacy artists.subgenres so the
+            // featured card surfaces every pick, not just the first.
             const a = op.data;
+            const fSeen = new Set();
+            const fGenres = [];
+            const fPush = v => { const s = String(v || '').trim(); if (s && !fSeen.has(s)) { fSeen.add(s); fGenres.push(s); } };
+            (Array.isArray(a.genre) ? a.genre : (a.genre ? [a.genre] : [])).forEach(fPush);
+            (Array.isArray(a.subgenres) ? a.subgenres : []).forEach(fPush);
             featured = {
               id: a.id,
               name: a.stage_name || a.profiles?.display_name || 'Artist',
               stage_name: a.stage_name,
-              genre: Array.isArray(a.genre) ? a.genre[0] : (a.genre || ''),
+              genre: fGenres[0] || '',
+              genres: fGenres,
               city: (Array.isArray(a.cities_active) ? a.cities_active[0] : '') || a.profiles?.city || '',
               avatar_url: a.profiles?.avatar_url,
               verified: a.verified,
@@ -324,7 +332,12 @@
         }
         if (featured) {
           const name = featured.name || featured.stage_name || 'Artist';
-          const genre = featured.genre || 'Artist';
+          // Show up to 2 genres on the featured card — full list lives
+          // on the artist profile. Falls back to single `genre` if a
+          // pre-merge cached response is in flight.
+          const genre = (Array.isArray(featured.genres) && featured.genres.length)
+            ? featured.genres.slice(0, 2).join(' · ')
+            : (featured.genre || 'Artist');
           const city = featured.city || 'GCC';
           setText('lt-featured-name', name.toUpperCase());
           setText('lt-featured-tags', `${genre} · ${city}`);

@@ -214,11 +214,19 @@
 
     function renderProfile(artist, similar, container) {
       const name       = artist.name || artist.stage_name || 'Artist';
-      const genre      = artist.genre || 'Artist';
+      // Render the full merged genre list (DB.getArtistById now
+      // exposes `genres: string[]`). Fall back to single `genre` for
+      // back-compat with any cached responses.
+      const genres     = (Array.isArray(artist.genres) && artist.genres.length)
+                            ? artist.genres : (artist.genre ? [artist.genre] : []);
+      const genre      = genres.join(' · ') || 'Artist';
       const city       = artist.city || '—';
       const avatarUrl  = artist.avatar_url;
       const verified   = artist.verified;
-      const bio        = artist.bio || `${name} is a ${String(genre).toLowerCase()} artist based out of ${city}, with a residency history across the GCC's premium venues. Known for long-form sets, curated track selection, and a close relationship with the region's headline promoters.`;
+      // Bio fallback uses the first/primary genre only — reads
+      // naturally as "a tech house artist", not "a tech house · hip hop artist".
+      const bioGenre   = (genres[0] || 'house').toLowerCase();
+      const bio        = artist.bio || `${name} is a ${bioGenre} artist based out of ${city}, with a residency history across the GCC's premium venues. Known for long-form sets, curated track selection, and a close relationship with the region's headline promoters.`;
       const avail      = artist.available === false ? 'booked' : 'avail';
       const availLabel = avail === 'avail' ? 'Available' : 'Fully booked';
       const days       = buildAvailability(artist);
@@ -419,7 +427,12 @@
                           </div>
                         </div>
                         <div>
-                          ${s.genre ? `<div class="artist-card-genre">${esc(s.genre)}</div>` : ''}
+                          ${(() => {
+                            const sg = (Array.isArray(s.genres) && s.genres.length)
+                              ? s.genres.slice(0, 2).join(' · ')
+                              : (s.genre || '');
+                            return sg ? `<div class="artist-card-genre">${esc(sg)}</div>` : '';
+                          })()}
                           <div class="artist-card-name">${esc(sName)}</div>
                           <div class="artist-card-meta">
                             <span style="display:inline-flex;align-items:center;gap:4px">${UI.icon('mapPin', 10)} ${esc(s.city || '—')}</span>
@@ -456,9 +469,15 @@
 
       const name = a.name || a.stage_name || 'Artist';
       const bio = String(a.bio || '').trim();
+      // Meta description prefers the bio; falls back to the full
+      // genre list (merged from artists.genre + legacy subgenres
+      // by DB.getArtistById) joined with " \u00b7 ".
+      const metaGenres = (Array.isArray(a.genres) && a.genres.length)
+        ? a.genres.join(' \u00b7 ')
+        : (a.genre || '');
       const desc = bio
         ? (bio.length > 160 ? bio.slice(0, 157) + '\u2026' : bio)
-        : ([a.genre, a.city].filter(Boolean).join(' \u2014 ') + ' \u00b7 Book on ROSTR+ GCC.').trim();
+        : ([metaGenres, a.city].filter(Boolean).join(' \u2014 ') + ' \u00b7 Book on ROSTR+ GCC.').trim();
       const img = a.avatar_url || 'https://rosterplus.io/icons/og-default.jpg';
       const url = `https://rosterplus.io/profile.html?id=${encodeURIComponent(a.id)}`;
       const setMeta = (sel, val) => { const el = document.querySelector(sel); if (el) el.setAttribute('content', val); };

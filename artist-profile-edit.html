@@ -583,18 +583,20 @@
       document.getElementById('social-spotify').value = social.spotify || '';
       document.getElementById('social-youtube').value = social.youtube || '';
 
-      // Tags. Merge existing artists.genre (text[]) + legacy
-      // artists.subgenres (text[]) into one chip list, deduped, cap 5.
-      // The two columns were split historically; this picker treats
-      // them as one set. New saves write everything to artists.genre
-      // and leave subgenres untouched.
-      const incomingGenres = Array.isArray(data.genre) ? data.genre : (data.genre ? [data.genre] : []);
-      const incomingSubs = Array.isArray(data.subgenres) ? data.subgenres
-        : (data.subgenre ? data.subgenre.split(',').map(s => s.trim()).filter(Boolean) : []);
-      const merged = [];
-      for (const v of [...incomingGenres, ...incomingSubs]) {
-        const s = String(v || '').trim();
-        if (s && !merged.includes(s) && merged.length < 5) merged.push(s);
+      // Tags. Prefer the pre-merged `data.genres` array exposed by
+      // DB.getMyArtistProfile (which already dedupes genre + legacy
+      // subgenres via _mergedGenreList). Fall back to raw fields if
+      // an older caller passes data here without the merge applied.
+      let merged = Array.isArray(data.genres) ? data.genres.slice(0, 5) : null;
+      if (!merged) {
+        const incomingGenres = Array.isArray(data.genre) ? data.genre : (data.genre ? [data.genre] : []);
+        const incomingSubs = Array.isArray(data.subgenres) ? data.subgenres
+          : (data.subgenre ? data.subgenre.split(',').map(s => s.trim()).filter(Boolean) : []);
+        merged = [];
+        for (const v of [...incomingGenres, ...incomingSubs]) {
+          const s = String(v || '').trim();
+          if (s && !merged.includes(s) && merged.length < 5) merged.push(s);
+        }
       }
       _tags.genres = merged;
       _tags.cities = Array.isArray(data.cities_active) ? [...data.cities_active] : [];
