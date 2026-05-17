@@ -40,10 +40,10 @@
 
   <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700,900&f[]=chillax@500,600,700&display=swap">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap">
-  <link rel="stylesheet" href="assets/css/system.css?v=2521872">
+  <link rel="stylesheet" href="assets/css/system.css?v=7345770">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="assets/js/error-logger.js?v=2521872" defer></script>
-  <script src="assets/js/app.js?v=2521872" defer></script>
+  <script src="assets/js/error-logger.js?v=7345770" defer></script>
+  <script src="assets/js/app.js?v=7345770" defer></script>
 </head>
 <body>
   <div class="page-shell">
@@ -69,6 +69,28 @@
 
     function initials(name) {
       return (name || '?').split(/\s+/).map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
+    }
+
+    /* Kebab-case slug for resolving the local photo path
+       /assets/images/artists/<slug>.jpg. Same shape as the index.html
+       and a.html helpers — when an artist hasn't claimed a profile
+       (so no profiles.avatar_url) but the operator has dropped a
+       photo file locally, we still want it to show. Three-tier:
+         1. profiles.avatar_url (claimed artist uploaded one)
+         2. /assets/images/artists/<handle-or-slug>.jpg (operator drop)
+         3. nothing — initials fallback in caller
+       2026-05-16: ported here to fix profile.html missing photos. */
+    function slugify(s) {
+      return (s || '').toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+    }
+    function photoSrc(a) {
+      if (a && a.avatar_url) return a.avatar_url;
+      const slug = a && (a.handle || slugify(a.stage_name || a.name || ''));
+      return slug ? `/assets/images/artists/${slug}.jpg` : '';
     }
 
     /* Build an oEmbed iframe URL for a { platform, url } video link.
@@ -221,7 +243,9 @@
                             ? artist.genres : (artist.genre ? [artist.genre] : []);
       const genre      = genres.join(' · ') || 'Artist';
       const city       = artist.city || '—';
-      const avatarUrl  = artist.avatar_url;
+      // Three-tier photo: avatar_url → /assets/images/artists/<slug>.jpg → initials
+       // (2026-05-16 fix — was only checking avatar_url, missing local-file fallback).
+      const avatarUrl  = photoSrc(artist);
       const verified   = artist.verified;
       // Bio fallback uses the first/primary genre only — reads
       // naturally as "a tech house artist", not "a tech house · hip hop artist".
@@ -270,8 +294,10 @@
 
         <section class="ap-narrow">
           <div class="ap-header lp-anim">
-            <div class="ap-avatar" style="${avatarUrl ? '' : coverStyle(name)}">
-              ${avatarUrl ? `<img src="${esc(avatarUrl)}" alt="${esc(name)}">` : esc(initials(name))}
+            <div class="ap-avatar" style="${coverStyle(name)}">
+              ${avatarUrl
+                ? `<img src="${esc(avatarUrl)}" alt="${esc(name)}" loading="eager" decoding="async" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'${esc(initials(name))}'}))">`
+                : esc(initials(name))}
             </div>
             <div class="ap-head-col">
               <div class="ap-meta-line">${esc(genre)} · ${esc(city)}</div>
@@ -416,9 +442,17 @@
               <div class="ap-similar-grid">
                 ${similar.map(s => {
                   const sName = s.name || s.stage_name || 'Artist';
+                  // 2026-05-16 fix: three-tier photo fallback. The
+                  // similar-artist cards used to render only the
+                  // gradient + initials — even when an image existed
+                  // at /assets/images/artists/<handle>.jpg. The <img>
+                  // sits on top of the cover gradient; on load failure
+                  // it removes itself and the initials show through.
+                  const sPhoto = photoSrc(s);
                   return `
                     <a class="artist-card" href="profile.html?id=${esc(s.id)}" style="aspect-ratio: 3 / 4; display: block">
                       <div class="cover" style="${coverStyle(sName)}"></div>
+                      ${sPhoto ? `<img class="cover" src="${esc(sPhoto)}" alt="${esc(sName)}" loading="lazy" decoding="async" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0" onerror="this.remove()">` : ''}
                       <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 700; font-size: 2.4rem; letter-spacing: -0.04em; color: rgba(255,255,255,0.18); z-index: 1">${esc(initials(sName))}</div>
                       <div class="artist-card-content">
                         <div class="artist-card-top">
