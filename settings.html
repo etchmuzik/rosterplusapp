@@ -20,10 +20,10 @@
 
   <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700,900&f[]=chillax@500,600,700&display=swap">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap">
-  <link rel="stylesheet" href="assets/css/system.css?v=2521872">
+  <link rel="stylesheet" href="assets/css/system.css?v=49fd6f2">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="assets/js/error-logger.js?v=2521872" defer></script>
-  <script src="assets/js/app.js?v=2521872" defer></script>
+  <script src="assets/js/error-logger.js?v=49fd6f2" defer></script>
+  <script src="assets/js/app.js?v=49fd6f2" defer></script>
   <style>
     .settings-container { max-width: 700px; margin: 80px auto 0; padding: var(--space-2xl) var(--space-lg); }
     .settings-section { margin-bottom: var(--space-3xl); }
@@ -104,6 +104,28 @@
             <option value="Manama">Manama</option>
             <option value="Muscat">Muscat</option>
           </select>
+        </div>
+
+        <!-- Bio — both roles. Stored on profiles.bio.
+             2026-05-16: added because the dashboard completion meter
+             nudges "Write a short bio" pointing at this page, but the
+             field never existed here. Promoter version surfaces on
+             messages + booking-request screens; artist version drives
+             /profile, /a/, and EPK pages. Same 500-char cap as the
+             artist-profile-edit page so a bio written in either place
+             can never grow past what the other surface accepts. -->
+        <div class="form-group">
+          <label class="form-label" for="bio">
+            Short bio <span class="hint-faint">(optional, max 500 chars)</span>
+          </label>
+          <textarea
+            class="form-textarea"
+            id="bio"
+            rows="4"
+            maxlength="500"
+            placeholder="Tell people about yourself in a sentence or two…"
+            oninput="updateCharCount(this, 'bio-count')"></textarea>
+          <div class="char-count" id="bio-count">0 / 500</div>
         </div>
         <button class="btn btn-primary" style="margin-top:var(--space-lg)" onclick="saveProfile()">Save Profile</button>
       </div>
@@ -216,11 +238,20 @@
       }
     }
 
+    // Live char-counter helper. Mirrors the same 3-line function in
+    // artist-profile-edit.html so the two bio textareas behave
+    // identically.
+    function updateCharCount(textarea, countId) {
+      const el = document.getElementById(countId);
+      if (el) el.textContent = `${textarea.value.length} / ${textarea.maxLength}`;
+    }
+
     async function saveProfile() {
       const updates = {
         display_name: document.getElementById('display-name').value.trim(),
         phone: document.getElementById('phone').value.trim(),
         city: document.getElementById('city').value,
+        bio: document.getElementById('bio').value.trim(),
       };
       // Company is promoter-only
       if (Auth.role === 'promoter') {
@@ -304,13 +335,28 @@
         }
       }
 
-      // Load full profile for phone/city/(company if promoter)
+      // Load full profile for phone/city/(company if promoter)/bio
       const profile = await DB.getProfile();
       if (profile.data) {
         document.getElementById('phone').value = profile.data.phone || '';
         document.getElementById('city').value = profile.data.city || '';
         const companyEl = document.getElementById('company');
         if (companyEl) companyEl.value = profile.data.company || '';
+        const bioEl = document.getElementById('bio');
+        if (bioEl) {
+          bioEl.value = profile.data.bio || '';
+          updateCharCount(bioEl, 'bio-count');
+        }
+      }
+
+      // Role-tailored placeholder for the bio. Promoters write for
+      // artists they're booking; artists write for promoters who'll
+      // book them. Auth.role is resolved by now (Auth.ready awaited
+      // above).
+      const bioEl2 = document.getElementById('bio');
+      if (bioEl2) {
+        const audience = Auth.role === 'promoter' ? 'artists' : 'promoters';
+        bioEl2.placeholder = `Tell ${audience} about yourself in a sentence or two…`;
       }
 
       await renderCompletion();
