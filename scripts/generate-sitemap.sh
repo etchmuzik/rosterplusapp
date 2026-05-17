@@ -35,7 +35,7 @@ TODAY="$(date -u +%Y-%m-%d)"
 artists_json="$(curl -sSf \
   -H "apikey: $SUPABASE_ANON_KEY" \
   -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
-  "$SUPABASE_URL/rest/v1/artists?select=id,updated_at&verified=eq.true&order=stage_name.asc")"
+  "$SUPABASE_URL/rest/v1/artists?select=id,handle,updated_at&verified=eq.true&order=stage_name.asc")"
 
 artist_count="$(echo "$artists_json" | jq 'length')"
 echo "Found $artist_count verified artists."
@@ -85,13 +85,29 @@ echo "Found $artist_count verified artists."
     <changefreq>hourly</changefreq>
     <priority>0.4</priority>
   </url>
+  <url>
+    <loc>$SITE_URL/press.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>$SITE_URL/link</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
 
-  <!-- Verified artist profiles — auto-generated. -->
+  <!-- Verified artist profiles (UUID URLs) — auto-generated. -->
 HEADER
 
   echo "$artists_json" | jq -r --arg site "$SITE_URL" '
     .[] |
     "  <url>\n    <loc>\($site)/profile.html?id=\(.id)</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n    <lastmod>\(.updated_at | split("T")[0])</lastmod>\n  </url>"
+  '
+
+  echo "  <!-- Pretty per-artist URLs at /a/<handle> — routed by .htaccess (see 20260512_artists_handle.sql for the handle column). Higher priority than UUID URLs because they're share-friendly. -->"
+  echo "$artists_json" | jq -r --arg site "$SITE_URL" '
+    .[] | select(.handle != null) |
+    "  <url>\n    <loc>\($site)/a/\(.handle)</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.9</priority>\n    <lastmod>\(.updated_at | split("T")[0])</lastmod>\n  </url>"
   '
 
   echo "</urlset>"
