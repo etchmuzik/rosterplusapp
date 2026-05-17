@@ -1470,6 +1470,43 @@ Auth.updatePassword = async function(newPassword) {
 // console warning at app boot.)
 
 // ══════════════════════════════════════════════════════════
+// GENRES — Canonical music genre catalogue (Beatport-aligned)
+// ══════════════════════════════════════════════════════════
+//
+// Single source of truth consumed by:
+//   - directory.html  (promoter filter dropdown)
+//   - artist-profile-edit.html (artist Primary Genre + Subgenres pickers)
+//
+// Display order matches Beatport's catalog taxonomy: House family
+// first (the bulk of GCC bookings), then Techno, Trance, Bass,
+// then non-electronic siblings that nightlife promoters actually
+// book in this region (Hip Hop, R&B, Latin, Arabic, Open Format,
+// Live Band).
+//
+// Schema: artists.genre is text[] (primary picks), artists.subgenres
+// is text[] (free strings drawn from GENRE_SUBS[primary]). See
+// shared/SCHEMA_NOTES.md.
+const GENRES = [
+  { name: 'House',          subs: ['Tech House', 'Deep House', 'Afro House', 'Melodic House', 'Organic House', 'Progressive House', 'Soulful House', 'Disco House', 'Tribal'] },
+  { name: 'Techno',         subs: ['Melodic Techno', 'Minimal Techno', 'Peak Time Techno', 'Hard Techno', 'Industrial Techno', 'Desert Techno'] },
+  { name: 'Trance',         subs: ['Progressive Trance', 'Psytrance', 'Uplifting Trance'] },
+  { name: 'Drum & Bass',    subs: ['Liquid DnB', 'Neurofunk', 'Jungle'] },
+  { name: 'Dubstep / Bass', subs: ['Dubstep', 'Future Bass', 'Trap', 'UK Garage'] },
+  { name: 'Electronic',     subs: ['Downtempo', 'Ambient', 'IDM', 'Breakbeat'] },
+  { name: 'Hip Hop',        subs: ['Old School', 'Trap', 'Drill', 'Boom Bap', 'Arabic Hip Hop'] },
+  { name: 'R&B / Soul',     subs: ['Neo Soul', 'Contemporary R&B', 'Funk'] },
+  { name: 'Latin',          subs: ['Reggaeton', 'Latin House', 'Afrobeats'] },
+  { name: 'Arabic',         subs: ['Arabic Pop', 'Khaleeji', 'Mahraganat'] },
+  { name: 'Open Format',    subs: [] },
+  { name: 'Live Band',      subs: [] },
+];
+const GENRE_PRIMARIES = GENRES.map(g => g.name);
+const GENRE_SUBS = Object.fromEntries(GENRES.map(g => [g.name, g.subs]));
+window.GENRES = GENRES;
+window.GENRE_PRIMARIES = GENRE_PRIMARIES;
+window.GENRE_SUBS = GENRE_SUBS;
+
+// ══════════════════════════════════════════════════════════
 // DB — Live Supabase data access
 // ══════════════════════════════════════════════════════════
 const DB = {

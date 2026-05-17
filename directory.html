@@ -61,16 +61,7 @@
         </div>
         <select class="dir-select" id="genreFilter" aria-label="Filter by genre" style="min-width: 160px">
           <option value="">All genres</option>
-          <option>House</option>
-          <option>Tech House</option>
-          <option>Deep House</option>
-          <option>Afro House</option>
-          <option>Melodic House</option>
-          <option>Melodic Techno</option>
-          <option>Progressive</option>
-          <option>Tribal</option>
-          <option>Open Format</option>
-          <option>Electronic</option>
+          <!-- Primary genres populated from window.GENRE_PRIMARIES (app.js) on DOMContentLoaded. -->
         </select>
         <select class="dir-select" id="cityFilter" aria-label="Filter by city" style="min-width: 150px">
           <option value="">All cities</option>
@@ -392,6 +383,14 @@
         navRoot.innerHTML = renderNav('directory');
       }
       if (typeof hydrateIcons === 'function') hydrateIcons();
+      // Populate genre filter from the canonical catalogue in app.js.
+      // Keep the "All genres" placeholder option that's already in HTML.
+      const genreSel = document.getElementById('genreFilter');
+      (window.GENRE_PRIMARIES || []).forEach(g => {
+        const o = document.createElement('option');
+        o.value = g; o.textContent = g;
+        genreSel.appendChild(o);
+      });
       setupEventListeners();
       loadFiltersFromURL();
       await initializeDirectory();

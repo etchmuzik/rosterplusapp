@@ -143,30 +143,20 @@
             </div>
             <div class="form-group">
               <label class="form-label">Primary Genre</label>
-              <select class="form-select" id="genre">
+              <select class="form-select" id="genre" onchange="rebuildSubgenrePicker()">
                 <option value="">Select genre...</option>
-                <option value="Tech House">Tech House</option>
-                <option value="Afro House">Afro House</option>
-                <option value="Deep House">Deep House</option>
-                <option value="Organic House">Organic House</option>
-                <option value="Minimal Techno">Minimal Techno</option>
-                <option value="Desert Techno">Desert Techno</option>
-                <option value="Drum & Bass">Drum & Bass</option>
-                <option value="Hip Hop">Hip Hop</option>
-                <option value="R&B / Neo Soul">R&B / Neo Soul</option>
-                <option value="Open Format">Open Format</option>
-                <option value="Future Bass">Future Bass</option>
-                <option value="Trance">Trance</option>
-                <option value="Reggaeton">Reggaeton</option>
-                <option value="Live Band">Live Band</option>
+                <!-- Primaries populated from window.GENRE_PRIMARIES (app.js) on init. -->
               </select>
             </div>
           </div>
           <div class="form-group">
             <label class="form-label">Subgenres</label>
-            <div class="tag-input-wrap" id="subgenres-wrap" onclick="this.querySelector('input').focus()">
-              <input type="text" placeholder="Type and press Enter..." onkeydown="addTag(event, 'subgenres')">
+            <div class="tag-input-wrap" id="subgenres-wrap">
+              <select id="subgenre-picker" class="form-select" style="flex:1;min-width:160px" onchange="addSubgenreFromPicker()" disabled>
+                <option value="">Pick a primary genre first…</option>
+              </select>
             </div>
+            <p class="text-tertiary" style="font-size:0.78rem;margin-top:4px">Scoped to your primary genre. Up to 5.</p>
           </div>
           <div class="form-group">
             <label class="form-label">Bio</label>
@@ -493,6 +483,50 @@
     function removeTag(type, idx) {
       _tags[type].splice(idx, 1);
       renderTags(type);
+      // Removing a subgenre chip frees the picker slot — re-include it.
+      if (type === 'subgenres') rebuildSubgenrePicker();
+    }
+
+    // Subgenres are constrained to the picks under the artist's
+    // current primary genre (see window.GENRE_SUBS in app.js). The
+    // picker dropdown rebuilds whenever the primary changes or the
+    // chip list changes, so already-chosen subgenres disappear from
+    // the dropdown options.
+    function rebuildSubgenrePicker() {
+      const primarySel = document.getElementById('genre');
+      const picker = document.getElementById('subgenre-picker');
+      if (!primarySel || !picker) return;
+      const primary = primarySel.value;
+      const subs = (window.GENRE_SUBS && window.GENRE_SUBS[primary]) || [];
+      const available = subs.filter(s => !_tags.subgenres.includes(s));
+      if (!primary) {
+        picker.innerHTML = '<option value="">Pick a primary genre first…</option>';
+        picker.disabled = true;
+      } else if (subs.length === 0) {
+        picker.innerHTML = '<option value="">No subgenres for this category</option>';
+        picker.disabled = true;
+      } else if (available.length === 0) {
+        picker.innerHTML = '<option value="">All subgenres added</option>';
+        picker.disabled = true;
+      } else {
+        picker.innerHTML = '<option value="">Add subgenre…</option>' +
+          available.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+        picker.disabled = false;
+      }
+    }
+
+    function addSubgenreFromPicker() {
+      const picker = document.getElementById('subgenre-picker');
+      const val = picker.value;
+      if (!val) return;
+      if (_tags.subgenres.length >= 5) {
+        picker.value = '';
+        if (typeof UI !== 'undefined' && UI.toast) UI.toast('Max 5 subgenres', 'info');
+        return;
+      }
+      _tags.subgenres.push(val);
+      renderTags('subgenres');
+      rebuildSubgenrePicker();
     }
 
     function renderTags(type) {
@@ -547,6 +581,8 @@
       _tags.cities = Array.isArray(data.cities_active) ? [...data.cities_active] : [];
       renderTags('subgenres');
       renderTags('cities');
+      // Primary genre is set above; now scope the subgenre picker to it.
+      rebuildSubgenrePicker();
 
       // Availability
       if (data.status === 'active') document.getElementById('availability-toggle').classList.add('active');
@@ -803,6 +839,18 @@
 
       document.getElementById('nav-root').innerHTML = renderNav('profile-edit');
       if (typeof hydrateIcons === 'function') hydrateIcons();
+
+      // Populate Primary Genre dropdown from the canonical catalogue in
+      // app.js. The "Select genre…" placeholder stays in the HTML.
+      const genreSel = document.getElementById('genre');
+      (window.GENRE_PRIMARIES || []).forEach(g => {
+        const o = document.createElement('option');
+        o.value = g; o.textContent = g;
+        genreSel.appendChild(o);
+      });
+      // First paint of the subgenre picker — disabled until a primary
+      // is picked (or rebuilt later by populateForm after data loads).
+      rebuildSubgenrePicker();
 
       _isSetup = new URLSearchParams(window.location.search).has('setup');
       if (_isSetup) {
