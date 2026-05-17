@@ -478,7 +478,21 @@
       const desc = bio
         ? (bio.length > 160 ? bio.slice(0, 157) + '\u2026' : bio)
         : ([metaGenres, a.city].filter(Boolean).join(' \u2014 ') + ' \u00b7 Book on ROSTR+ GCC.').trim();
-      const img = a.avatar_url || 'https://rosterplus.io/icons/og-default.jpg';
+      // OG image fallback chain (mirrors EPK pattern at epk.html:213-224):
+      //   1. Claimed artists: profiles.avatar_url
+      //   2. Slug-based local placeholder /assets/images/artists/<slug>.jpg
+      //   3. Generic ROSTR+ OG card.
+      // Unclaimed artists are most common (18/29 right now) — without the
+      // slug step they all share og-default.jpg, making social previews
+      // indistinguishable. Slug images are dropped per-artist in the
+      // assets dir (gitignored); 404s fall through to og-default.
+      const _ogSlug = String(a.stage_name || a.name || '').toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+      const img = a.avatar_url
+        || (_ogSlug ? `https://rosterplus.io/assets/images/artists/${_ogSlug}.jpg` : 'https://rosterplus.io/icons/og-default.jpg');
       const url = `https://rosterplus.io/profile.html?id=${encodeURIComponent(a.id)}`;
       const setMeta = (sel, val) => { const el = document.querySelector(sel); if (el) el.setAttribute('content', val); };
       document.title = `${name} \u2014 ROSTR+ GCC`;
