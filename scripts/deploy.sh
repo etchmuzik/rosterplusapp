@@ -159,21 +159,29 @@ fi
 
 # ── Cache-bust HTML asset references ──────────────────────
 # Every <link href="assets/css/system.css"> and <script src="assets/js/app.js">
-# gets a ?v=<sha> appended so browsers treat post-deploy assets as new
-# URLs. That lets the .htaccess long-cache the actual files (1 year,
-# immutable) while still guaranteeing freshness on the next deploy.
+# gets ?v=<sha> set to the current build SHA so browsers treat post-deploy
+# assets as new URLs. The .htaccess long-caches the actual files (1 year,
+# immutable) while ?v=<sha> guarantees freshness on every deploy.
 #
-# Only rewrites tags that DON'T already have a ?v= query to keep this
-# script idempotent across local re-runs. Restored from .deploy-bak on
-# exit alongside sw.js and app.js.
+# Two passes per pattern:
+#   1. REWRITE existing ?v=<old> with the current SHA. Catches stale
+#      stamps committed from earlier interrupted deploys (the
+#      .deploy-bak restore wasn't always run cleanly) AND ensures
+#      every deploy actually bumps the cache-bust param.
+#   2. APPEND ?v=<sha> to bare refs that have no query at all.
+# Rewrite first, append second — otherwise the append regex would
+# double-stamp ?v=<sha>?v=<sha>.
+#
+# (2026-05-17 fix: earlier version of this only had pass 2, which meant
+# any HTML committed with a stale stamp stayed stale on every deploy.)
 HTML_BAK_DIR=$(mktemp -d)
 for html in *.html; do
   [[ -f "$html" ]] || continue
   cp "$html" "$HTML_BAK_DIR/$html.deploy-bak"
-  # Match: src="assets/js/X.js" or href="assets/css/X.css" with no existing query
-  # Append: ?v=<sha>
   # Use @-delimited sed so forward slashes stay legible.
   sed -i.tmp -E \
+    -e "s@(src|href)=\"(assets/(js|css)/[^\"?]+\.(js|css))\?v=[^\"]*\"@\1=\"\2?v=$BUILD_SHA\"@g" \
+    -e "s@(src|href)=\"/(assets/(js|css)/[^\"?]+\.(js|css))\?v=[^\"]*\"@\1=\"/\2?v=$BUILD_SHA\"@g" \
     -e "s@(src|href)=\"(assets/(js|css)/[^\"?]+\.(js|css))\"@\1=\"\2?v=$BUILD_SHA\"@g" \
     -e "s@(src|href)=\"/(assets/(js|css)/[^\"?]+\.(js|css))\"@\1=\"/\2?v=$BUILD_SHA\"@g" \
     "$html"
