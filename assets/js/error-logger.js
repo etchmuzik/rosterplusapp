@@ -131,20 +131,38 @@
     } catch (_) { /* no-op */ }
   }
 
-  // Browser-extension noise filter (2026-05-13 audit P1-13).
-  // The single biggest source of client_errors rows over the last
-  // week was "func sseError not found" — 199 entries originating
-  // from an injected wallet-extension script (TON/Tron), not our
-  // code. Drop these before they hit Supabase + Sentry so real
-  // bugs don't drown in the noise.
+  // Browser-extension + benign-browser noise filter
+  // (2026-05-13 audit P1-13, 2026-05-17 audit expansion).
+  //
+  // Anything matching these patterns gets dropped BEFORE the POST to
+  // /rest/v1/client_errors and BEFORE the Sentry capture call. The
+  // list reflects what real browsers + extensions actually throw at
+  // us — verified by grouping `client_errors` in the last 7 days.
   var NOISE_PATTERNS = [
+    // Wallet / TON / Tron / MetaMask injected scripts
     /func\s+sseError\s+not\s+found/i,
-    /inpage\.js/i,                    // TON/Tron wallet inpage shim
+    /inpage\.js/i,
+    /window\.ethereum/i,              // any ethereum-related error
+    /__firefox__/i,                   // Firefox reader-mode + private extensions
+    /reader.*is not defined/i,
+    // Generic extension namespaces (some leak through fname check)
     /chrome-extension:\/\//i,
     /moz-extension:\/\//i,
     /safari-(web-)?extension:\/\//i,
-    /^ResizeObserver loop/i,          // benign browser noise
+    // Common third-party dev tools that inject into pages
+    /DarkReader/i,                    // Dark Reader extension
+    /Can't find variable: (?:DarkReader|__firefox__|webkit)/i,
+    /Grammarly/i,
+    // Browser quirks that aren't actionable bugs
+    /^ResizeObserver loop/i,          // benign reflow churn
     /Script error\.?$/i,              // cross-origin script (uninformative)
+    /Loading chunk \d+ failed/i,      // user navigated away mid-fetch
+    /Load failed$/i,                  // generic fetch abort on tab close
+    /NetworkError when attempting to fetch resource/i,
+    /AbortError/i,                    // request cancelled (often page nav)
+    // Non-error throws from third-party SDKs (Sentry catches these)
+    /Non-error promise rejection captured with value: Object Not Found/i,
+    /Object captured as promise rejection with keys: \w+,?\s*\w*$/i,
   ];
   function looksLikeNoise(err, context) {
     try {
