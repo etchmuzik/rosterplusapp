@@ -4250,7 +4250,17 @@ const PWA_INSTALL_DISMISS_KEY = 'rostr_install_dismissed_at';
 const PWA_INSTALL_VISIT_KEY = 'rostr_visit_count';
 const PWA_INSTALL_DISMISS_DAYS = 14;
 const PWA_INSTALL_MIN_VISITS = 2;
-const PWA_INSTALL_SKIP_PAGES = ['/', '/index.html', '/auth.html', '/terms.html', '/privacy.html', '/claim-profile.html'];
+// Pages where the install banner is intentionally suppressed.
+// Auth + legal + claim flow: focus-critical, no room for nags.
+// EPK + profile + booking + booking-detail: actionable content that
+// the banner was visibly overlapping on mobile (QW-4 fix 2026-05-17).
+// Homepage and directory keep the banner — that's where install
+// conversion is highest. /a/<handle> is served as /a.html which is in.
+const PWA_INSTALL_SKIP_PAGES = [
+  '/auth.html', '/terms.html', '/privacy.html', '/claim-profile.html',
+  '/epk.html', '/profile.html', '/booking.html', '/booking-detail.html',
+  '/contract.html', '/messages.html',
+];
 
 let _deferredInstallPrompt = null;
 
