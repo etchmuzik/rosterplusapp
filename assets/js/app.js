@@ -1126,6 +1126,16 @@ function renderFooter() {
           </ul>
         </div>
 
+        <div class="site-footer-col">
+          <div class="site-footer-heading">Connect</div>
+          <ul class="site-footer-links">
+            <li><a href="https://instagram.com/rostr.plus" target="_blank" rel="noopener" aria-label="Instagram @rostr.plus">Instagram</a></li>
+            <li><a href="https://wa.me/971581232600" target="_blank" rel="noopener" aria-label="WhatsApp +971 58 123 2600">WhatsApp</a></li>
+            <li><a href="mailto:book@rosterplus.io">Bookings inbox</a></li>
+            <li><a href="/link">All channels</a></li>
+          </ul>
+        </div>
+
       </div>
 
       <div class="site-footer-base container">
