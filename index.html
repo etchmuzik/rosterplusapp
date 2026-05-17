@@ -414,34 +414,15 @@
         </div>
       </div>
 
-      <!-- ═══ AUTOMATIONS SUB-STRIP ═══
-           Below the main grid (lower visual weight). Surfaces the
-           lifecycle features that don't need a hero card but ARE
-           real product value invisible elsewhere. Each tile maps to
-           one or more edge functions:
-             LIFECYCLE → send-artist-onboarding-drip, send-booking-reminders
-             REVIEWS   → send-review-prompts
-             RECOVERY  → send-password-reset, send-email
-             OPS       → admin-daily-digest, health, stripe-webhook, resend-webhook
-           -->
-      <div class="lp-automations-strip" aria-label="Behind-the-scenes automations">
-        <div class="lp-auto-tile">
-          <span class="lp-auto-eyebrow">Lifecycle</span>
-          <p>Welcome drip for new artists. Booking reminders that fire on the right day. Onboarding sequence for promoters who haven't shipped their first gig.</p>
-        </div>
-        <div class="lp-auto-tile">
-          <span class="lp-auto-eyebrow">Reviews</span>
-          <p>Post-gig review prompts to both sides. Real social proof, written the day it happened — not pulled from stale testimonials.</p>
-        </div>
-        <div class="lp-auto-tile">
-          <span class="lp-auto-eyebrow">Recovery</span>
-          <p>Password resets, email-change confirmations, magic-link sign-in. All branded, all logged, all routed through Resend.</p>
-        </div>
-        <div class="lp-auto-tile">
-          <span class="lp-auto-eyebrow">Ops</span>
-          <p>Daily digest to admin. Health checks every five minutes. Stripe webhooks reconciled automatically against pending payouts.</p>
-        </div>
-      </div>
+      <!-- Automations sub-strip removed 2026-05-16 — operator call.
+           The 4-tile row (Lifecycle / Reviews / Recovery / Ops) was added
+           in commit 73d6e8a alongside the 12-card grid expansion, but
+           visually it read as filler below the main grid. The underlying
+           features (send-artist-onboarding-drip, send-review-prompts,
+           send-password-reset, admin-daily-digest, health, stripe-webhook
+           edge functions) still ship — they're just no longer surfaced
+           on the homepage. The 12-card feature grid above already
+           communicates the platform's surface area. -->
     </section>
 
     <!-- ═══ REACH ═══
