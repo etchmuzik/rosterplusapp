@@ -612,28 +612,41 @@
     <div id="nav-root"></div>
 
     <!-- Main Content -->
-    <!-- 2026-05-13 audit v2 P2-10: early-bind onclick targets so very
+    <!-- F-01 (2026-05-17 audit-fix): early-bind onclick targets so very
          fast clicks before the main inline script parses don't fire
          "openNewContractModal is not defined" / "filterContracts is
-         not defined" errors. Real implementations override these later. -->
+         not defined" errors.
+         The original shim (2026-05-13 audit v2 P2-10) queued via
+         addEventListener('DOMContentLoaded'), but that listener silently
+         no-ops if DOMContentLoaded already fired before the click — which
+         is exactly the case for the ~3 hits/week still landing in
+         client_errors. setTimeout-based retry loop polls for the real
+         implementation and invokes it once it's defined. -->
     <script>
-      window.openNewContractModal = window.openNewContractModal || function(){
-        // queue the action — real impl runs after DOMContentLoaded.
-        document.addEventListener('DOMContentLoaded', function once(){
-          document.removeEventListener('DOMContentLoaded', once);
-          if (typeof openNewContractModal === 'function' && openNewContractModal !== window.openNewContractModal) {
-            openNewContractModal();
+      function _gsdQueueShim(name, args) {
+        var maxTries = 20; // ~2 seconds @ 100ms
+        var tries = 0;
+        var poll = function() {
+          tries++;
+          var real = window[name];
+          if (typeof real === 'function' && !real._gsdShim) {
+            try { real.apply(null, args); } catch (e) { /* swallow */ }
+            return;
           }
-        });
-      };
-      window.filterContracts = window.filterContracts || function(f){
-        document.addEventListener('DOMContentLoaded', function once(){
-          document.removeEventListener('DOMContentLoaded', once);
-          if (typeof filterContracts === 'function' && filterContracts !== window.filterContracts) {
-            filterContracts(f);
-          }
-        });
-      };
+          if (tries < maxTries) setTimeout(poll, 100);
+        };
+        setTimeout(poll, 0);
+      }
+      if (!window.openNewContractModal) {
+        var s1 = function() { _gsdQueueShim('openNewContractModal', Array.prototype.slice.call(arguments)); };
+        s1._gsdShim = true;
+        window.openNewContractModal = s1;
+      }
+      if (!window.filterContracts) {
+        var s2 = function() { _gsdQueueShim('filterContracts', Array.prototype.slice.call(arguments)); };
+        s2._gsdShim = true;
+        window.filterContracts = s2;
+      }
     </script>
 
     <main id="main-content" class="contracts-container">
