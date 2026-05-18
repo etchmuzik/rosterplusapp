@@ -62,6 +62,23 @@ interface EmailPayload {
   data: Record<string, string>;
 }
 
+/**
+ * Map email type to the optional per-kind pref the user can opt out
+ * of. All recipients must also have `prefs.email !== false` (master
+ * email toggle), so this just adds an extra opt-out for booking /
+ * contract / payment categories. Return null for:
+ *   - invitation       — recipient has no account yet, no prefs row
+ *   - artist_*         — onboarding drip, master email opt-out only
+ *   - review_prompt    — master email opt-out only
+ * 2026-05-18: added with profiles.notification_prefs migration.
+ */
+function emailKindPrefKey(type: string): string | null {
+  if (type.startsWith('booking_'))  return 'bookings';
+  if (type.startsWith('contract_')) return 'contracts';
+  if (type.startsWith('payment_'))  return 'payouts';
+  return null;
+}
+
 // ── Shared shell ────────────────────────────────────────────────
 // Mirror of the shell in send-booking-reminders. When this changes,
 // update that one too. Dark background, white primary CTAs, microcopy
@@ -362,6 +379,48 @@ serve(async (req) => {
           status: 401,
           headers: { ...cors, 'Content-Type': 'application/json' },
         });
+      }
+    }
+
+    // Respect the recipient's notification preferences. Two-layer gate:
+    //   1. Master `email` toggle — if false, skip everything except
+    //      invitations (recipient has no account, can't have a pref).
+    //      Mail to book@rosterplus.io (anonymous EPK inquiries) also
+    //      skips the check — that's our own inbox, not a user opt-out
+    //      surface.
+    //   2. Per-kind toggle — `bookings` / `contracts` / `payouts`. Only
+    //      applies if `emailKindPrefKey(type)` returns non-null.
+    //
+    // Lookup tolerates failure (column missing on legacy row, recipient
+    // not in profiles): we fall back to sending. Opt-out model means
+    // "couldn't read prefs" should not silently drop email.
+    // 2026-05-18 — wired with profiles.notification_prefs.
+    const skipPrefCheck = type === 'invitation' || to.toLowerCase() === 'book@rosterplus.io';
+    if (!skipPrefCheck && SUPABASE_URL && SERVICE_ROLE) {
+      try {
+        const lookupClient = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
+        const { data: profRow } = await lookupClient
+          .from('profiles')
+          .select('notification_prefs')
+          .ilike('email', to)
+          .maybeSingle();
+        const prefs = (profRow?.notification_prefs ?? {}) as Record<string, boolean>;
+
+        if (prefs.email === false) {
+          console.log(`[send-email] skipped to=${to} type=${type} (prefs.email=false)`);
+          return new Response(JSON.stringify({ skipped: true, reason: 'prefs.email' }), {
+            headers: { ...cors, 'Content-Type': 'application/json' },
+          });
+        }
+        const kindKey = emailKindPrefKey(type);
+        if (kindKey && prefs[kindKey] === false) {
+          console.log(`[send-email] skipped to=${to} type=${type} (prefs.${kindKey}=false)`);
+          return new Response(JSON.stringify({ skipped: true, reason: `prefs.${kindKey}` }), {
+            headers: { ...cors, 'Content-Type': 'application/json' },
+          });
+        }
+      } catch (_e) {
+        // Lookup failure → send (opt-out safety default).
       }
     }
 

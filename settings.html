@@ -20,10 +20,10 @@
 
   <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700,900&f[]=chillax@500,600,700&display=swap">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap">
-  <link rel="stylesheet" href="assets/css/system.css?v=49fd6f2">
+  <link rel="stylesheet" href="assets/css/system.css?v=0e27ba1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="assets/js/error-logger.js?v=49fd6f2" defer></script>
-  <script src="assets/js/app.js?v=49fd6f2" defer></script>
+  <script src="assets/js/error-logger.js?v=0e27ba1" defer></script>
+  <script src="assets/js/app.js?v=0e27ba1" defer></script>
   <style>
     .settings-container { max-width: 700px; margin: 80px auto 0; padding: var(--space-2xl) var(--space-lg); }
     .settings-section { margin-bottom: var(--space-3xl); }
@@ -215,8 +215,8 @@
       <div class="settings-section">
         <h2 class="settings-header h-as-h3" style="color:var(--status-cancelled)">Danger Zone</h2>
         <div class="danger-zone">
-          <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:var(--space-md)">Once you delete your account, there is no going back. All your data will be permanently removed.</p>
-          <button class="btn btn-danger btn-sm" onclick="if(confirm('Are you sure? This cannot be undone.')) UI.toast('Contact hi@rosterplus.io to delete your account','info')">Delete Account</button>
+          <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:var(--space-md)">Account deletion is handled by the operator within 48 hours to ensure all linked data (bookings, contracts, messages) is closed out cleanly. Click below to send the deletion request — your account email and ID will be pre-filled so we can locate your row immediately.</p>
+          <button class="btn btn-danger btn-sm" onclick="requestAccountDeletion()">Request Account Deletion</button>
         </div>
       </div>
     </div>
@@ -246,12 +246,33 @@
       if (el) el.textContent = `${textarea.value.length} / ${textarea.maxLength}`;
     }
 
+    // Read the current visual state of a toggle. Returns true when
+    // the .active class is set, false otherwise. The 5 placebo toggles
+    // were just visual until 2026-05-18 — now their state ships to
+    // profiles.notification_prefs on every Save Profile click.
+    function toggleIsOn(id) {
+      const el = document.getElementById(id);
+      return !!(el && el.classList.contains('active'));
+    }
+
     async function saveProfile() {
       const updates = {
         display_name: document.getElementById('display-name').value.trim(),
         phone: document.getElementById('phone').value.trim(),
         city: document.getElementById('city').value,
         bio: document.getElementById('bio').value.trim(),
+        // 5 notification preferences. Both role-conditional toggles
+        // (contracts / payouts) are read regardless of visibility —
+        // the unused one stays at its default true rather than being
+        // omitted, so role-switching later doesn't accidentally turn
+        // it off.
+        notification_prefs: {
+          email:     toggleIsOn('toggle-email'),
+          bookings:  toggleIsOn('toggle-bookings'),
+          messages:  toggleIsOn('toggle-messages'),
+          contracts: toggleIsOn('toggle-contracts'),
+          payouts:   toggleIsOn('toggle-payouts'),
+        },
       };
       // Company is promoter-only
       if (Auth.role === 'promoter') {
@@ -284,6 +305,32 @@
 
     // Sign out from every device. Confirms before firing because this
     // kills all active sessions and forces a full re-auth.
+    // Real account-deletion flow. Operator-mediated for now (no
+    // self-serve hard-delete RPC yet), but this is honest about that
+    // by opening a mailto: with the user's email + auth ID + role
+    // pre-filled. The operator can find the profiles row by uuid and
+    // do the cascade delete + email-archive in one go.
+    // 2026-05-18: replaced the previous "Contact hi@rosterplus.io"
+    // toast which gave the user nothing actionable.
+    function requestAccountDeletion() {
+      if (!confirm('Send an account-deletion request to the ROSTR+ team? Your account stays active until we process the request (typically within 48 hours). This cannot be undone once processed.')) {
+        return;
+      }
+      const u = Auth.user || {};
+      const subject = encodeURIComponent('Account deletion request');
+      const body = encodeURIComponent(
+        'Please delete my ROSTR+ account.\n\n' +
+        '— Account email: ' + (u.email || '(unknown)') + '\n' +
+        '— Account ID:    ' + (u.id || '(unknown)') + '\n' +
+        '— Role:          ' + (Auth.role || '(unknown)') + '\n' +
+        '— Display name:  ' + (u.display_name || '(none)') + '\n\n' +
+        'I understand all my bookings, contracts, messages, and ' +
+        'profile data will be permanently removed.\n\n' +
+        '(Sent from /settings.html — please confirm receipt.)\n'
+      );
+      window.location.href = 'mailto:hi@rosterplus.io?subject=' + subject + '&body=' + body;
+    }
+
     async function signOutEverywhere() {
       if (!confirm('Sign out of all devices? You\u2019ll need to log in again everywhere.')) return;
       UI.toast('Signing out everywhere\u2026', 'info');
@@ -347,6 +394,26 @@
           bioEl.value = profile.data.bio || '';
           updateCharCount(bioEl, 'bio-count');
         }
+        // Apply saved notification_prefs to the 5 toggles. Each toggle
+        // markup ships with the 'active' class on by default; we strip
+        // it if the user has saved a false value, then leave the
+        // onclick="this.classList.toggle('active')" handler alone so
+        // visual feedback still works. saveProfile() reads the current
+        // .active state at submit time.
+        const prefs = profile.data.notification_prefs || {};
+        const applyPref = (id, key) => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          // Missing key counts as true (default opt-in for legacy rows
+          // written before the column existed).
+          const on = (prefs[key] !== false);
+          el.classList.toggle('active', on);
+        };
+        applyPref('toggle-email',     'email');
+        applyPref('toggle-bookings',  'bookings');
+        applyPref('toggle-messages',  'messages');
+        applyPref('toggle-contracts', 'contracts');
+        applyPref('toggle-payouts',   'payouts');
       }
 
       // Role-tailored placeholder for the bio. Promoters write for

@@ -29,8 +29,34 @@ interface ReminderRow {
   currency: string | null;
   promoter_id: string;
   artist_id: string;
-  promoter: { display_name: string | null; email: string | null; company: string | null } | null;
-  artists: { stage_name: string | null; profiles: { display_name: string | null; email: string | null } | null } | null;
+  promoter: {
+    display_name: string | null;
+    email: string | null;
+    company: string | null;
+    notification_prefs: Record<string, boolean> | null;
+  } | null;
+  artists: {
+    stage_name: string | null;
+    profiles: {
+      display_name: string | null;
+      email: string | null;
+      notification_prefs: Record<string, boolean> | null;
+    } | null;
+  } | null;
+}
+
+/**
+ * AND-gated booking-reminder pref check. The recipient must have
+ * BOTH the master email toggle and the bookings toggle on. Missing
+ * keys count as true (opt-out model — pre-migration rows have no
+ * column value but should still receive reminders).
+ * 2026-05-18: added with profiles.notification_prefs migration.
+ */
+function shouldEmailReminder(prefs: Record<string, boolean> | null | undefined): boolean {
+  if (!prefs) return true;
+  if (prefs.email === false) return false;
+  if (prefs.bookings === false) return false;
+  return true;
 }
 
 function fmtFee(fee: number | null, currency: string | null): string {
@@ -137,8 +163,8 @@ serve(async (req) => {
     .select(`
       id, event_name, event_date, event_time, venue_name, fee, currency,
       promoter_id, artist_id,
-      promoter:profiles!promoter_id(display_name, email, company),
-      artists(stage_name, profiles(display_name, email))
+      promoter:profiles!promoter_id(display_name, email, company, notification_prefs),
+      artists(stage_name, profiles(display_name, email, notification_prefs))
     `)
     .eq('event_date', tomorrowISO)
     .in('status', ['confirmed', 'contracted'])
@@ -148,7 +174,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 
-  const results: Array<{ id: string; sent: number; failed: number }> = [];
+  const results: Array<{ id: string; sent: number; failed: number; skipped: number }> = [];
   const reminders = (rows || []) as unknown as ReminderRow[];
 
   for (const b of reminders) {
@@ -162,23 +188,38 @@ serve(async (req) => {
 
     let sent = 0;
     let failed = 0;
+    let skipped = 0;
 
     const artistEmail = b.artists?.profiles?.email;
     if (artistEmail) {
-      const mail = renderEmail({ recipientRole: 'artist', counterpartyName: promoterName, eventName, eventDate: b.event_date, eventTime, venue, fee, bookingUrl });
-      if (await sendEmail(artistEmail, mail.subject, mail.html)) sent++; else failed++;
+      // Skip if the artist has opted out of email or booking notifications.
+      // 2026-05-18 profiles.notification_prefs respect.
+      if (!shouldEmailReminder(b.artists?.profiles?.notification_prefs)) {
+        console.log(`[send-booking-reminders] skipped artist=${artistEmail} booking=${b.id} (prefs opt-out)`);
+        skipped++;
+      } else {
+        const mail = renderEmail({ recipientRole: 'artist', counterpartyName: promoterName, eventName, eventDate: b.event_date, eventTime, venue, fee, bookingUrl });
+        if (await sendEmail(artistEmail, mail.subject, mail.html)) sent++; else failed++;
+      }
     }
     const promoterEmail = b.promoter?.email;
     if (promoterEmail) {
-      const mail = renderEmail({ recipientRole: 'promoter', counterpartyName: artistName, eventName, eventDate: b.event_date, eventTime, venue, fee, bookingUrl });
-      if (await sendEmail(promoterEmail, mail.subject, mail.html)) sent++; else failed++;
+      if (!shouldEmailReminder(b.promoter?.notification_prefs)) {
+        console.log(`[send-booking-reminders] skipped promoter=${promoterEmail} booking=${b.id} (prefs opt-out)`);
+        skipped++;
+      } else {
+        const mail = renderEmail({ recipientRole: 'promoter', counterpartyName: artistName, eventName, eventDate: b.event_date, eventTime, venue, fee, bookingUrl });
+        if (await sendEmail(promoterEmail, mail.subject, mail.html)) sent++; else failed++;
+      }
     }
 
     // Mark sent even if one side bounced \u2014 re-trying would just spam
     // the working side. If both failed we still mark: same rationale plus
     // "email not reaching us" is a user problem, not a cron problem.
+    // Skipped-by-prefs ALSO marks sent: we honoured the opt-out, don't
+    // re-attempt next hour.
     await sb.from('bookings').update({ reminder_sent_at: new Date().toISOString() }).eq('id', b.id);
-    results.push({ id: b.id, sent, failed });
+    results.push({ id: b.id, sent, failed, skipped });
   }
 
   return new Response(JSON.stringify({ success: true, processed: reminders.length, results }), {

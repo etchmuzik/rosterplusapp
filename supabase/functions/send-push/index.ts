@@ -21,6 +21,27 @@ type IncomingPayload = {
   data?: Record<string, unknown>;
 };
 
+/**
+ * Map notifications.type (or data.type prefix) to the
+ * profiles.notification_prefs key that governs it. Returns null when
+ * a type doesn't map to any toggle — those notifications always send
+ * (e.g. system-level / admin broadcasts). The mapping is intentionally
+ * by prefix so future variants ("booking_accepted", "booking_declined",
+ * "booking_reminder_24h") all route to the same toggle without code
+ * changes.
+ * 2026-05-18: added with profiles.notification_prefs migration.
+ */
+function prefKeyForType(type: string | null | undefined): string | null {
+  if (!type) return null;
+  const t = String(type).toLowerCase();
+  if (t.startsWith("booking"))  return "bookings";
+  if (t.startsWith("message"))  return "messages";
+  if (t.startsWith("contract")) return "contracts";
+  if (t.startsWith("payout"))   return "payouts";
+  if (t.startsWith("payment"))  return "payouts";
+  return null;
+}
+
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -100,6 +121,29 @@ Deno.serve(async (req: Request) => {
   const authz = await authorizeCaller(req, payload.user_id);
   if (!authz.ok) {
     return json({ error: authz.message }, authz.status);
+  }
+
+  // Respect the user's notification preferences. Fetched once here so
+  // a single Supabase round-trip covers both the toggle check and the
+  // device-tokens lookup. If prefs lookup fails (column missing on a
+  // bizarre legacy row), we fall back to sending — the toggle is
+  // opt-out, so the safe default on read-failure is "yes deliver".
+  // 2026-05-18 — wired with profiles.notification_prefs.
+  const typeRaw = (payload.data && (payload.data as Record<string, unknown>).type) as string | undefined;
+  const prefKey = prefKeyForType(typeRaw);
+  if (prefKey) {
+    const { data: profRow } = await admin
+      .from("profiles")
+      .select("notification_prefs")
+      .eq("id", payload.user_id)
+      .maybeSingle();
+    const prefs = (profRow?.notification_prefs ?? {}) as Record<string, boolean>;
+    if (prefs[prefKey] === false) {
+      console.log(
+        `[send-push] skipped user=${payload.user_id} type=${typeRaw} (prefs.${prefKey}=false)`
+      );
+      return json({ dispatched: 0, skipped_due_to_prefs: prefKey });
+    }
   }
 
   const { data: tokens, error } = await admin
