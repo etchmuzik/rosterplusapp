@@ -52,6 +52,14 @@
       <!-- ═══ Profile completion nudge ═══ -->
       <div id="completion-mount"></div>
 
+      <!-- ═══ First-booking tour (0-booking promoters only) ═══
+           2026-05-29 activation quick-win #5. A net-new promoter lands
+           on a dashboard full of empty states + help text. This card
+           replaces that cold open with a single, obvious path to the
+           first booking request. Rendered by renderFirstBookingTour()
+           only when _allBookings.length === 0 AND not dismissed. -->
+      <div id="first-booking-tour-mount"></div>
+
       <!-- ═══ Big stats ═══ -->
       <div class="dash-stats">
         <div class="dash-stat lp-anim lp-d-1">
@@ -345,6 +353,80 @@
       `;
     }
 
+    /* ── First-booking tour (activation quick-win #5) ──
+       Shown only to promoters with zero bookings. Replaces the cold
+       "empty dashboard" first impression with an obvious 3-step path
+       to the first booking request. Dismissible (localStorage), and
+       self-suppresses the moment the promoter has any booking — so it
+       never nags an active user. The primary CTA goes to the directory
+       (step 1: pick an artist); steps 2-3 are signposting, since the
+       booking flow on booking.html already handles date + fee.
+
+       Why a roadmap card, not a modal wizard: the booking flow exists
+       and works. The gap is "what do I do on this empty screen?", not
+       "the booking form is confusing". A visible roadmap removes the
+       paralysis at the lowest cost. */
+    function renderFirstBookingTour() {
+      const host = document.getElementById('first-booking-tour-mount');
+      if (!host) return;
+
+      // Suppress once the promoter has any booking — they're activated.
+      if (_allBookings.length > 0) { host.innerHTML = ''; return; }
+
+      // Respect a same-session dismissal so it doesn't reappear on every
+      // dashboard visit within the day. Count check trumps this anyway:
+      // once they book, the length>0 guard above fires regardless.
+      try {
+        if (localStorage.getItem('rostr-firstbooking-tour-dismissed') === '1') {
+          host.innerHTML = '';
+          return;
+        }
+      } catch (_) { /* localStorage blocked — show it, harmless */ }
+
+      const steps = [
+        { n: '1', icon: 'search',   title: 'Pick an artist', body: 'Browse verified GCC talent. Filter by genre, city, or date.' },
+        { n: '2', icon: 'send',     title: 'Send a request', body: 'Set the date, venue, and fee. The artist gets notified instantly.' },
+        { n: '3', icon: 'fileText', title: 'Lock it in',     body: 'Accept → auto-contract → tracked payout. All in one thread.' },
+      ];
+
+      host.innerHTML = `
+        <div class="fbt-card lp-anim">
+          <button class="fbt-dismiss" onclick="dismissFirstBookingTour()" aria-label="Dismiss getting-started guide">&times;</button>
+          <div class="fbt-head">
+            <span class="fbt-eyebrow">Get started</span>
+            <h2 class="fbt-title">Your first booking, in 60 seconds</h2>
+            <p class="fbt-sub">No card needed during launch. Here's the whole flow:</p>
+          </div>
+          <div class="fbt-steps">
+            ${steps.map(s => `
+              <div class="fbt-step">
+                <div class="fbt-step-num">${s.n}</div>
+                <div class="fbt-step-body">
+                  <div class="fbt-step-title">${UI.icon(s.icon, 14)} ${esc(s.title)}</div>
+                  <div class="fbt-step-text">${esc(s.body)}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+          <div class="fbt-actions">
+            <a class="btn btn-primary" href="directory.html">
+              <span class="js-icon" data-icon="search" data-size="16"></span>
+              Browse the roster
+            </a>
+            <a class="btn btn-ghost" href="booking.html">Skip to booking form</a>
+          </div>
+        </div>
+      `;
+      if (typeof hydrateIcons === 'function') hydrateIcons(host);
+    }
+
+    function dismissFirstBookingTour() {
+      try { localStorage.setItem('rostr-firstbooking-tour-dismissed', '1'); } catch (_) {}
+      const host = document.getElementById('first-booking-tour-mount');
+      if (host) host.innerHTML = '';
+    }
+    window.dismissFirstBookingTour = dismissFirstBookingTour;
+
     /* ── Stats ── */
     function renderStats() {
       const total     = _allBookings.length;
@@ -610,6 +692,7 @@
       _allMessages = messagesRes.data || [];
 
       renderStats();
+      renderFirstBookingTour();
       renderActionItems().catch(() => {});
       renderTimeline();
       renderPipeline();

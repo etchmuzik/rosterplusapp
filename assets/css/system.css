@@ -4706,6 +4706,108 @@ tr:hover td { background: rgba(255,255,255,0.015); }
    interpolations) stay inline — they can't be classes.
    ═══════════════════════════════════════════════════════════ */
 
+/* ── First-booking tour (activation quick-win #5, 2026-05-29) ──
+   Prominent getting-started card shown to promoters with 0 bookings.
+   Accent-tinted so it reads as "do this next", not "system notice".
+   Self-removes once the promoter books (renderFirstBookingTour). */
+.fbt-card {
+  position: relative;
+  background: linear-gradient(150deg, var(--accent-dim-10), var(--bg-card));
+  border: 1px solid var(--accent-dim-30);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  margin-bottom: var(--space-xl);
+  box-shadow: var(--accent-glow);
+}
+.fbt-dismiss {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: color var(--duration-fast) var(--ease-out);
+}
+.fbt-dismiss:hover { color: var(--text-primary); }
+.fbt-eyebrow {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-soft);
+  margin-bottom: 6px;
+}
+.fbt-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 2.4vw, 1.9rem);
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  margin: 0 0 6px;
+  color: var(--text-primary);
+}
+.fbt-sub {
+  margin: 0 0 var(--space-lg);
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+.fbt-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+.fbt-step {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: flex-start;
+}
+.fbt-step-num {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent-dim-20);
+  color: var(--accent-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.fbt-step-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+.fbt-step-text {
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-tertiary);
+}
+.fbt-actions {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  align-items: center;
+}
+/* Stack steps vertically on narrow viewports so the roadmap stays
+   legible on a phone. */
+@media (max-width: 720px) {
+  .fbt-steps { grid-template-columns: 1fr; gap: var(--space-sm); }
+}
+
 /* — Page chrome — */
 .main-pad-y-dash    { padding-top: var(--space-xl); padding-bottom: var(--space-3xl); }
 .h2-display-sm      { margin-top: 4px; font-family: var(--font-display); font-size: 1.5rem; letter-spacing: -0.03em; }
