@@ -1679,6 +1679,24 @@ const DB = {
     }
   },
 
+  // Anonymized recent-booking feed for the directory social-proof
+  // ticker (2026-05-29 activation #6). Calls the SECURITY DEFINER
+  // recent_booking_activity() RPC — the function is the privacy
+  // boundary, returning only { artist_name, city, when_bucket } and
+  // never the promoter, fee, venue, or exact date. Safe to call
+  // anonymously. Returns [] on any error so the ticker degrades to
+  // its founding-state fallback rather than throwing.
+  async getRecentActivity(limit = 8) {
+    if (DEMO_MODE) return { success: true, data: [] };
+    try {
+      const { data, error } = await _sb.rpc('recent_booking_activity', { p_limit: limit });
+      if (error) return { success: false, data: [], error: error.message };
+      return { success: true, data: data || [] };
+    } catch (e) {
+      return { success: false, data: [], error: String(e) };
+    }
+  },
+
   // Resolve an artist by their Linktree handle (case-insensitive) OR by
   // UUID, returning the same enriched shape used by the EPK + Linktree
   // surfaces. UUID fallback: if `slug` matches the UUID regex, we look

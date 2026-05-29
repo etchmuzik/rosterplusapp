@@ -2740,6 +2740,84 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   font-size: 0.66rem;
 }
 
+/* ── Social-proof activity ticker (activation #6, 2026-05-29) ──
+   Sits between the stats strip and the grid. Two states:
+     .activity-ticker            — real recent-booking activity
+     .activity-ticker--founding  — honest fallback when <2 bookings
+   Calm by default — a thin bordered band, not a loud banner. The
+   point is ambient "this place is alive", not a shout. */
+.activity-ticker {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+  padding: 10px var(--space-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  overflow: hidden;
+}
+.activity-ticker strong { color: var(--text-primary); font-weight: 600; }
+.at-label {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--status-confirmed);
+  padding: 2px 8px;
+  border: 1px solid rgba(142, 230, 181, 0.3);
+  border-radius: 100px;
+  background: rgba(142, 230, 181, 0.08);
+}
+/* The scrolling track. CSS-only marquee on a duplicated row would be
+   ideal, but with a handful of entries a simple horizontal-scroll
+   flex row (no scrollbar) reads cleaner and avoids motion-sickness
+   risk. Wraps to nothing on overflow — first entries are the freshest
+   so truncation is acceptable. */
+.at-track {
+  display: flex;
+  gap: var(--space-lg);
+  overflow-x: auto;
+  scrollbar-width: none;
+  white-space: nowrap;
+}
+.at-track::-webkit-scrollbar { display: none; }
+.at-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+/* Pulsing green dot — the "live" signal. Respects reduced-motion. */
+.at-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--status-confirmed);
+  flex-shrink: 0;
+  animation: at-pulse 2.4s ease infinite;
+}
+@keyframes at-pulse {
+  0%, 100% { opacity: 1;   box-shadow: 0 0 0 0 rgba(142, 230, 181, 0.5); }
+  50%      { opacity: 0.6; box-shadow: 0 0 0 4px rgba(142, 230, 181, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .at-dot { animation: none; }
+}
+/* Founding-state — same shell, calmer (no "Live" pill, dimmer dot). */
+.activity-ticker--founding {
+  color: var(--text-tertiary);
+  font-size: 0.82rem;
+}
+.activity-ticker--founding .at-dot {
+  background: var(--accent-soft);
+  animation: none;
+}
+
 /* Grid layout */
 .dir-grid {
   display: grid;

@@ -32,10 +32,10 @@
 
   <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700,900&f[]=chillax@500,600,700&display=swap">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap">
-  <link rel="stylesheet" href="assets/css/system.css?v=2521872">
+  <link rel="stylesheet" href="assets/css/system.css?v=898465b">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="assets/js/error-logger.js?v=2521872" defer></script>
-  <script src="assets/js/app.js?v=2521872" defer></script>
+  <script src="assets/js/error-logger.js?v=898465b" defer></script>
+  <script src="assets/js/app.js?v=898465b" defer></script>
 </head>
 <body>
   <div class="page-shell">
@@ -106,6 +106,13 @@
         <div class="dir-stats-headline" id="dirStatsHeadline">Loading…</div>
         <div class="dir-meta" id="resultsInfo">Sorting by relevance</div>
       </div>
+
+      <!-- ═══ Social-proof activity ticker (activation #6, 2026-05-29) ═══
+           Anonymized "recently booked" feed via recent_booking_activity()
+           RPC. Renders real activity when bookings exist; falls back to an
+           honest founding-state line when empty (never shows a dead
+           "no activity" message). Populated by renderActivityTicker(). -->
+      <div id="activity-ticker-mount"></div>
 
       <div id="artist-grid" class="dir-grid"></div>
       <div id="artist-list" class="dir-list" style="display: none"></div>
@@ -410,7 +417,67 @@
       // applyFilters() runs inside initializeDirectory's render path; the
       // URL params now populate the form and the initial filter applies
       // them. No extra call needed.
+      renderActivityTicker(); // social-proof band — non-blocking
     });
+
+    /* ── Social-proof activity ticker (activation quick-win #6) ──
+       Shows anonymized recent bookings ("ETCH booked in Dubai · this
+       week") as a horizontal scrolling band above the grid. The whole
+       point is to make the directory feel alive — promoters book what
+       other promoters are booking.
+
+       Critical design rule: NEVER show a dead "no activity" state. On a
+       platform with zero bookings (today), an empty ticker would
+       broadcast deadness and undercut trust. So <2 real entries falls
+       back to a founding-state line that's still forward-looking:
+       "Founding roster forming — N verified artists live." That reads
+       as early-access momentum, not a ghost town.
+
+       Data via DB.getRecentActivity → recent_booking_activity() RPC.
+       The RPC is the privacy boundary (returns name + city + coarse
+       time bucket only). */
+    async function renderActivityTicker() {
+      const host = document.getElementById('activity-ticker-mount');
+      if (!host || typeof DB === 'undefined' || !DB.getRecentActivity) return;
+
+      let rows = [];
+      try {
+        const res = await DB.getRecentActivity(8);
+        rows = (res && res.success && Array.isArray(res.data)) ? res.data : [];
+      } catch (_) { rows = []; }
+
+      // Fallback threshold: need at least 2 real bookings before the
+      // ticker reads as "activity" rather than "one lonely booking".
+      if (rows.length < 2) {
+        // Founding-state: aspirational, honest, never "empty". Pull the
+        // verified-artist count from the directory's own loaded data if
+        // available (window-scoped by initializeDirectory), else omit.
+        const verifiedCount = (typeof allArtists !== 'undefined' && Array.isArray(allArtists))
+          ? allArtists.filter(a => a.verified).length
+          : 0;
+        const line = verifiedCount > 0
+          ? `<span class="at-dot" aria-hidden="true"></span> Founding roster forming — <strong>${verifiedCount} verified ${verifiedCount === 1 ? 'artist' : 'artists'}</strong> live and bookable now`
+          : `<span class="at-dot" aria-hidden="true"></span> Founding roster forming — verified GCC talent, bookable now`;
+        host.innerHTML = `<div class="activity-ticker activity-ticker--founding" role="status">${line}</div>`;
+        return;
+      }
+
+      // Real activity. Build the scrolling row. esc() each field even
+      // though the RPC only returns curated columns — house style.
+      const items = rows.map(r => {
+        const name = esc(r.artist_name || 'An artist');
+        const city = r.city ? esc(r.city) : '';
+        const when = esc(r.when_bucket || 'recently');
+        return `<span class="at-item"><span class="at-dot" aria-hidden="true"></span> <strong>${name}</strong> booked${city ? ' in ' + city : ''} · ${when}</span>`;
+      }).join('');
+
+      host.innerHTML = `
+        <div class="activity-ticker" role="status" aria-label="Recent booking activity">
+          <span class="at-label">Live</span>
+          <div class="at-track">${items}</div>
+        </div>`;
+    }
+    window.renderActivityTicker = renderActivityTicker;
   </script>
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
     <!-- Site-wide footer (rendered by app.js renderFooter()) -->
