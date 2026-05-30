@@ -52,19 +52,44 @@ Deno.serve(async (_req) => {
     if (!latestByJob[r.job]) latestByJob[r.job] = { status: r.status, ran_at: r.ran_at, duration_ms: r.duration_ms };
   }
 
-  // Compute staleness for the main reminder job.
+  // ── Liveness probe ──────────────────────────────────────────────
+  // We judge pg_cron health by a job that logs EVERY run regardless of
+  // workload — not by send-booking-reminders, which short-circuits
+  // silently when there are no bookings 24h out (so its cron_runs row
+  // is legitimately absent during quiet periods). Watching it caused a
+  // permanent false "ok:false" until the first booking.
+  //
+  // send-artist-onboarding-drip runs `30 * * * *` (hourly) and logs
+  // unconditionally → if IT is stale, pg_cron itself is down, which is
+  // what an external pinger actually wants to know. error-spike-alert
+  // (every 5 min) is the secondary heartbeat. 2026-05-30 fix.
+  const HEARTBEAT_JOB = 'send-artist-onboarding-drip';
+  const STALE_MS = 2 * 60 * 60 * 1000; // >2h of silence from an hourly job = cron down
+  const heartbeat = latestByJob[HEARTBEAT_JOB];
+  const cronAlive = heartbeat
+    ? (Date.now() - new Date(heartbeat.ran_at).getTime()) <= STALE_MS
+    : false; // heartbeat job has never logged → cron not running
+
+  // send-booking-reminders is reported informationally (last run, or
+  // "idle — no bookings to remind") but does NOT gate health.
   const reminderRun = latestByJob['send-booking-reminders'];
-  const reminderStale =
-    reminderRun
-      ? (Date.now() - new Date(reminderRun.ran_at).getTime()) > 2 * 60 * 60 * 1000 // >2h
-      : true; // never ran
+
+  const warnings: string[] = [];
+  if (!cronAlive) {
+    warnings.push(`pg_cron heartbeat stale: ${HEARTBEAT_JOB} has not logged in over 2 hours`);
+  }
 
   return json({
-    ok: !reminderStale,
+    ok: cronAlive,
     ts: new Date().toISOString(),
     build: 'edge',
     latency_ms: Date.now() - startedAt,
+    cron_alive: cronAlive,
+    heartbeat_job: HEARTBEAT_JOB,
+    booking_reminders: reminderRun
+      ? { last_run: reminderRun.ran_at, status: reminderRun.status }
+      : { status: 'idle', note: 'no bookings within 24h to remind — job short-circuits silently' },
     crons: latestByJob,
-    warnings: reminderStale ? ['send-booking-reminders has not run in the last 2 hours'] : [],
+    warnings,
   });
 });
