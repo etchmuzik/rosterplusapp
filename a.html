@@ -48,10 +48,10 @@
 
   <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700,900&f[]=chillax@500,600,700&display=swap">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap">
-  <link rel="stylesheet" href="assets/css/system.css?v=2521872">
+  <link rel="stylesheet" href="assets/css/system.css?v=3583d4e">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="assets/js/error-logger.js?v=2521872" defer></script>
-  <script src="assets/js/app.js?v=2521872" defer></script>
+  <script src="assets/js/error-logger.js?v=3583d4e" defer></script>
+  <script src="assets/js/app.js?v=3583d4e" defer></script>
 
   <!-- Linktree styles live in system.css under "LINKTREE SURFACE
        (shared)", same as /link.html. Only a tiny body bg override
@@ -258,8 +258,14 @@
             </span>
           </a>
 
-          ${(a.profiles?.phone || social.whatsapp) ? `
-            <a class="lt-link" href="${esc(buildWhatsAppUrl(a.profiles?.phone || social.whatsapp, stageName))}" target="_blank" rel="noopener" onclick="trackArtistCta('a_whatsapp','${esc(handle)}')">
+          ${social.whatsapp ? `
+            <!-- Public booking WhatsApp. Sourced ONLY from the artist's
+                 deliberately-published social_links.whatsapp (anon-readable,
+                 artist-controlled). The account phone (profiles.phone) is
+                 NOT used here — it's private PII, locked from anon in the
+                 2026-05-29 lockdown. Artists who want this button must set
+                 a WhatsApp number in their profile editor. -->
+            <a class="lt-link" href="${esc(buildWhatsAppUrl(social.whatsapp, stageName))}" target="_blank" rel="noopener" onclick="trackArtistCta('a_whatsapp','${esc(handle)}')">
               <span class="lt-link-ico" style="color:#25d366">
                 <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" aria-hidden="true">
                   <path d="M17.5 14.4c-.3-.2-1.7-.9-2-1-.3-.1-.5-.2-.7.2-.2.3-.8 1-.9 1.1-.2.2-.3.2-.6 0-.3-.2-1.2-.5-2.3-1.4-.9-.7-1.5-1.7-1.6-2-.2-.3 0-.5.1-.6.1-.1.3-.4.5-.5.1-.2.2-.3.3-.5.1-.2 0-.3 0-.5 0-.2-.7-1.7-1-2.3-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4 0 1.4 1 2.7 1.2 2.9.1.2 2 3 4.7 4.2.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.7-.7 1.9-1.4.3-.7.3-1.2.2-1.4-.1-.2-.3-.3-.6-.4Z"/>

@@ -1621,7 +1621,10 @@ const DB = {
     // LEFT join (no !inner) so unclaimed artists still resolve.
     const { data, error } = await _sb
       .from('artists')
-      .select(`*, profiles(display_name, avatar_url, city, bio, phone)`)
+      // Public read (profile.html). Drops phone — anon lost the column
+      // grant in the 2026-05-29 PII lockdown and the page never displayed
+      // it anyway. Authenticated self/partner reads use getMyArtistProfile.
+      .select(`*, profiles(display_name, avatar_url, city, bio)`)
       .eq('id', id)
       .single();
 
@@ -1714,8 +1717,12 @@ const DB = {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed);
     try {
       const query = _sb
+        // Public read (/a/<handle> Linktree). Drops phone + email — anon
+        // lost those column grants in the 2026-05-29 PII lockdown and the
+        // Linktree never rendered personal contact info (promoters reach
+        // artists via the in-app booking flow, not a public phone/email).
         .from('artists')
-        .select(`*, profiles(display_name, avatar_url, city, bio, phone, email)`)
+        .select(`*, profiles(display_name, avatar_url, city, bio)`)
         .is('deleted_at', null);
       const filtered = isUuid
         ? query.eq('id', trimmed)
